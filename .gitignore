@@ -1,3 +1,7 @@
 .env
 /.claude
+<<<<<<< HEAD
 .env.ex
+=======
+.env.ex
+>>>>>>> translation-subtitles

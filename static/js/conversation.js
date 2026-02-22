@@ -13,8 +13,12 @@ if (!sessionId) window.location.href = '/dashboard.html';
 let isSending      = false;
 let isRecording    = false;
 let recognition    = null;
-let currentAudio   = null;
+let currentSource  = null;  // AudioBufferSourceNode — mobile-compatible
+let audioCtx       = null;  // Web Audio context, unlocked on first user gesture
 let ttsEnabled     = true;
+
+// Cache translations keyed by message text to avoid redundant API calls
+const translationCache = new Map();
 
 /* ── Language metadata ──────────────────────────────────────────────────────── */
 const LANG_META = {
@@ -74,9 +78,12 @@ function appendMessage(role, content, id) {
   if (id) div.id = id;
 
   const avatarContent = isUser ? '👤' : langMeta.avatar;
-  const playBtn = isUser ? '' : `
+  const assistantBtns = isUser ? '' : `
     <button class="msg-play-btn" onclick="playMessage(this)" data-text="${escapeAttr(content)}" title="Play audio">
       🔊 Play
+    </button>
+    <button class="msg-translate-btn" onclick="translateMessage(this)" data-text="${escapeAttr(content)}" title="Show English translation">
+      🌐 Translate
     </button>
   `;
 
@@ -84,9 +91,10 @@ function appendMessage(role, content, id) {
     <div class="msg-avatar">${avatarContent}</div>
     <div class="msg-body">
       <div class="msg-bubble">${escapeHtml(content)}</div>
+      <div class="msg-translation" hidden></div>
       <div class="msg-footer">
         <span class="msg-time">${formatTime()}</span>
-        ${playBtn}
+        ${assistantBtns}
       </div>
     </div>
   `;
@@ -122,14 +130,22 @@ function finalizeStreamingMessage(fullText) {
   msg.classList.remove('streaming');
   msg.id = `msg-${Date.now()}`;
 
-  // Add footer with time and play button
+  // Insert translation placeholder before the footer
   const body = msg.querySelector('.msg-body');
+  const translationEl = document.createElement('div');
+  translationEl.className = 'msg-translation';
+  translationEl.hidden = true;
+  body.appendChild(translationEl);
+
   const footer = document.createElement('div');
   footer.className = 'msg-footer';
   footer.innerHTML = `
     <span class="msg-time">${formatTime()}</span>
     <button class="msg-play-btn" onclick="playMessage(this)" data-text="${escapeAttr(fullText)}" title="Play audio">
       🔊 Play
+    </button>
+    <button class="msg-translate-btn" onclick="translateMessage(this)" data-text="${escapeAttr(fullText)}" title="Show English translation">
+      🌐 Translate
     </button>
   `;
   body.appendChild(footer);
@@ -165,6 +181,7 @@ async function sendMessage(text) {
   const messageText = text ?? msgInput.value.trim();
   if (!messageText || isSending) return;
 
+  unlockAudio(); // synchronous — inside the tap/click gesture that called sendMessage
   isSending = true;
   sendBtn.disabled = true;
   msgInput.value = '';
@@ -249,15 +266,44 @@ async function streamAIResponse(message, isGreet) {
   }
 }
 
-/* ── TTS playback ───────────────────────────────────────────────────────────── */
-async function playTTS(text) {
-  // Stop current audio if playing
-  if (currentAudio) {
-    currentAudio.pause();
-    currentAudio = null;
-    document.querySelectorAll('.msg-play-btn.playing')
-      .forEach(b => { b.textContent = '🔊 Play'; b.classList.remove('playing'); });
+/* ── Web Audio context (mobile-compatible) ──────────────────────────────────── */
+// Mobile browsers (iOS Safari, Android Chrome) block Audio.play() when called
+// from async code after a network request — the user-gesture chain is broken.
+// The Web Audio API bypasses this: once the AudioContext is resumed synchronously
+// inside a user gesture, it stays unlocked for the lifetime of the page and can
+// play audio from any async context.
+
+function getAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
+  return audioCtx;
+}
+
+// Call this synchronously inside every user-gesture handler (send, mic tap).
+function unlockAudio() {
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  // Play a one-sample silent buffer — fully unlocks audio on iOS Safari.
+  const buf = ctx.createBuffer(1, 1, 22050);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.connect(ctx.destination);
+  src.start(0);
+}
+
+function stopCurrentAudio() {
+  if (currentSource) {
+    try { currentSource.stop(); } catch (_) {}
+    currentSource = null;
+  }
+  document.querySelectorAll('.msg-play-btn.playing')
+    .forEach(b => { b.textContent = '🔊 Play'; b.classList.remove('playing'); });
+}
+
+/* ── TTS playback ───────────────────────────────────────────────────────────── */
+async function playTTS(text, onEnded) {
+  stopCurrentAudio();
 
   const indicator = document.getElementById('audioIndicator');
   indicator.classList.add('show');
@@ -266,27 +312,32 @@ async function playTTS(text) {
     const res = await API.binary('/api/tts', { text, language });
     if (!res.ok) {
       console.warn('TTS failed:', res.status);
+      indicator.classList.remove('show');
+      onEnded?.();
       return;
     }
-    const blob = await res.blob();
-    const url  = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    currentAudio = audio;
 
-    audio.onended = () => {
-      URL.revokeObjectURL(url);
-      currentAudio = null;
+    const arrayBuffer = await res.arrayBuffer();
+    const ctx = getAudioCtx();
+    if (ctx.state === 'suspended') await ctx.resume();
+
+    const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+    const source = ctx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(ctx.destination);
+    currentSource = source;
+
+    source.onended = () => {
+      if (currentSource === source) currentSource = null;
       indicator.classList.remove('show');
+      onEnded?.();
     };
-    audio.onerror = () => {
-      URL.revokeObjectURL(url);
-      currentAudio = null;
-      indicator.classList.remove('show');
-    };
-    await audio.play();
+
+    source.start(0);
   } catch (err) {
     console.warn('TTS error:', err);
     indicator.classList.remove('show');
+    onEnded?.();
   }
 }
 
@@ -300,20 +351,63 @@ function playMessage(btn) {
   const text = btn.getAttribute('data-text');
   if (!text) return;
 
+  unlockAudio(); // must be synchronous — this IS the user gesture
+
   const wasPlaying = btn.classList.contains('playing');
-  // Reset all play buttons
-  document.querySelectorAll('.msg-play-btn.playing').forEach(b => {
-    b.textContent = '🔊 Play'; b.classList.remove('playing');
-  });
-  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  stopCurrentAudio(); // resets all play buttons + stops any running source
 
   if (!wasPlaying) {
     btn.textContent = '⏹ Stop';
     btn.classList.add('playing');
-    playTTS(text).then(() => {
+    playTTS(text, () => {
       btn.textContent = '🔊 Play';
       btn.classList.remove('playing');
     });
+  }
+}
+
+/* ── Translation ────────────────────────────────────────────────────────────── */
+async function translateMessage(btn) {
+  const text = btn.getAttribute('data-text');
+  if (!text) return;
+
+  // Find sibling .msg-translation div
+  const body = btn.closest('.msg-body');
+  const translationEl = body?.querySelector('.msg-translation');
+  if (!translationEl) return;
+
+  // Toggle off if already showing
+  if (!translationEl.hidden) {
+    translationEl.hidden = true;
+    btn.textContent = '🌐 Translate';
+    return;
+  }
+
+  // Show cached translation immediately
+  if (translationCache.has(text)) {
+    translationEl.textContent = translationCache.get(text);
+    translationEl.hidden = false;
+    btn.textContent = '🌐 Hide';
+    return;
+  }
+
+  // Fetch from API
+  btn.textContent = '⏳…';
+  btn.disabled = true;
+  try {
+    const data = await API.post('/api/conversation/translate', { text, language });
+    if (!data?.translation) throw new Error('Translation failed');
+    translationCache.set(text, data.translation);
+    translationEl.textContent = data.translation;
+    translationEl.hidden = false;
+    btn.textContent = '🌐 Hide';
+  } catch (err) {
+    translationEl.textContent = '⚠ Could not translate. Please try again.';
+    translationEl.hidden = false;
+    btn.textContent = '🌐 Translate';
+    console.warn('Translation error:', err);
+  } finally {
+    btn.disabled = false;
   }
 }
 
@@ -361,6 +455,7 @@ function startRecording() {
     alert('Voice input is not supported in your browser. Please use Chrome or Edge.');
     return;
   }
+  unlockAudio(); // synchronous — inside the mic button tap gesture
   try {
     recognition.start();
     isRecording = true;

@@ -60,6 +60,7 @@ func main() {
 		r.Use(auth.Middleware)
 		r.Post("/api/conversation/start",              convHandler.Start)
 		r.Post("/api/conversation/message",            convHandler.Message)
+		r.Post("/api/conversation/translate",          convHandler.Translate)
 		r.Get("/api/conversation/history/{sessionId}", convHandler.History)
 		r.Post("/api/tts",                             ttsHandler.Convert)
 	})
