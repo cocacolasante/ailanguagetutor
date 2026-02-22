@@ -236,6 +236,79 @@ func (h *ConversationHandler) Message(w http.ResponseWriter, r *http.Request) {
 	flusher.Flush()
 }
 
+// ── Translate ─────────────────────────────────────────────────────────────────
+
+type translateRequest struct {
+	Text     string `json:"text"`
+	Language string `json:"language"`
+}
+
+func (h *ConversationHandler) Translate(w http.ResponseWriter, r *http.Request) {
+	var req translateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+	if strings.TrimSpace(req.Text) == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "text cannot be empty"})
+		return
+	}
+
+	langName := LanguageName(req.Language)
+	prompt := fmt.Sprintf(
+		"Translate the following %s text to English. Respond with ONLY the translation — no explanations, no quotation marks, no additional commentary:\n\n%s",
+		langName, req.Text,
+	)
+
+	payload := ionosPayload{
+		Model: h.cfg.IONOSModel,
+		Messages: []store.Message{
+			{Role: "user", Content: prompt},
+		},
+		Stream:      false,
+		MaxTokens:   512,
+		Temperature: 0.1,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	ionosReq, err := http.NewRequestWithContext(r.Context(), "POST",
+		h.cfg.IONOSBaseURL+"/chat/completions", bytes.NewReader(body))
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to reach AI service"})
+		return
+	}
+	ionosReq.Header.Set("Content-Type", "application/json")
+	ionosReq.Header.Set("Authorization", "Bearer "+h.cfg.IONOSAPIKey)
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(ionosReq)
+	if err != nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "AI service unavailable"})
+		return
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil || len(result.Choices) == 0 {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to parse translation"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{
+		"translation": strings.TrimSpace(result.Choices[0].Message.Content),
+	})
+}
+
 // ── History ───────────────────────────────────────────────────────────────────
 
 func (h *ConversationHandler) History(w http.ResponseWriter, r *http.Request) {

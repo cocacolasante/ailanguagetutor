@@ -725,6 +725,42 @@ input::placeholder { color: var(--text-3); }
 .msg-play-btn:hover { background: var(--surface-3); color: var(--text-2); }
 .msg-play-btn.playing { color: var(--accent); }
 
+.msg-translate-btn {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: background 0.15s, color 0.15s;
+}
+.msg-translate-btn:hover { background: var(--surface-3); color: var(--text-2); }
+.msg-translate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.msg-translation {
+  margin-top: 6px;
+  padding: 8px 12px;
+  background: var(--surface-1);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 0.85rem;
+  color: var(--text-2);
+  line-height: 1.5;
+  font-style: italic;
+}
+.msg-translation::before {
+  content: 'EN · ';
+  font-style: normal;
+  font-weight: 600;
+  color: var(--accent);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
 /* Typing indicator */
 .typing-indicator {
   display: flex;
