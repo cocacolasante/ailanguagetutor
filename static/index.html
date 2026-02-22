@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LinguaAI — Language Tutor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body class="auth-page">
+
+  <div class="auth-container">
+    <!-- Logo -->
+    <div class="auth-logo">
+      <span class="logo-icon">🌐</span>
+      <h1 class="gradient-text">LinguaAI</h1>
+      <p>Your AI-powered language tutor</p>
+    </div>
+
+    <!-- Card -->
+    <div class="auth-card">
+      <!-- Tabs -->
+      <div class="auth-tabs" role="tablist">
+        <button class="auth-tab active" id="tab-login"    role="tab" aria-selected="true"  aria-controls="panel-login"    onclick="switchTab('login')">Sign In</button>
+        <button class="auth-tab"        id="tab-register" role="tab" aria-selected="false" aria-controls="panel-register" onclick="switchTab('register')">Create Account</button>
+      </div>
+
+      <!-- Alert -->
+      <div class="alert alert-error" id="authAlert" role="alert"></div>
+
+      <!-- Login form -->
+      <div id="panel-login" role="tabpanel">
+        <form class="auth-form" id="loginForm" novalidate>
+          <div class="form-group">
+            <label for="loginEmail">Email</label>
+            <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email" required />
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" required />
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg w-full" id="loginBtn">
+            <span>Sign In</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Register form -->
+      <div id="panel-register" role="tabpanel" style="display:none">
+        <form class="auth-form" id="registerForm" novalidate>
+          <div class="form-group">
+            <label for="regUsername">Username</label>
+            <input type="text" id="regUsername" placeholder="Your name" autocomplete="name" required />
+          </div>
+          <div class="form-group">
+            <label for="regEmail">Email</label>
+            <input type="email" id="regEmail" placeholder="you@example.com" autocomplete="email" required />
+          </div>
+          <div class="form-group">
+            <label for="regPassword">Password</label>
+            <input type="password" id="regPassword" placeholder="Min. 8 characters" autocomplete="new-password" required />
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg w-full" id="registerBtn">
+            <span>Create Account</span>
+          </button>
+        </form>
+      </div>
+
+      <div class="auth-divider">Available Languages</div>
+
+      <div class="languages-preview">
+        <div class="lang-pill"><span>🇮🇹</span><span>Italiano</span></div>
+        <div class="lang-pill"><span>🇪🇸</span><span>Español</span></div>
+        <div class="lang-pill"><span>🇧🇷</span><span>Português</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+</body>
+</html>

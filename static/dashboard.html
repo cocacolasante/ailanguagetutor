@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — LinguaAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <span class="brand-icon">🌐</span>
+      <span>LinguaAI</span>
+    </div>
+    <div class="nav-right">
+      <div class="nav-user">
+        <div class="nav-avatar" id="navAvatar">?</div>
+        <span id="navUsername"></span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Sign out</button>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="dashboard-page">
+    <header class="dashboard-header">
+      <h1>Good <span id="greeting-time">day</span>, <span id="greeting-name" class="gradient-text">learner</span> 👋</h1>
+      <p>Choose a language and topic to start practicing.</p>
+    </header>
+
+    <!-- Step 1: Language -->
+    <section aria-labelledby="lang-step">
+      <div class="step-label">
+        <div class="step-num">1</div>
+        <h2 id="lang-step">Choose your language</h2>
+      </div>
+      <div class="language-grid" id="languageGrid">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- Step 2: Topic -->
+    <section aria-labelledby="topic-step">
+      <div class="step-label">
+        <div class="step-num">2</div>
+        <h2 id="topic-step">Choose a topic</h2>
+      </div>
+      <div id="topicsContainer">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+  </main>
+
+  <!-- Start bar (slides up when both selected) -->
+  <div class="start-bar" id="startBar">
+    <div class="start-selection-info" id="selectionInfo">
+      <!-- Populated by JS -->
+    </div>
+    <button class="btn btn-primary btn-lg" id="startBtn" onclick="startConversation()">
+      Start Conversation →
+    </button>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>

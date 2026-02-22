@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conversation — LinguaAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <div class="conv-page">
+
+    <!-- Header -->
+    <header class="conv-header">
+      <div class="conv-header-left">
+        <a href="/dashboard.html" class="btn-icon" title="Back to Dashboard" aria-label="Back">←</a>
+        <div class="conv-meta">
+          <span class="badge badge-purple" id="headerLang">🇮🇹 Italian</span>
+          <span class="badge badge-blue"   id="headerTopic">💬 General</span>
+        </div>
+      </div>
+      <div class="conv-header-right">
+        <!-- Audio playing indicator -->
+        <div class="audio-playing-indicator" id="audioIndicator">
+          <div class="audio-bars">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <span>Playing</span>
+        </div>
+        <!-- TTS toggle -->
+        <label class="tts-toggle" title="Auto-play voice responses">
+          <input type="checkbox" id="ttsToggle" checked />
+          <div class="toggle-track"></div>
+          <span>🔊</span>
+        </label>
+        <!-- New session -->
+        <button class="btn-icon" title="New conversation" onclick="newConversation()" aria-label="New session">↺</button>
+      </div>
+    </header>
+
+    <!-- Messages -->
+    <div class="conv-messages" id="messagesContainer">
+      <!-- Loading state shown initially -->
+      <div class="conv-loading-state" id="loadingState">
+        <div class="spinner"></div>
+        <p>Starting your session…</p>
+      </div>
+    </div>
+
+    <!-- Input area -->
+    <div class="conv-input-area">
+      <div class="voice-status" id="voiceStatus">
+        <div class="voice-dot"></div>
+        <span>Listening… speak now</span>
+      </div>
+      <div class="input-row">
+        <button class="mic-btn" id="micBtn" onclick="toggleRecording()" title="Hold to speak" aria-label="Voice input">🎤</button>
+        <div class="input-wrapper">
+          <textarea
+            id="messageInput"
+            placeholder="Type a message or use the mic…"
+            rows="1"
+            aria-label="Message input"
+          ></textarea>
+        </div>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()" aria-label="Send message" disabled>
+          ➤
+        </button>
+      </div>
+      <p class="input-hint">Press <kbd>Enter</kbd> to send · <kbd>Shift+Enter</kbd> for new line</p>
+    </div>
+
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/conversation.js"></script>
+</body>
+</html>
