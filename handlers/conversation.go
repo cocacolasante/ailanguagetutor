@@ -212,6 +212,7 @@ func (h *ConversationHandler) Message(w http.ResponseWriter, r *http.Request) {
 		if len(chunk.Choices) == 0 {
 			continue
 		}
+		
 		content := chunk.Choices[0].Delta.Content
 		if content == "" {
 			continue
