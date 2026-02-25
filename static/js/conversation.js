@@ -18,6 +18,7 @@ let currentSource     = null;  // AudioBufferSourceNode — mobile-compatible
 let audioCtx          = null;  // Web Audio context, unlocked on first user gesture
 let ttsEnabled        = true;
 let silenceTimer      = null;  // auto-send after speech pause
+let onAllAudioDone    = null;  // called once when all TTS audio for a response ends
 
 const SILENCE_TIMEOUT = 1500; // ms of silence before auto-sending
 
@@ -186,6 +187,7 @@ async function sendMessage(text) {
   const messageText = text ?? msgInput.value.trim();
   if (!messageText || isSending) return;
 
+  onAllAudioDone = null; // cancel any pending mic auto-restart from previous response
   unlockAudio(); // synchronous — inside the tap/click gesture that called sendMessage
   isSending = true;
   sendBtn.disabled = true;
@@ -275,6 +277,16 @@ async function streamAIResponse(message, isGreet) {
 
       if (data.done) {
         finalizeStreamingMessage(fullText);
+        // Schedule mic auto-restart once all TTS audio for this response ends.
+        if (ttsEnabled) {
+          onAllAudioDone = () => {
+            setTimeout(() => {
+              if (ttsEnabled && !isSending && !isRecording && !msgInput.value.trim()) {
+                startRecording();
+              }
+            }, 500);
+          };
+        }
         if (ttsEnabled && ttsStarted) {
           // Pre-fetch phase 2 (remainder after the first sentence) while
           // phase 1 audio is still playing.
@@ -284,7 +296,7 @@ async function streamAIResponse(message, isGreet) {
               if (buf) {
                 ttsPhase2Buf = buf;
                 tryPlayPhase2();
-              } else if (ttsPhase1Done && !currentSource) {
+              } else if (ttsPhase1Done && !currentSource && !isRecording) {
                 // Prefetch failed and phase 1 already ended — play directly.
                 autoPlayTTS(remainder);
               }
@@ -401,7 +413,14 @@ async function playTTS(text, onEnded) {
       indicator.classList.remove('show');
       // Don't chain to onEnded if audio was explicitly stopped (user action /
       // new message) — avoids phase-2 playing over top of new content.
-      if (!source._stopped) onEnded?.();
+      if (!source._stopped) {
+        onEnded?.();
+        // If onEnded didn't start new audio (e.g. phase 2), all audio is done.
+        if (!currentSource) {
+          onAllAudioDone?.();
+          onAllAudioDone = null;
+        }
+      }
     };
 
     source.start(0);
@@ -443,6 +462,10 @@ function playDecodedAudio(audioBuffer) {
   source.onended = () => {
     if (currentSource === source) currentSource = null;
     indicator.classList.remove('show');
+    if (!source._stopped) {
+      onAllAudioDone?.();
+      onAllAudioDone = null;
+    }
   };
   source.start(0);
 }
@@ -451,6 +474,7 @@ function playMessage(btn) {
   const text = btn.getAttribute('data-text');
   if (!text) return;
 
+  onAllAudioDone = null; // user is manually playing — don't auto-start mic after
   unlockAudio(); // must be synchronous — this IS the user gesture
 
   const wasPlaying = btn.classList.contains('playing');
