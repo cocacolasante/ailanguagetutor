@@ -241,6 +241,8 @@ async function streamAIResponse(message, isGreet) {
   //   Phase 2 — remainder of the response; pre-fetched (ElevenLabs request
   //             runs in parallel while phase 1 is playing) so it's ready the
   //             moment phase 1 ends, with no audible gap.
+  //   If prefetch fails (null), ttsPhase2Text is set as a fallback and played
+  //   via a regular playTTS call instead.
   let ttsStarted    = false;  // phase 1 fired
   let firstSentLen  = 0;      // char length of text sent to phase 1
   let ttsPhase1Done = false;  // phase 1 audio finished playing naturally
@@ -276,8 +278,15 @@ async function streamAIResponse(message, isGreet) {
           const remainder = fullText.slice(firstSentLen).trim();
           if (remainder) {
             prefetchTTS(remainder).then(buf => {
-              ttsPhase2Buf = buf;
-              tryPlayPhase2();
+              if (buf) {
+                ttsPhase2Buf = buf;
+                tryPlayPhase2();
+              } else if (ttsPhase1Done && !currentSource) {
+                // Prefetch failed and phase 1 already ended — play directly.
+                autoPlayTTS(remainder);
+              }
+              // If phase 1 is still playing and prefetch failed, phase 2 is
+              // skipped — acceptable since it's a rare, short-response case.
             });
           }
         } else if (ttsEnabled && fullText) {

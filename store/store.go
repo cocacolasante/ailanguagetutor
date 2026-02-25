@@ -40,6 +40,7 @@ type Session struct {
 	UserID    string    `json:"user_id"`
 	Language  string    `json:"language"`
 	Topic     string    `json:"topic"`
+	Level     int       `json:"level"`
 	Messages  []Message `json:"messages"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -154,16 +155,17 @@ func NewSessionStore() *SessionStore {
 	return &SessionStore{sessions: make(map[string]*Session)}
 }
 
-func (ss *SessionStore) Create(userID, language, topic, systemPrompt string) *Session {
+func (ss *SessionStore) Create(userID, language, topic string, level int, systemPrompt string) *Session {
 	ss.mu.Lock()
 	defer ss.mu.Unlock()
 
 	s := &Session{
-		ID:       uuid.New().String(),
-		UserID:   userID,
-		Language: language,
-		Topic:    topic,
-		Messages: []Message{{Role: "system", Content: systemPrompt}},
+		ID:        uuid.New().String(),
+		UserID:    userID,
+		Language:  language,
+		Topic:     topic,
+		Level:     level,
+		Messages:  []Message{{Role: "system", Content: systemPrompt}},
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}

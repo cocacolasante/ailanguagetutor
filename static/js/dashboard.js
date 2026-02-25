@@ -2,9 +2,18 @@ requireAuth();
 
 /* ── State ──────────────────────────────────────────────────────────────────── */
 let selectedLang  = null;
+let selectedLevel = null;
 let selectedTopic = null;
 let languages     = [];
 let topics        = [];
+
+const levels = [
+  { id: 1, label: 'Beginner',     emoji: '🌱', desc: 'New to the language — vocabulary, pronunciation & basics' },
+  { id: 2, label: 'Elementary',   emoji: '📖', desc: 'Simple phrases & everyday grammar with guided support' },
+  { id: 3, label: 'Intermediate', emoji: '💬', desc: 'Comfortable conversation on familiar topics' },
+  { id: 4, label: 'Advanced',     emoji: '🎯', desc: 'Nuanced discussion, idioms & complex grammar' },
+  { id: 5, label: 'Fluent',       emoji: '🚀', desc: 'Fully natural, native-speed conversation' },
+];
 
 /* ── Greeting ───────────────────────────────────────────────────────────────── */
 (function initGreeting() {
@@ -69,6 +78,39 @@ function selectLanguage(code) {
   updateStartBar();
 }
 
+/* ── Level cards ────────────────────────────────────────────────────────────── */
+function renderLevels() {
+  const grid = document.getElementById('levelGrid');
+  grid.innerHTML = levels.map(lv => `
+    <div
+      class="level-card"
+      id="level-${lv.id}"
+      onclick="selectLevel(${lv.id})"
+      role="radio"
+      aria-checked="false"
+      tabindex="0"
+      onkeydown="if(event.key==='Enter'||event.key===' ')selectLevel(${lv.id})"
+    >
+      <div class="level-check">✓</div>
+      <div class="level-num">${lv.id}</div>
+      <div class="level-emoji">${lv.emoji}</div>
+      <div class="level-label">${lv.label}</div>
+      <div class="level-desc">${lv.desc}</div>
+    </div>
+  `).join('');
+}
+
+function selectLevel(id) {
+  if (selectedLevel) {
+    const prev = document.getElementById(`level-${selectedLevel}`);
+    if (prev) { prev.classList.remove('selected'); prev.setAttribute('aria-checked','false'); }
+  }
+  selectedLevel = id;
+  const card = document.getElementById(`level-${id}`);
+  if (card) { card.classList.add('selected'); card.setAttribute('aria-checked','true'); }
+  updateStartBar();
+}
+
 /* ── Topic cards (grouped) ──────────────────────────────────────────────────── */
 function renderTopics() {
   const container = document.getElementById('topicsContainer');
@@ -124,16 +166,19 @@ function updateStartBar() {
   const bar  = document.getElementById('startBar');
   const info = document.getElementById('selectionInfo');
 
-  if (!selectedLang || !selectedTopic) {
+  if (!selectedLang || !selectedLevel || !selectedTopic) {
     bar.classList.remove('visible');
     return;
   }
 
   const lang  = languages.find(l => l.code === selectedLang);
+  const lv    = levels.find(l => l.id === selectedLevel);
   const topic = topics.find(t => t.id === selectedTopic);
 
   info.innerHTML = `
     <span class="badge badge-purple">${lang.flag} ${lang.name}</span>
+    <span style="color:var(--text-3)">·</span>
+    <span class="badge badge-green">${lv.emoji} Level ${lv.id} — ${lv.label}</span>
     <span style="color:var(--text-3)">·</span>
     <span class="badge badge-blue">${topic.icon} ${topic.name}</span>
   `;
@@ -142,7 +187,7 @@ function updateStartBar() {
 
 /* ── Start conversation ─────────────────────────────────────────────────────── */
 async function startConversation() {
-  if (!selectedLang || !selectedTopic) return;
+  if (!selectedLang || !selectedLevel || !selectedTopic) return;
 
   const btn = document.getElementById('startBtn');
   btn.disabled = true;
@@ -151,12 +196,14 @@ async function startConversation() {
   try {
     const data = await API.post('/api/conversation/start', {
       language: selectedLang,
+      level:    selectedLevel,
       topic:    selectedTopic,
     });
 
     const params = new URLSearchParams({
       session:   data.session_id,
       language:  data.language,
+      level:     selectedLevel,
       topic:     data.topic,
       topicName: data.topic_name,
     });
@@ -170,4 +217,5 @@ async function startConversation() {
 }
 
 /* ── Init ───────────────────────────────────────────────────────────────────── */
+renderLevels();
 loadData();

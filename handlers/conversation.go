@@ -31,6 +31,7 @@ func NewConversationHandler(cfg *config.Config, ss *store.SessionStore) *Convers
 type startRequest struct {
 	Language string `json:"language"`
 	Topic    string `json:"topic"`
+	Level    int    `json:"level"`
 }
 
 type startResponse struct {
@@ -38,6 +39,7 @@ type startResponse struct {
 	Language  string `json:"language"`
 	Topic     string `json:"topic"`
 	TopicName string `json:"topic_name"`
+	Level     int    `json:"level"`
 }
 
 func (h *ConversationHandler) Start(w http.ResponseWriter, r *http.Request) {
@@ -57,16 +59,20 @@ func (h *ConversationHandler) Start(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid topic"})
 		return
 	}
+	if req.Level < 1 || req.Level > 5 {
+		req.Level = 3 // default to intermediate
+	}
 
 	topicName, topicDesc := TopicDetails(req.Topic)
-	systemPrompt := buildSystemPrompt(req.Language, topicName, topicDesc)
-	session := h.sessionStore.Create(userID, req.Language, req.Topic, systemPrompt)
+	systemPrompt := buildSystemPrompt(req.Language, req.Level, topicName, topicDesc)
+	session := h.sessionStore.Create(userID, req.Language, req.Topic, req.Level, systemPrompt)
 
 	writeJSON(w, http.StatusCreated, startResponse{
 		SessionID: session.ID,
 		Language:  session.Language,
 		Topic:     session.Topic,
 		TopicName: topicName,
+		Level:     session.Level,
 	})
 }
 
@@ -113,10 +119,7 @@ func (h *ConversationHandler) Message(w http.ResponseWriter, r *http.Request) {
 	var userContent string
 	if req.Greet {
 		// Invisible trigger — not stored in history
-		userContent = fmt.Sprintf(
-			"[Begin the session. Greet the student warmly in %s and introduce the conversation topic naturally. Keep it brief and enthusiastic.]",
-			LanguageName(session.Language),
-		)
+		userContent = buildGreetPrompt(session.Language, session.Level)
 		messages = append(messages, store.Message{Role: "user", Content: userContent})
 	} else {
 		if strings.TrimSpace(req.Message) == "" {
@@ -334,28 +337,97 @@ func (h *ConversationHandler) History(w http.ResponseWriter, r *http.Request) {
 		"language":   session.Language,
 		"topic":      session.Topic,
 		"topic_name": topicName,
+		"level":      session.Level,
 		"messages":   msgs,
 	})
 }
 
 // ── System prompt builder ─────────────────────────────────────────────────────
 
-func buildSystemPrompt(langCode, topicName, topicDesc string) string {
+func levelProfile(level int) string {
+	switch level {
+	case 1:
+		return `STUDENT LEVEL: Beginner (1/5)
+- The student is brand new to this language. They may know almost nothing.
+- Communicate primarily in English to ensure understanding. Introduce only 1–2 key phrases or vocabulary words in the target language per response, always accompanied by a clear English translation.
+- Use extremely simple, short sentences when you do write in the target language.
+- Praise every attempt enthusiastically — even a single correct word is worth celebrating.
+- Never expect full sentences from the student; a single word response is completely fine.
+- Explicitly teach: say the target-language word/phrase, provide the pronunciation hint if helpful, and use it in a simple example sentence.`
+	case 2:
+		return `STUDENT LEVEL: Elementary (2/5)
+- The student knows basic greetings and very common vocabulary but still needs significant support.
+- Write roughly 50% of your response in the target language and 50% in English. Place English translations in [square brackets] immediately after any word or phrase the student might not know.
+- Use only simple, common grammar structures (present tense, basic questions).
+- Gently model correct forms without calling out errors by name.
+- Encourage the student to try responding in the target language, but accept English with a soft nudge.`
+	case 3:
+		return `STUDENT LEVEL: Intermediate (3/5)
+- The student can handle everyday conversation on familiar topics.
+- Speak primarily in the target language. Use English only for brief clarifications of complex ideas — place these in [square brackets].
+- Use standard everyday vocabulary and a range of tenses.
+- Subtly reinforce correct grammar by echoing corrected forms naturally in your own sentences.
+- Push the student gently: ask follow-up questions that require a bit more than a yes/no answer.`
+	case 4:
+		return `STUDENT LEVEL: Advanced (4/5)
+- The student is comfortable with the language and can discuss a wide range of topics.
+- Speak entirely in the target language. Avoid English unless a cultural concept has no translation.
+- Use rich vocabulary, idiomatic expressions, and varied grammar structures freely.
+- Challenge the student with nuanced questions, hypotheticals, and opinions.
+- Correct errors only by naturally and smoothly using the correct form in your response — never interrupt flow.`
+	case 5:
+		return `STUDENT LEVEL: Fluent (5/5)
+- The student is near-native. Treat them as a fluent peer, not a learner.
+- Speak entirely in the target language at natural native speed and complexity.
+- Use idioms, colloquialisms, humor, cultural references, and register variation freely.
+- Do not simplify vocabulary, grammar, or sentence length in any way.
+- Engage as you would with any native speaker — debate, joke, tell stories, explore nuance.`
+	default:
+		return levelProfile(3)
+	}
+}
+
+func buildSystemPrompt(langCode string, level int, topicName, topicDesc string) string {
 	lang := LanguageName(langCode)
-	return fmt.Sprintf(`You are an expert, warm, and encouraging language tutor specializing in %s. Your mission is to help the student practice %s through natural, immersive conversation about "%s".
+	return fmt.Sprintf(`You are an expert, warm, and encouraging language tutor specializing in %s. Your mission is to help the student practice %s through natural conversation about "%s".
 
 Topic context: %s
 
-Tutor guidelines:
-1. Speak primarily in %s. For students who seem to be struggling, include very brief English hints in [square brackets] only when necessary.
-2. Keep the conversation naturally centered on the topic without being rigid about it.
-3. Gently reinforce correct grammar by naturally weaving the correct form into your own response — never say "you made a mistake" explicitly.
-4. Match your vocabulary complexity to the student's apparent level; introduce new words with context.
-5. Always ask a follow-up question or make a comment that invites the student to continue talking.
-6. Be warm, patient, and celebratory — language learning is hard and every effort counts.
-7. If the student writes in English, respond in %s but gently acknowledge what they said and nudge them toward the target language.
-8. Keep responses conversational and concise — typically 2–4 sentences.
-9. Never use markdown formatting, asterisks, or bullet points in your responses; speak naturally.
-10. You may occasionally add a brief cultural note or fun fact relevant to the topic.`,
-		lang, lang, topicName, topicDesc, lang, lang)
+%s
+
+General guidelines (apply at all levels):
+- Keep the conversation naturally centered on the topic without being rigid.
+- Always end with a question or invitation that encourages the student to keep talking.
+- Never use markdown formatting, asterisks, or bullet points — speak naturally in prose.
+- Keep responses concise: typically 2–4 sentences.
+- You may occasionally weave in a brief cultural note or fun fact relevant to the topic.`,
+		lang, lang, topicName, topicDesc, levelProfile(level))
+}
+
+func buildGreetPrompt(langCode string, level int) string {
+	lang := LanguageName(langCode)
+	switch level {
+	case 1:
+		return fmt.Sprintf(
+			"[Begin the session. Welcome the student warmly in English. Tell them you'll be learning %s together today and introduce the topic. Then teach them one simple greeting phrase in %s with its English translation to get started.]",
+			lang, lang,
+		)
+	case 2:
+		return fmt.Sprintf(
+			"[Begin the session. Greet the student in a mix of English and %s. Introduce the topic simply and invite them to try responding — even in English is fine for now.]",
+			lang,
+		)
+	case 3:
+		return fmt.Sprintf(
+			"[Begin the session. Greet the student primarily in %s and introduce the conversation topic naturally. Keep it brief, warm, and end with an easy question to get the conversation going.]",
+			lang,
+		)
+	case 4, 5:
+		return fmt.Sprintf(
+			"[Begin the session. Greet the student entirely in %s and dive into the topic naturally, as you would with a confident speaker. Ask an engaging, open-ended question right away.]",
+			lang,
+		)
+	default:
+		return buildGreetPrompt(langCode, 3)
+	}
 }
