@@ -10,12 +10,13 @@ const topicName = params.get('topicName') || 'General Conversation';
 if (!sessionId) window.location.href = '/dashboard.html';
 
 /* ── State ──────────────────────────────────────────────────────────────────── */
-let isSending      = false;
-let isRecording    = false;
-let recognition    = null;
-let currentSource  = null;  // AudioBufferSourceNode — mobile-compatible
-let audioCtx       = null;  // Web Audio context, unlocked on first user gesture
-let ttsEnabled     = true;
+let isSending         = false;
+let isRecording       = false;
+let recognition       = null;
+let currentTranscript = '';  // accumulated final transcript during recording session
+let currentSource     = null;  // AudioBufferSourceNode — mobile-compatible
+let audioCtx          = null;  // Web Audio context, unlocked on first user gesture
+let ttsEnabled        = true;
 
 // Cache translations keyed by message text to avoid redundant API calls
 const translationCache = new Map();
@@ -114,7 +115,7 @@ function appendStreamingMessage() {
   div.innerHTML = `
     <div class="msg-avatar">${langMeta.avatar}</div>
     <div class="msg-body">
-      <div class="msg-bubble" id="streaming-content"></div>
+      <div class="msg-bubble"></div>
     </div>
   `;
   container.appendChild(div);
@@ -124,8 +125,9 @@ function appendStreamingMessage() {
 
 function finalizeStreamingMessage(fullText) {
   const msg     = document.getElementById('streaming-msg');
-  const content = document.getElementById('streaming-content');
-  if (!msg || !content) return;
+  if (!msg) return;
+  const content = msg.querySelector('.msg-bubble');
+  if (!content) return;
 
   msg.classList.remove('streaming');
   msg.id = `msg-${Date.now()}`;
@@ -251,7 +253,7 @@ async function streamAIResponse(message, isGreet) {
         fullText += data.content;
         if (!streamingEl) {
           streamingEl = appendStreamingMessage();
-          contentEl   = document.getElementById('streaming-content');
+          contentEl   = streamingEl.querySelector('.msg-bubble');
         }
         contentEl.textContent = fullText;
         scrollToBottom();
@@ -412,38 +414,68 @@ async function translateMessage(btn) {
 }
 
 /* ── Voice input ────────────────────────────────────────────────────────────── */
+// Mobile-compatible recording strategy:
+//   continuous:true + interimResults:true keeps the recognizer alive (mobile browsers
+//   frequently fire onend early with continuous:false).  Final transcript chunks are
+//   accumulated in currentTranscript; the live preview (final + current interim) is
+//   shown in the textarea so the user can see what was captured.  Tapping the mic a
+//   second time grabs msgInput.value, stops the recognizer, and sends the text.
 function initSpeechRecognition() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) return null;
 
   const rec = new SpeechRecognition();
   rec.lang = langMeta.bcp47;
-  rec.continuous = false;
-  rec.interimResults = false;
+  rec.continuous = true;      // keeps mic open on mobile; user taps to stop
+  rec.interimResults = true;  // live transcript preview while speaking
   rec.maxAlternatives = 1;
 
   rec.onresult = (event) => {
-    const transcript = event.results[0][0].transcript;
-    stopRecording();
-    if (transcript.trim()) sendMessage(transcript.trim());
+    if (!isRecording) return;
+    let final = '';
+    let interim = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const t = event.results[i][0].transcript;
+      if (event.results[i].isFinal) final += t;
+      else interim += t;
+    }
+    if (final) currentTranscript += final;
+    // Show live preview in the textarea (disabled but writable via JS)
+    msgInput.value = (currentTranscript + interim).trim();
+    msgInput.style.height = 'auto';
+    msgInput.style.height = Math.min(msgInput.scrollHeight, 160) + 'px';
   };
 
   rec.onerror = (event) => {
+    if (event.error === 'aborted') return; // we triggered stop intentionally
     console.warn('Speech recognition error:', event.error);
-    stopRecording();
-    if (event.error !== 'no-speech' && event.error !== 'aborted') {
+    if (event.error !== 'no-speech') {
       appendMessage('assistant', '⚠ Voice input error: ' + event.error + '. Please try typing instead.');
     }
+    stopRecording();
   };
 
-  rec.onend = () => stopRecording();
+  rec.onend = () => {
+    if (!isRecording) return; // user stopped intentionally — nothing to do
+    // Recognition ended unexpectedly (very common on mobile) — restart silently
+    try { rec.start(); } catch (e) {
+      console.warn('Could not restart recognition:', e);
+      stopRecording();
+    }
+  };
 
   return rec;
 }
 
 function toggleRecording() {
   if (isRecording) {
+    // Capture whatever is in the preview textarea, then stop and send
+    const text = msgInput.value.trim();
     stopRecording();
+    if (text && !isSending) {
+      unlockAudio(); // synchronous — still within the tap gesture
+      sendMessage(text);
+    }
   } else {
     startRecording();
   }
@@ -455,12 +487,17 @@ function startRecording() {
     alert('Voice input is not supported in your browser. Please use Chrome or Edge.');
     return;
   }
+  currentTranscript = '';
+  msgInput.value = '';
+  msgInput.style.height = 'auto';
   unlockAudio(); // synchronous — inside the mic button tap gesture
   try {
     recognition.start();
     isRecording = true;
     document.getElementById('micBtn').classList.add('recording');
-    document.getElementById('voiceStatus').classList.add('show');
+    const vs = document.getElementById('voiceStatus');
+    vs.querySelector('span').textContent = 'Listening\u2026 tap mic to send';
+    vs.classList.add('show');
     sendBtn.disabled = true;
     msgInput.disabled = true;
   } catch (err) {
@@ -469,10 +506,9 @@ function startRecording() {
 }
 
 function stopRecording() {
-  if (recognition && isRecording) {
-    try { recognition.stop(); } catch (_) {}
-  }
-  isRecording = false;
+  isRecording = false; // set FIRST so onend auto-restart check fails
+  try { if (recognition) recognition.stop(); } catch (_) {}
+  currentTranscript = '';
   document.getElementById('micBtn').classList.remove('recording');
   document.getElementById('voiceStatus').classList.remove('show');
   msgInput.disabled = false;
