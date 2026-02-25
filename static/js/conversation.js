@@ -17,6 +17,9 @@ let currentTranscript = '';  // accumulated final transcript during recording se
 let currentSource     = null;  // AudioBufferSourceNode — mobile-compatible
 let audioCtx          = null;  // Web Audio context, unlocked on first user gesture
 let ttsEnabled        = true;
+let silenceTimer      = null;  // auto-send after speech pause
+
+const SILENCE_TIMEOUT = 1500; // ms of silence before auto-sending
 
 // Cache translations keyed by message text to avoid redundant API calls
 const translationCache = new Map();
@@ -534,7 +537,26 @@ function initSpeechRecognition() {
       if (event.results[i].isFinal) final += t;
       else interim += t;
     }
-    if (final) currentTranscript += final;
+    if (final) {
+      currentTranscript += final;
+      // Speech paused — start countdown to auto-send
+      if (silenceTimer) clearTimeout(silenceTimer);
+      const vs = document.getElementById('voiceStatus');
+      vs.querySelector('span').textContent = 'Got it\u2026 sending';
+      silenceTimer = setTimeout(() => {
+        silenceTimer = null;
+        if (!isRecording) return;
+        const text = msgInput.value.trim();
+        stopRecording();
+        if (text && !isSending) sendMessage(text);
+      }, SILENCE_TIMEOUT);
+    }
+    if (interim) {
+      // Still speaking — reset any pending auto-send
+      if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
+      const vs = document.getElementById('voiceStatus');
+      vs.querySelector('span').textContent = 'Listening\u2026 tap mic to cancel';
+    }
     // Show live preview in the textarea (disabled but writable via JS)
     msgInput.value = (currentTranscript + interim).trim();
     msgInput.style.height = 'auto';
@@ -591,7 +613,7 @@ function startRecording() {
     isRecording = true;
     document.getElementById('micBtn').classList.add('recording');
     const vs = document.getElementById('voiceStatus');
-    vs.querySelector('span').textContent = 'Listening\u2026 tap mic to send';
+    vs.querySelector('span').textContent = 'Listening\u2026 tap mic to cancel';
     vs.classList.add('show');
     sendBtn.disabled = true;
     msgInput.disabled = true;
@@ -602,6 +624,7 @@ function startRecording() {
 
 function stopRecording() {
   isRecording = false; // set FIRST so onend auto-restart check fails
+  if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
   try { if (recognition) recognition.stop(); } catch (_) {}
   currentTranscript = '';
   document.getElementById('micBtn').classList.remove('recording');
