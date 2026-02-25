@@ -202,6 +202,17 @@ async function sendMessage(text) {
 }
 
 /* ── Stream AI response ─────────────────────────────────────────────────────── */
+
+// Returns the first complete sentence in text (ends with . ! ? followed by
+// whitespace or end-of-string), requiring at least 25 chars before the break
+// so we don't fire TTS on a single word like "Ciao!".
+function extractFirstSentence(text) {
+  if (text.length < 25) return null;
+  const m = text.slice(20).search(/[.!?…](?:\s|$)/);
+  if (m < 0) return null;
+  return text.slice(0, 20 + m + 1).trim();
+}
+
 async function streamAIResponse(message, isGreet) {
   removeTypingIndicator();
 
@@ -219,10 +230,27 @@ async function streamAIResponse(message, isGreet) {
 
   const reader  = res.body.getReader();
   const decoder = new TextDecoder();
-  let   buffer  = '';
-  let   fullText = '';
+  let   buffer      = '';
+  let   fullText    = '';
   let   streamingEl = null;
   let   contentEl   = null;
+
+  // Two-phase TTS pipeline:
+  //   Phase 1 — fires as soon as the first complete sentence arrives; starts
+  //             playing immediately, cutting perceived latency.
+  //   Phase 2 — remainder of the response; pre-fetched (ElevenLabs request
+  //             runs in parallel while phase 1 is playing) so it's ready the
+  //             moment phase 1 ends, with no audible gap.
+  let ttsStarted    = false;  // phase 1 fired
+  let firstSentLen  = 0;      // char length of text sent to phase 1
+  let ttsPhase1Done = false;  // phase 1 audio finished playing naturally
+  let ttsPhase2Buf  = null;   // decoded AudioBuffer for phase 2, ready to play
+
+  function tryPlayPhase2() {
+    if (ttsPhase2Buf && ttsPhase1Done && !currentSource) {
+      playDecodedAudio(ttsPhase2Buf);
+    }
+  }
 
   while (true) {
     const { done, value } = await reader.read();
@@ -242,7 +270,20 @@ async function streamAIResponse(message, isGreet) {
 
       if (data.done) {
         finalizeStreamingMessage(fullText);
-        if (ttsEnabled && fullText) autoPlayTTS(fullText);
+        if (ttsEnabled && ttsStarted) {
+          // Pre-fetch phase 2 (remainder after the first sentence) while
+          // phase 1 audio is still playing.
+          const remainder = fullText.slice(firstSentLen).trim();
+          if (remainder) {
+            prefetchTTS(remainder).then(buf => {
+              ttsPhase2Buf = buf;
+              tryPlayPhase2();
+            });
+          }
+        } else if (ttsEnabled && fullText) {
+          // Response too short to hit a sentence break — play it all at once.
+          autoPlayTTS(fullText);
+        }
         return;
       }
       if (data.error) {
@@ -257,14 +298,27 @@ async function streamAIResponse(message, isGreet) {
         }
         contentEl.textContent = fullText;
         scrollToBottom();
+
+        // Phase 1: fire as soon as a complete sentence lands in the stream.
+        if (ttsEnabled && !ttsStarted) {
+          const sentence = extractFirstSentence(fullText);
+          if (sentence) {
+            ttsStarted   = true;
+            firstSentLen = sentence.length;
+            playTTS(sentence, () => {
+              ttsPhase1Done = true;
+              tryPlayPhase2();
+            });
+          }
+        }
       }
     }
   }
 
-  // Stream ended without [done]
+  // Stream ended without a [done] event.
   if (fullText) {
     finalizeStreamingMessage(fullText);
-    if (ttsEnabled) autoPlayTTS(fullText);
+    if (ttsEnabled && !ttsStarted) autoPlayTTS(fullText);
   }
 }
 
@@ -296,6 +350,7 @@ function unlockAudio() {
 
 function stopCurrentAudio() {
   if (currentSource) {
+    currentSource._stopped = true; // tells onended not to trigger chained callbacks
     try { currentSource.stop(); } catch (_) {}
     currentSource = null;
   }
@@ -332,7 +387,9 @@ async function playTTS(text, onEnded) {
     source.onended = () => {
       if (currentSource === source) currentSource = null;
       indicator.classList.remove('show');
-      onEnded?.();
+      // Don't chain to onEnded if audio was explicitly stopped (user action /
+      // new message) — avoids phase-2 playing over top of new content.
+      if (!source._stopped) onEnded?.();
     };
 
     source.start(0);
@@ -347,6 +404,35 @@ async function autoPlayTTS(text) {
   // Only play the first ~400 chars to keep latency low for long responses
   const excerpt = text.length > 400 ? text.slice(0, text.lastIndexOf(' ', 400)) + '…' : text;
   await playTTS(excerpt);
+}
+
+// Fetches and decodes TTS audio without playing it yet.
+// Returns an AudioBuffer ready to hand to playDecodedAudio, or null on error.
+async function prefetchTTS(text) {
+  const excerpt = text.length > 350 ? text.slice(0, text.lastIndexOf(' ', 350) || 350) + '…' : text;
+  try {
+    const res = await API.binary('/api/tts', { text: excerpt, language });
+    if (!res.ok) return null;
+    const ctx = getAudioCtx();
+    return await ctx.decodeAudioData(await res.arrayBuffer());
+  } catch { return null; }
+}
+
+// Plays a pre-decoded AudioBuffer directly (no fetch latency).
+// Assumes the caller has already verified nothing else should be playing.
+function playDecodedAudio(audioBuffer) {
+  const indicator = document.getElementById('audioIndicator');
+  indicator.classList.add('show');
+  const ctx = getAudioCtx();
+  const source = ctx.createBufferSource();
+  source.buffer = audioBuffer;
+  source.connect(ctx.destination);
+  currentSource = source;
+  source.onended = () => {
+    if (currentSource === source) currentSource = null;
+    indicator.classList.remove('show');
+  };
+  source.start(0);
 }
 
 function playMessage(btn) {
