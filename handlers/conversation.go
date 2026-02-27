@@ -20,10 +20,11 @@ import (
 type ConversationHandler struct {
 	cfg          *config.Config
 	sessionStore *store.SessionStore
+	contextStore *store.ContextStore
 }
 
-func NewConversationHandler(cfg *config.Config, ss *store.SessionStore) *ConversationHandler {
-	return &ConversationHandler{cfg: cfg, sessionStore: ss}
+func NewConversationHandler(cfg *config.Config, ss *store.SessionStore, cs *store.ContextStore) *ConversationHandler {
+	return &ConversationHandler{cfg: cfg, sessionStore: ss, contextStore: cs}
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────────
@@ -64,8 +65,16 @@ func (h *ConversationHandler) Start(w http.ResponseWriter, r *http.Request) {
 	}
 
 	topicName, topicDesc := TopicDetails(req.Topic)
-	systemPrompt := buildSystemPrompt(req.Language, req.Level, topicName, topicDesc)
+
+	// Load prior context for this user/language/level combo
+	priorMsgs := h.contextStore.Get(userID, req.Language, req.Level)
+	systemPrompt := buildSystemPrompt(req.Language, req.Level, topicName, topicDesc, len(priorMsgs) > 0)
 	session := h.sessionStore.Create(userID, req.Language, req.Topic, req.Level, systemPrompt)
+
+	// Inject prior session messages so the AI has continuity
+	for _, m := range priorMsgs {
+		_ = h.sessionStore.AddMessage(session.ID, m)
+	}
 
 	writeJSON(w, http.StatusCreated, startResponse{
 		SessionID: session.ID,
@@ -234,6 +243,10 @@ func (h *ConversationHandler) Message(w http.ResponseWriter, r *http.Request) {
 			Role:    "assistant",
 			Content: fullResponse.String(),
 		})
+		// Save this session as the new context for (user, language, level)
+		if updated, err := h.sessionStore.Get(req.SessionID); err == nil {
+			h.contextStore.Save(session.UserID, session.Language, session.Level, updated.Messages)
+		}
 	}
 
 	fmt.Fprintf(w, "data: {\"done\":true}\n\n")
@@ -387,8 +400,12 @@ func levelProfile(level int) string {
 	}
 }
 
-func buildSystemPrompt(langCode string, level int, topicName, topicDesc string) string {
+func buildSystemPrompt(langCode string, level int, topicName, topicDesc string, hasPriorContext bool) string {
 	lang := LanguageName(langCode)
+	contextNote := ""
+	if hasPriorContext {
+		contextNote = "\n\nNote: The conversation history below is from this student's most recent previous session. You may naturally reference what was discussed or acknowledge their progress, but always open this new session with a warm, fresh greeting."
+	}
 	return fmt.Sprintf(`You are an expert, warm, and encouraging language tutor specializing in %s. Your mission is to help the student practice %s through natural conversation about "%s".
 
 Topic context: %s
@@ -400,8 +417,8 @@ General guidelines (apply at all levels):
 - Always end with a question or invitation that encourages the student to keep talking.
 - Never use markdown formatting, asterisks, or bullet points — speak naturally in prose.
 - Keep responses concise: typically 2–4 sentences.
-- You may occasionally weave in a brief cultural note or fun fact relevant to the topic.`,
-		lang, lang, topicName, topicDesc, levelProfile(level))
+- You may occasionally weave in a brief cultural note or fun fact relevant to the topic.%s`,
+		lang, lang, topicName, topicDesc, levelProfile(level), contextNote)
 }
 
 func buildGreetPrompt(langCode string, level int) string {

@@ -3,6 +3,7 @@ package store
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -213,4 +214,85 @@ func (ss *SessionStore) GetMessages(id string) ([]Message, error) {
 		}
 	}
 	return msgs, nil
+}
+
+// ── Context Store ─────────────────────────────────────────────────────────────
+// Persists the last session's messages per (userID, language, level) so the AI
+// can reference prior conversations when a new session starts.
+
+const maxContextMessages = 20 // keep last 10 exchanges (20 messages)
+
+type contextEntry struct {
+	Messages  []Message `json:"messages"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type ContextStore struct {
+	mu       sync.RWMutex
+	data     map[string]contextEntry
+	filePath string
+}
+
+func NewContextStore() *ContextStore {
+	cs := &ContextStore{
+		data:     make(map[string]contextEntry),
+		filePath: "data/contexts.json",
+	}
+	cs.load()
+	return cs
+}
+
+func contextKey(userID, language string, level int) string {
+	return fmt.Sprintf("%s:%s:%d", userID, language, level)
+}
+
+// Save replaces the stored context for this (userID, language, level) with the
+// most recent messages from the session (excluding the system message).
+func (cs *ContextStore) Save(userID, language string, level int, messages []Message) {
+	var msgs []Message
+	for _, m := range messages {
+		if m.Role != "system" {
+			msgs = append(msgs, m)
+		}
+	}
+	if len(msgs) > maxContextMessages {
+		msgs = msgs[len(msgs)-maxContextMessages:]
+	}
+
+	cs.mu.Lock()
+	defer cs.mu.Unlock()
+	cs.data[contextKey(userID, language, level)] = contextEntry{
+		Messages:  msgs,
+		UpdatedAt: time.Now(),
+	}
+	cs.persist()
+}
+
+// Get returns the stored prior-session messages for (userID, language, level),
+// or nil if none exist.
+func (cs *ContextStore) Get(userID, language string, level int) []Message {
+	cs.mu.RLock()
+	defer cs.mu.RUnlock()
+	entry, ok := cs.data[contextKey(userID, language, level)]
+	if !ok {
+		return nil
+	}
+	return entry.Messages
+}
+
+func (cs *ContextStore) load() {
+	data, err := os.ReadFile(cs.filePath)
+	if err != nil {
+		return
+	}
+	_ = json.Unmarshal(data, &cs.data)
+}
+
+func (cs *ContextStore) persist() {
+	_ = os.MkdirAll("data", 0755)
+	data, err := json.MarshalIndent(cs.data, "", "  ")
+	if err != nil {
+		return
+	}
+	_ = os.WriteFile(cs.filePath, data, 0600)
 }

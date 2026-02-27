@@ -18,9 +18,10 @@ func main() {
 
 	userStore    := store.NewUserStore()
 	sessionStore := store.NewSessionStore()
+	contextStore := store.NewContextStore()
 
 	authHandler := handlers.NewAuthHandler(cfg, userStore)
-	convHandler := handlers.NewConversationHandler(cfg, sessionStore)
+	convHandler := handlers.NewConversationHandler(cfg, sessionStore, contextStore)
 	ttsHandler  := handlers.NewTTSHandler(cfg)
 
 	auth := middleware.NewAuthMiddleware(cfg)
