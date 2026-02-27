@@ -29,6 +29,11 @@ const levels = [
   const avatar = document.getElementById('navAvatar');
   avatar.textContent = name.charAt(0).toUpperCase();
   document.getElementById('navUsername').textContent = name;
+
+  // Show admin link only for admin users
+  if (user.is_admin) {
+    document.getElementById('adminLink').classList.remove('hidden');
+  }
 })();
 
 /* ── Load data ──────────────────────────────────────────────────────────────── */

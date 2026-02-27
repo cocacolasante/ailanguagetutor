@@ -1,9 +1,20 @@
 [
   {
+    "id": "58eec3dd-e737-4adc-a7a4-d473b0b05723",
+    "email": "testing@testing.com",
+    "username": "testaccount",
+    "password_hash": "$2a$10$y2GsT5Bx2ssIzqf2Yl4aYOcF.EoJF5xHgUSuUQvK7xN9wIruZ0Rta",
+    "is_admin": false,
+    "approved": false,
+    "created_at": "2026-02-27T12:00:52.148915-05:00"
+  },
+  {
     "id": "20e5feba-3ac1-4017-9422-0f6dad617e1b",
-    "email": "colasante16@gmail.com",
+    "email": "anthony@csuitecode.com",
     "username": "cocacolasante",
     "password_hash": "$2a$10$nWwNSQu3yhcyzNShllRFbuouMCYGKXO5LmdyBe2fKj.9uABnguWGS",
+    "is_admin": true,
+    "approved": true,
     "created_at": "2026-02-22T10:11:20.662999-05:00"
   }
 ]

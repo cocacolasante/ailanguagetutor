@@ -98,19 +98,24 @@ registerForm.addEventListener('submit', async (e) => {
 
   setLoading(registerBtn, true);
   try {
-    const data = await fetch('/api/auth/register', {
+    const res = await fetch('/api/auth/register', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ email, username, password }),
-    }).then(async (res) => {
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error || 'Registration failed');
-      return d;
     });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Registration failed');
 
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user',  JSON.stringify(data.user));
-    window.location.href = '/dashboard.html';
+    if (data.token) {
+      // Admin auto-approved
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user',  JSON.stringify(data.user));
+      window.location.href = '/dashboard.html';
+    } else {
+      // Pending approval — show success message, switch to login tab
+      switchTab('login');
+      showAlert(data.message || 'Account created. Please wait for admin approval.');
+    }
   } catch (err) {
     showAlert(err.message);
   } finally {

@@ -42,6 +42,7 @@ const API = (() => {
   return {
     get:    (path)        => json('GET',    path),
     post:   (path, body)  => json('POST',   path, body),
+    patch:  (path, body)  => json('PATCH',  path, body),
     delete: (path)        => json('DELETE', path),
 
     /** Returns the raw Response for streaming endpoints. */

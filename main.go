@@ -20,9 +20,10 @@ func main() {
 	sessionStore := store.NewSessionStore()
 	contextStore := store.NewContextStore()
 
-	authHandler := handlers.NewAuthHandler(cfg, userStore)
-	convHandler := handlers.NewConversationHandler(cfg, sessionStore, contextStore)
-	ttsHandler  := handlers.NewTTSHandler(cfg)
+	authHandler  := handlers.NewAuthHandler(cfg, userStore)
+	convHandler  := handlers.NewConversationHandler(cfg, sessionStore, contextStore)
+	ttsHandler   := handlers.NewTTSHandler(cfg)
+	adminHandler := handlers.NewAdminHandler(userStore)
 
 	auth := middleware.NewAuthMiddleware(cfg)
 
@@ -40,6 +41,7 @@ func main() {
 	r.Get("/",                   serveFile("./static/index.html"))
 	r.Get("/dashboard.html",     serveFile("./static/dashboard.html"))
 	r.Get("/conversation.html",  serveFile("./static/conversation.html"))
+	r.Get("/admin.html",         serveFile("./static/admin.html"))
 
 	// ── Auth (public) ─────────────────────────────────────────────────────────
 	r.Post("/api/auth/register", authHandler.Register)
@@ -64,6 +66,13 @@ func main() {
 		r.Post("/api/conversation/translate",          convHandler.Translate)
 		r.Get("/api/conversation/history/{sessionId}", convHandler.History)
 		r.Post("/api/tts",                             ttsHandler.Convert)
+	})
+
+	// ── Admin (protected) ─────────────────────────────────────────────────────
+	r.Group(func(r chi.Router) {
+		r.Use(auth.Middleware)
+		r.Get("/api/admin/users",                   adminHandler.ListUsers)
+		r.Patch("/api/admin/users/{id}/approval",   adminHandler.SetApproval)
 	})
 
 	srv := &http.Server{

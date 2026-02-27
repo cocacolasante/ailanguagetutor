@@ -35,11 +35,17 @@ type userDTO struct {
 	ID       string `json:"id"`
 	Email    string `json:"email"`
 	Username string `json:"username"`
+	IsAdmin  bool   `json:"is_admin"`
+	Approved bool   `json:"approved"`
 }
 
 type authResponse struct {
 	Token string  `json:"token"`
 	User  userDTO `json:"user"`
+}
+
+func toDTO(u *store.User) userDTO {
+	return userDTO{ID: u.ID, Email: u.Email, Username: u.Username, IsAdmin: u.IsAdmin, Approved: u.Approved}
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -73,11 +79,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to generate token"})
 		return
 	}
-
-	writeJSON(w, http.StatusCreated, authResponse{
-		Token: token,
-		User:  userDTO{ID: u.ID, Email: u.Email, Username: u.Username},
-	})
+	writeJSON(w, http.StatusCreated, authResponse{Token: token, User: toDTO(u)})
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -93,16 +95,18 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !u.Approved {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "Your account is pending approval by an administrator."})
+		return
+	}
+
 	token, err := h.generateToken(u.ID)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to generate token"})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, authResponse{
-		Token: token,
-		User:  userDTO{ID: u.ID, Email: u.Email, Username: u.Username},
-	})
+	writeJSON(w, http.StatusOK, authResponse{Token: token, User: toDTO(u)})
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
@@ -116,7 +120,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "user not found"})
 		return
 	}
-	writeJSON(w, http.StatusOK, userDTO{ID: u.ID, Email: u.Email, Username: u.Username})
+	writeJSON(w, http.StatusOK, toDTO(u))
 }
 
 func (h *AuthHandler) generateToken(userID string) (string, error) {

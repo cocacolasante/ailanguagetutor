@@ -23,11 +23,15 @@ var (
 
 // ── Models ────────────────────────────────────────────────────────────────────
 
+const AdminEmail = "anthony@csuitecode.com"
+
 type User struct {
 	ID           string    `json:"id"`
 	Email        string    `json:"email"`
 	Username     string    `json:"username"`
 	PasswordHash string    `json:"password_hash"`
+	IsAdmin      bool      `json:"is_admin"`
+	Approved     bool      `json:"approved"`
 	CreatedAt    time.Time `json:"created_at"`
 }
 
@@ -84,6 +88,8 @@ func (us *UserStore) Create(email, username, password string) (*User, error) {
 		Email:        email,
 		Username:     username,
 		PasswordHash: string(hash),
+		IsAdmin:      email == AdminEmail,
+		Approved:     true,
 		CreatedAt:    time.Now(),
 	}
 	us.byEmail[email] = u
@@ -117,6 +123,30 @@ func (us *UserStore) GetByID(id string) (*User, error) {
 	return u, nil
 }
 
+func (us *UserStore) ListAll() []*User {
+	us.mu.RLock()
+	defer us.mu.RUnlock()
+
+	users := make([]*User, 0, len(us.byID))
+	for _, u := range us.byID {
+		users = append(users, u)
+	}
+	return users
+}
+
+func (us *UserStore) SetApproved(id string, approved bool) error {
+	us.mu.Lock()
+	defer us.mu.Unlock()
+
+	u, exists := us.byID[id]
+	if !exists {
+		return ErrUserNotFound
+	}
+	u.Approved = approved
+	us.save()
+	return nil
+}
+
 func (us *UserStore) load() {
 	data, err := os.ReadFile(us.filePath)
 	if err != nil {
@@ -126,9 +156,19 @@ func (us *UserStore) load() {
 	if err := json.Unmarshal(data, &users); err != nil {
 		return
 	}
+	modified := false
 	for _, u := range users {
+		// Migration: ensure admin is always flagged correctly
+		if u.Email == AdminEmail && (!u.IsAdmin || !u.Approved) {
+			u.IsAdmin = true
+			u.Approved = true
+			modified = true
+		}
 		us.byEmail[u.Email] = u
 		us.byID[u.ID] = u
+	}
+	if modified {
+		us.save()
 	}
 }
 
