@@ -677,7 +677,11 @@ function escapeAttr(str) {
 }
 
 /* ── Boot: request AI greeting ──────────────────────────────────────────────── */
-(async function boot() {
+// iOS Safari (and some Android browsers) block AudioContext.resume() unless called
+// synchronously inside a user-gesture handler.  We show a "tap to start" overlay so
+// that unlockAudio() fires inside the tap, then begin the greeting.  This is a no-op
+// cost on desktop (one extra click) but is required for mobile audio to work.
+async function startGreeting() {
   try {
     await streamAIResponse('', true); // greet = true
   } catch (err) {
@@ -685,4 +689,17 @@ function escapeAttr(str) {
     document.getElementById('loadingState')?.remove();
     appendMessage('assistant', `Ciao! Sono pronto per praticare con te. Come stai oggi?`);
   }
+}
+
+(function boot() {
+  const overlay  = document.getElementById('startOverlay');
+  const startBtn = document.getElementById('startBtn');
+  overlay.hidden = false;
+  startBtn.addEventListener('click', () => {
+    unlockAudio();      // synchronous — inside the tap gesture
+    overlay.hidden = true;
+    startGreeting();
+  }, { once: true });
 })();
+
+

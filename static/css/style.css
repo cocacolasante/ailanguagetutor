@@ -1074,3 +1074,49 @@ input::placeholder { color: var(--text-3); }
   .language-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
   .language-card { padding: 14px 8px; }
 }
+
+/* ── Tap-to-start overlay (iOS Safari AudioContext unlock) ──────────────────── */
+.start-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(9, 9, 15, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.start-overlay[hidden] { display: none; }
+
+.start-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-xl);
+  padding: 40px 32px;
+  text-align: center;
+  max-width: 320px;
+  width: 90%;
+  box-shadow: var(--shadow-lg);
+}
+.start-card .start-icon { font-size: 3rem; margin-bottom: 16px; }
+.start-card h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; }
+.start-card p  { color: var(--text-2); font-size: 0.95rem; margin-bottom: 28px; }
+.start-card .btn-start {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 36px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  box-shadow: 0 4px 20px var(--accent-glow);
+  transition: opacity var(--transition), transform var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+.start-card .btn-start:active { opacity: 0.85; transform: scale(0.97); }

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=10" />
+  <link rel="stylesheet" href="/css/style.css?v=11" />
 </head>
 <body>
 
@@ -75,7 +75,17 @@
 
   </div>
 
-  <script src="/js/api.js?v=10"></script>
-  <script src="/js/conversation.js?v=10"></script>
+  <!-- Tap-to-start overlay: required by iOS Safari to unlock AudioContext -->
+  <div class="start-overlay" id="startOverlay" hidden>
+    <div class="start-card">
+      <p class="start-icon">🎙️</p>
+      <h2>Ready to practice?</h2>
+      <p>Tap to start your conversation</p>
+      <button class="btn-start" id="startBtn">Let's go</button>
+    </div>
+  </div>
+
+  <script src="/js/api.js?v=11"></script>
+  <script src="/js/conversation.js?v=11"></script>
 </body>
 </html>
