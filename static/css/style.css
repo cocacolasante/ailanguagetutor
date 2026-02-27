@@ -610,15 +610,11 @@ input::placeholder { color: var(--text-3); }
    CONVERSATION PAGE
 ═══════════════════════════════════════════════════════════════════════════════ */
 .conv-page {
-  height: 100vh;       /* fallback */
-  height: 100dvh;      /* accounts for mobile browser chrome (address bar etc.) */
+  position: fixed;
+  inset: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-/* Older iOS Safari doesn't support dvh — fill-available covers it */
-@supports (-webkit-touch-callout: none) {
-  .conv-page { height: -webkit-fill-available; }
 }
 
 /* Header */
