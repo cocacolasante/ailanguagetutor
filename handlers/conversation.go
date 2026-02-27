@@ -21,10 +21,11 @@ type ConversationHandler struct {
 	cfg          *config.Config
 	sessionStore *store.SessionStore
 	contextStore *store.ContextStore
+	userStore    *store.UserStore
 }
 
-func NewConversationHandler(cfg *config.Config, ss *store.SessionStore, cs *store.ContextStore) *ConversationHandler {
-	return &ConversationHandler{cfg: cfg, sessionStore: ss, contextStore: cs}
+func NewConversationHandler(cfg *config.Config, ss *store.SessionStore, cs *store.ContextStore, us *store.UserStore) *ConversationHandler {
+	return &ConversationHandler{cfg: cfg, sessionStore: ss, contextStore: cs, userStore: us}
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────────
@@ -62,6 +63,23 @@ func (h *ConversationHandler) Start(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Level < 1 || req.Level > 5 {
 		req.Level = 3 // default to intermediate
+	}
+
+	u, err := h.userStore.GetByID(userID)
+	if err == nil {
+		if !u.HasConversationAccess() {
+			writeJSON(w, http.StatusForbidden, map[string]string{
+				"error": "Your subscription has ended. Please visit your profile to resubscribe.",
+				"code":  "subscription_ended",
+			})
+			return
+		}
+		if !u.HasFullAccess() && req.Level > 3 {
+			writeJSON(w, http.StatusForbidden, map[string]string{
+				"error": "Levels 4 and 5 require a full subscription. Upgrade to unlock advanced practice.",
+			})
+			return
+		}
 	}
 
 	topicName, topicDesc := TopicDetails(req.Topic)

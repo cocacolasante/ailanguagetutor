@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile — LinguaAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=12" />
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <span class="brand-icon">🌐</span>
+      <span>LinguaAI</span>
+    </div>
+    <div class="nav-right">
+      <div class="nav-user">
+        <div class="nav-avatar" id="navAvatar">?</div>
+        <span id="navUsername"></span>
+      </div>
+      <a class="btn btn-ghost btn-sm" href="/dashboard.html">Dashboard</a>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Sign out</button>
+    </div>
+  </nav>
+
+  <main class="dashboard-page">
+    <header class="dashboard-header">
+      <h1>Profile <span class="gradient-text">&amp; Billing</span></h1>
+      <p>Manage your account and subscription.</p>
+    </header>
+
+    <!-- Account info -->
+    <section style="max-width: 600px;">
+      <div class="step-label" style="margin-bottom: 16px;">
+        <div class="step-num">👤</div>
+        <h2>Account</h2>
+      </div>
+      <div class="profile-card" id="accountCard">
+        <div class="profile-row">
+          <span class="profile-label">Username</span>
+          <span class="profile-value" id="profileUsername">—</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Email</span>
+          <span class="profile-value" id="profileEmail">—</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Member since</span>
+          <span class="profile-value" id="profileJoined">—</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Subscription info -->
+    <section style="max-width: 600px; margin-top: 32px;">
+      <div class="step-label" style="margin-bottom: 16px;">
+        <div class="step-num">💳</div>
+        <h2>Subscription</h2>
+      </div>
+      <div class="profile-card" id="subCard">
+        <div class="conv-loading-state" style="padding: 40px 0;">
+          <div class="spinner"></div>
+          <p>Loading…</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/js/api.js?v=14"></script>
+  <script src="/js/profile.js?v=2"></script>
+</body>
+</html>

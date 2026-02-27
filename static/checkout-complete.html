@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Setting up your account… — LinguaAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=2" />
+</head>
+<body class="auth-page">
+
+  <div class="auth-container">
+    <div class="auth-logo">
+      <span class="logo-icon">🌐</span>
+      <h1 class="gradient-text">LinguaAI</h1>
+    </div>
+    <div class="auth-card" style="text-align:center; padding: 40px 32px;">
+      <div class="spinner" style="margin: 0 auto 20px;"></div>
+      <p id="statusMsg" style="color: var(--text-2); font-size: 0.95rem;">
+        Setting up your account…
+      </p>
+    </div>
+  </div>
+
+  <script>
+    (async () => {
+      const params    = new URLSearchParams(location.search);
+      const sessionId = params.get('session_id');
+
+      if (!sessionId) {
+        window.location.href = '/';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/billing/verify-checkout?session_id=' + sessionId);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.token) localStorage.setItem('token', data.token);
+          if (data.user)  localStorage.setItem('user',  JSON.stringify(data.user));
+          document.getElementById('statusMsg').textContent = 'All set! Taking you to your dashboard…';
+          window.location.href = '/dashboard.html';
+          return;
+        }
+      } catch (_) {}
+
+      // Verify failed — send to login so they can try again
+      document.getElementById('statusMsg').textContent = 'Almost there — please sign in to continue.';
+      setTimeout(() => { window.location.href = '/'; }, 1500);
+    })();
+  </script>
+
+</body>
+</html>

@@ -20,10 +20,11 @@ func main() {
 	sessionStore := store.NewSessionStore()
 	contextStore := store.NewContextStore()
 
-	authHandler  := handlers.NewAuthHandler(cfg, userStore)
-	convHandler  := handlers.NewConversationHandler(cfg, sessionStore, contextStore)
-	ttsHandler   := handlers.NewTTSHandler(cfg)
-	adminHandler := handlers.NewAdminHandler(userStore)
+	billingHandler := handlers.NewBillingHandler(cfg, userStore)
+	authHandler    := handlers.NewAuthHandler(cfg, userStore, billingHandler)
+	convHandler    := handlers.NewConversationHandler(cfg, sessionStore, contextStore, userStore)
+	ttsHandler     := handlers.NewTTSHandler(cfg)
+	adminHandler   := handlers.NewAdminHandler(userStore, billingHandler)
 
 	auth := middleware.NewAuthMiddleware(cfg)
 
@@ -33,15 +34,17 @@ func main() {
 
 	// ── Static files ──────────────────────────────────────────────────────────
 	fs := http.FileServer(http.Dir("./static"))
-	r.Handle("/css/*",    fs)
-	r.Handle("/js/*",     fs)
-	r.Handle("/fonts/*",  fs)
+	r.Handle("/css/*",   fs)
+	r.Handle("/js/*",    fs)
+	r.Handle("/fonts/*", fs)
 
 	// Serve HTML pages
-	r.Get("/",                   serveFile("./static/index.html"))
-	r.Get("/dashboard.html",     serveFile("./static/dashboard.html"))
-	r.Get("/conversation.html",  serveFile("./static/conversation.html"))
-	r.Get("/admin.html",         serveFile("./static/admin.html"))
+	r.Get("/",                      serveFile("./static/index.html"))
+	r.Get("/dashboard.html",        serveFile("./static/dashboard.html"))
+	r.Get("/conversation.html",     serveFile("./static/conversation.html"))
+	r.Get("/admin.html",            serveFile("./static/admin.html"))
+	r.Get("/profile.html",          serveFile("./static/profile.html"))
+	r.Get("/checkout-complete.html", serveFile("./static/checkout-complete.html"))
 
 	// ── Auth (public) ─────────────────────────────────────────────────────────
 	r.Post("/api/auth/register", authHandler.Register)
@@ -58,9 +61,19 @@ func main() {
 	r.Get("/api/languages", handlers.GetLanguages)
 	r.Get("/api/topics",    handlers.GetTopics)
 
-	// ── Conversation + TTS (protected) ────────────────────────────────────────
+	// ── Billing webhook + verify-checkout (no auth) ────────────────────────────
+	r.Post("/api/billing/webhook",        billingHandler.Webhook)
+	r.Get("/api/billing/verify-checkout", billingHandler.VerifyCheckout)
+
+	// ── Billing + Conversation + TTS (protected) ──────────────────────────────
 	r.Group(func(r chi.Router) {
 		r.Use(auth.Middleware)
+
+		r.Get("/api/billing/status",    billingHandler.Status)
+		r.Post("/api/billing/checkout", billingHandler.CreateCheckoutSession)
+		r.Post("/api/billing/cancel",   billingHandler.Cancel)
+		r.Post("/api/billing/portal",   billingHandler.CreatePortalSession)
+
 		r.Post("/api/conversation/start",              convHandler.Start)
 		r.Post("/api/conversation/message",            convHandler.Message)
 		r.Post("/api/conversation/translate",          convHandler.Translate)
@@ -71,8 +84,9 @@ func main() {
 	// ── Admin (protected) ─────────────────────────────────────────────────────
 	r.Group(func(r chi.Router) {
 		r.Use(auth.Middleware)
-		r.Get("/api/admin/users",                   adminHandler.ListUsers)
-		r.Patch("/api/admin/users/{id}/approval",   adminHandler.SetApproval)
+		r.Get("/api/admin/users",                        adminHandler.ListUsers)
+		r.Patch("/api/admin/users/{id}/approval",        adminHandler.SetApproval)
+		r.Patch("/api/admin/users/{id}/subscription",    adminHandler.SetSubscription)
 	})
 
 	srv := &http.Server{

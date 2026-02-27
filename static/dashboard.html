@@ -22,10 +22,22 @@
         <div class="nav-avatar" id="navAvatar">?</div>
         <span id="navUsername"></span>
       </div>
+      <a class="btn btn-ghost btn-sm" href="/profile.html" title="Profile &amp; Billing">⚙</a>
       <a class="btn btn-ghost btn-sm hidden" id="adminLink" href="/admin.html">Admin</a>
       <button class="btn btn-ghost btn-sm" onclick="logout()">Sign out</button>
     </div>
   </nav>
+
+  <!-- Trial banner (shown for trialing users) -->
+  <div class="trial-banner hidden" id="trialBanner">
+    <span id="trialBannerText">⏰ Trial active</span>
+    <a href="/profile.html" class="trial-upgrade-btn">Upgrade to Full Access →</a>
+  </div>
+
+  <!-- Past-due warning -->
+  <div class="pastdue-banner hidden" id="pastdueBanner">
+    ⚠️ Your payment is past due. <a href="/profile.html">Update payment method →</a>
+  </div>
 
   <!-- Main content -->
   <main class="dashboard-page">
@@ -78,7 +90,7 @@
     </button>
   </div>
 
-  <script src="/js/api.js?v=12"></script>
-  <script src="/js/dashboard.js?v=2"></script>
+  <script src="/js/api.js?v=14"></script>
+  <script src="/js/dashboard.js?v=6"></script>
 </body>
 </html>

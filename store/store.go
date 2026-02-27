@@ -25,14 +25,59 @@ var (
 
 const AdminEmail = "anthony@csuitecode.com"
 
+// SubscriptionStatus values
+const (
+	SubTrialing  = "trialing"
+	SubActive    = "active"
+	SubPastDue   = "past_due"
+	SubCancelled = "cancelled"
+	SubFree      = "free"      // admin-granted free access
+	SubSuspended = "suspended" // admin-revoked
+)
+
 type User struct {
-	ID           string    `json:"id"`
-	Email        string    `json:"email"`
-	Username     string    `json:"username"`
-	PasswordHash string    `json:"password_hash"`
-	IsAdmin      bool      `json:"is_admin"`
-	Approved     bool      `json:"approved"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID           string     `json:"id"`
+	Email        string     `json:"email"`
+	Username     string     `json:"username"`
+	PasswordHash string     `json:"password_hash"`
+	IsAdmin      bool       `json:"is_admin"`
+	Approved     bool       `json:"approved"`
+	CreatedAt    time.Time  `json:"created_at"`
+
+	StripeCustomerID     string     `json:"stripe_customer_id,omitempty"`
+	StripeSubscriptionID string     `json:"stripe_subscription_id,omitempty"`
+	SubscriptionStatus   string     `json:"subscription_status,omitempty"`
+	TrialEndsAt          *time.Time `json:"trial_ends_at,omitempty"`
+}
+
+// HasFullAccess returns true when the user can use all levels.
+func (u *User) HasFullAccess() bool {
+	return u.SubscriptionStatus == SubActive ||
+		u.SubscriptionStatus == SubFree ||
+		u.SubscriptionStatus == SubPastDue
+}
+
+// HasAnyAccess returns true when the user can log in.
+// Cancelled users can always log in (to manage billing).
+func (u *User) HasAnyAccess() bool {
+	return u.Approved && (u.SubscriptionStatus == SubTrialing ||
+		u.SubscriptionStatus == SubActive ||
+		u.SubscriptionStatus == SubFree ||
+		u.SubscriptionStatus == SubPastDue ||
+		u.SubscriptionStatus == SubCancelled)
+}
+
+// HasConversationAccess returns true when the user can start conversations.
+// Cancelled users retain access during any remaining trial period.
+func (u *User) HasConversationAccess() bool {
+	switch u.SubscriptionStatus {
+	case SubActive, SubFree, SubPastDue, SubTrialing:
+		return true
+	case SubCancelled:
+		return u.TrialEndsAt != nil && time.Now().Before(*u.TrialEndsAt)
+	default:
+		return false
+	}
 }
 
 type Message struct {
@@ -88,8 +133,14 @@ func (us *UserStore) Create(email, username, password string) (*User, error) {
 		Email:        email,
 		Username:     username,
 		PasswordHash: string(hash),
-		IsAdmin:      email == AdminEmail,
-		Approved:     true,
+		IsAdmin:            email == AdminEmail,
+		Approved:           email == AdminEmail,
+		SubscriptionStatus: func() string {
+			if email == AdminEmail {
+				return SubFree
+			}
+			return ""
+		}(),
 		CreatedAt:    time.Now(),
 	}
 	us.byEmail[email] = u
@@ -134,6 +185,19 @@ func (us *UserStore) ListAll() []*User {
 	return users
 }
 
+func (us *UserStore) Delete(id string) {
+	us.mu.Lock()
+	defer us.mu.Unlock()
+
+	u, exists := us.byID[id]
+	if !exists {
+		return
+	}
+	delete(us.byID, id)
+	delete(us.byEmail, u.Email)
+	us.save()
+}
+
 func (us *UserStore) SetApproved(id string, approved bool) error {
 	us.mu.Lock()
 	defer us.mu.Unlock()
@@ -143,6 +207,70 @@ func (us *UserStore) SetApproved(id string, approved bool) error {
 		return ErrUserNotFound
 	}
 	u.Approved = approved
+	us.save()
+	return nil
+}
+
+func (us *UserStore) GetByStripeCustomerID(customerID string) (*User, error) {
+	us.mu.RLock()
+	defer us.mu.RUnlock()
+
+	for _, u := range us.byID {
+		if u.StripeCustomerID == customerID {
+			return u, nil
+		}
+	}
+	return nil, ErrUserNotFound
+}
+
+// UpdateSubscription is called after Stripe checkout or webhook events.
+func (us *UserStore) UpdateSubscription(userID, customerID, subscriptionID, status string, trialEndsAt *time.Time) error {
+	us.mu.Lock()
+	defer us.mu.Unlock()
+
+	u, exists := us.byID[userID]
+	if !exists {
+		return ErrUserNotFound
+	}
+	if customerID != "" {
+		u.StripeCustomerID = customerID
+	}
+	if subscriptionID != "" {
+		u.StripeSubscriptionID = subscriptionID
+	}
+	u.SubscriptionStatus = status
+	u.TrialEndsAt = trialEndsAt
+	// Only update Approved when a real status is being set (empty means we're
+	// just persisting a Stripe customer ID, not changing subscription state).
+	if status != "" {
+		switch status {
+		case SubTrialing, SubActive, SubFree, SubPastDue, SubCancelled:
+			u.Approved = true
+		default:
+			u.Approved = false
+		}
+	}
+	us.save()
+	return nil
+}
+
+// SetSubscriptionStatus lets admins override subscription state.
+func (us *UserStore) SetSubscriptionStatus(id, status string, trialEndsAt *time.Time) error {
+	us.mu.Lock()
+	defer us.mu.Unlock()
+
+	u, exists := us.byID[id]
+	if !exists {
+		return ErrUserNotFound
+	}
+	u.SubscriptionStatus = status
+	u.TrialEndsAt = trialEndsAt
+	switch status {
+	case SubTrialing, SubActive, SubFree, SubPastDue, SubCancelled:
+		u.Approved = true
+	default:
+		u.Approved = false
+	}
 	us.save()
 	return nil
 }
@@ -158,11 +286,14 @@ func (us *UserStore) load() {
 	}
 	modified := false
 	for _, u := range users {
-		// Migration: ensure admin is always flagged correctly
-		if u.Email == AdminEmail && (!u.IsAdmin || !u.Approved) {
-			u.IsAdmin = true
-			u.Approved = true
-			modified = true
+		// Migration: ensure admin is always flagged correctly with free subscription
+		if u.Email == AdminEmail {
+			if !u.IsAdmin || !u.Approved || u.SubscriptionStatus != SubFree {
+				u.IsAdmin = true
+				u.Approved = true
+				u.SubscriptionStatus = SubFree
+				modified = true
+			}
 		}
 		us.byEmail[u.Email] = u
 		us.byID[u.ID] = u

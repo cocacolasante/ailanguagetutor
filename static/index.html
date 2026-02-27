@@ -62,8 +62,29 @@
             <label for="regPassword">Password</label>
             <input type="password" id="regPassword" placeholder="Min. 8 characters" autocomplete="new-password" required />
           </div>
+
+          <!-- Plan selection -->
+          <div class="plan-select">
+            <label class="plan-option selected" id="planTrial">
+              <input type="radio" name="plan" value="trial" checked />
+              <div class="plan-option-body">
+                <div class="plan-option-title">7-Day Free Trial</div>
+                <div class="plan-option-desc">Then $100/mo · Levels 1–3 · Cancel anytime</div>
+              </div>
+              <div class="plan-check">✓</div>
+            </label>
+            <label class="plan-option" id="planImmediate">
+              <input type="radio" name="plan" value="immediate" />
+              <div class="plan-option-body">
+                <div class="plan-option-title">Subscribe Now — $100/mo</div>
+                <div class="plan-option-desc">Full access · All 5 levels · Cancel anytime</div>
+              </div>
+              <div class="plan-check">✓</div>
+            </label>
+          </div>
+
           <button type="submit" class="btn btn-primary btn-lg w-full" id="registerBtn">
-            <span>Create Account</span>
+            <span>Continue to Payment →</span>
           </button>
         </form>
       </div>

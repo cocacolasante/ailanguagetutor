@@ -19,6 +19,11 @@ type Config struct {
 	ElevenLabsVoiceES string
 	ElevenLabsVoicePT string
 	ElevenLabsModel   string
+
+	StripeSecretKey     string
+	StripeWebhookSecret string
+	StripePriceID       string
+	AppBaseURL          string
 }
 
 func Load() *Config {
@@ -36,6 +41,11 @@ func Load() *Config {
 		ElevenLabsVoiceES: getEnv("ELEVENLABS_VOICE_ES", "21m00Tcm4TlvDq8ikWAM"),
 		ElevenLabsVoicePT: getEnv("ELEVENLABS_VOICE_PT", "21m00Tcm4TlvDq8ikWAM"),
 		ElevenLabsModel:   getEnv("ELEVENLABS_MODEL", "eleven_multilingual_v2"),
+
+		StripeSecretKey:     getEnv("STRIPE_SECRET_KEY", ""),
+		StripeWebhookSecret: getEnv("STRIPE_WEBHOOK_SECRET", ""),
+		StripePriceID:       getEnv("STRIPE_PRICE_ID", ""),
+		AppBaseURL:          getEnv("APP_BASE_URL", "http://localhost:8080"),
 	}
 }
 

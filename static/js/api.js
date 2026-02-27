@@ -63,9 +63,23 @@ const API = (() => {
   };
 })();
 
-/** Redirect to login if no token stored */
+/** Safely parse the stored user object, clearing corrupt values. */
+function getUser() {
+  const raw = localStorage.getItem('user');
+  if (!raw || raw === 'undefined' || raw === 'null') return {};
+  try { return JSON.parse(raw) || {}; } catch (_) {
+    localStorage.removeItem('user');
+    return {};
+  }
+}
+
+/** Redirect to login if no token stored.
+ *  Saves the current URL so it can be restored after login (e.g. Stripe return). */
 function requireAuth() {
   if (!localStorage.getItem('token')) {
+    if (location.search) {
+      sessionStorage.setItem('authReturnUrl', location.pathname + location.search);
+    }
     window.location.href = '/';
   }
 }

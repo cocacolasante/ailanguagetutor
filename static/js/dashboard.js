@@ -6,6 +6,7 @@ let selectedLevel = null;
 let selectedTopic = null;
 let languages     = [];
 let topics        = [];
+let subStatus     = '';
 
 const levels = [
   { id: 1, label: 'Beginner',     emoji: '🌱', desc: 'New to the language — vocabulary, pronunciation & basics' },
@@ -21,7 +22,7 @@ const levels = [
   const time = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
   document.getElementById('greeting-time').textContent = time;
 
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = getUser();
   const name = user.username || 'learner';
   document.getElementById('greeting-name').textContent = name;
 
@@ -33,6 +34,37 @@ const levels = [
   // Show admin link only for admin users
   if (user.is_admin) {
     document.getElementById('adminLink').classList.remove('hidden');
+  }
+
+  // Subscription banners + access control
+  subStatus = user.subscription_status || '';
+  const trialEndsAt = user.trial_ends_at ? new Date(user.trial_ends_at) : null;
+  const trialExpired = trialEndsAt && trialEndsAt <= new Date();
+
+  // Cancelled + trial expired → redirect to profile (locked out of features)
+  if (subStatus === 'cancelled' && trialExpired) {
+    window.location.href = '/profile.html?expired=true';
+    return;
+  }
+
+  if (subStatus === 'trialing') {
+    const banner = document.getElementById('trialBanner');
+    banner.classList.remove('hidden');
+    let txt = '⏰ Trial active — levels 1–3 only.';
+    if (trialEndsAt) {
+      const days = Math.max(0, Math.ceil((trialEndsAt - Date.now()) / 86400000));
+      txt = `⏰ Trial: ${days} day${days !== 1 ? 's' : ''} remaining · Levels 1–3 only.`;
+    }
+    document.getElementById('trialBannerText').textContent = txt;
+  } else if (subStatus === 'cancelled') {
+    // Cancelled but still in trial period
+    const banner = document.getElementById('trialBanner');
+    banner.classList.remove('hidden');
+    const days = trialEndsAt ? Math.max(0, Math.ceil((trialEndsAt - Date.now()) / 86400000)) : 0;
+    document.getElementById('trialBannerText').textContent =
+      `⚠️ Subscription cancelled — trial access ends in ${days} day${days !== 1 ? 's' : ''}. Levels 1–3 only.`;
+  } else if (subStatus === 'past_due') {
+    document.getElementById('pastdueBanner').classList.remove('hidden');
   }
 })();
 
@@ -85,24 +117,34 @@ function selectLanguage(code) {
 
 /* ── Level cards ────────────────────────────────────────────────────────────── */
 function renderLevels() {
-  const grid = document.getElementById('levelGrid');
-  grid.innerHTML = levels.map(lv => `
+  const isTrial   = subStatus === 'trialing';
+  const grid      = document.getElementById('levelGrid');
+  grid.innerHTML = levels.map(lv => {
+    const locked = isTrial && lv.id > 3;
+    return `
     <div
-      class="level-card"
+      class="level-card${locked ? ' level-locked' : ''}"
       id="level-${lv.id}"
-      onclick="selectLevel(${lv.id})"
+      onclick="${locked ? 'showUpgradePrompt()' : 'selectLevel(' + lv.id + ')'}"
       role="radio"
       aria-checked="false"
       tabindex="0"
-      onkeydown="if(event.key==='Enter'||event.key===' ')selectLevel(${lv.id})"
+      title="${locked ? 'Upgrade to unlock' : ''}"
     >
       <div class="level-check">✓</div>
+      ${locked ? '<div class="level-lock">🔒</div>' : ''}
       <div class="level-num">${lv.id}</div>
       <div class="level-emoji">${lv.emoji}</div>
       <div class="level-label">${lv.label}</div>
       <div class="level-desc">${lv.desc}</div>
     </div>
-  `).join('');
+  `}).join('');
+}
+
+function showUpgradePrompt() {
+  if (confirm('Levels 4 and 5 require a full subscription ($100/mo).\n\nUpgrade now?')) {
+    window.location.href = '/profile.html';
+  }
 }
 
 function selectLevel(id) {
@@ -204,6 +246,8 @@ async function startConversation() {
       level:    selectedLevel,
       topic:    selectedTopic,
     });
+
+    if (!data) return; // 401 already handled — token expired, navigating to login
 
     const params = new URLSearchParams({
       session:   data.session_id,
