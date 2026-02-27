@@ -330,8 +330,8 @@ func (h *BillingHandler) Webhook(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			break
 		}
-		// Don't override a manual admin suspension with 'cancelled'.
-		if u.SubscriptionStatus == store.SubSuspended {
+		// Don't override manual admin statuses (suspended / free) with 'cancelled'.
+		if u.SubscriptionStatus == store.SubSuspended || u.SubscriptionStatus == store.SubFree {
 			break
 		}
 		// Preserve any trial end date so cancelled-during-trial users keep access.

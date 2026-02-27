@@ -146,13 +146,14 @@ func (h *AdminHandler) SetSubscription(w http.ResponseWriter, r *http.Request) {
 		trialEndsAt = &t
 	}
 
-	// When revoking (suspending), cancel the Stripe subscription without
-	// changing the local status — SetSubscriptionStatus below sets it to "suspended".
-	if body.Status == store.SubSuspended {
+	// When revoking (suspending) or granting free access, cancel any active
+	// Stripe subscription without changing local status — SetSubscriptionStatus
+	// below sets the final local state.
+	if body.Status == store.SubSuspended || body.Status == store.SubFree {
 		if u, err := h.userStore.GetByID(targetID); err == nil {
 			if cancelErr := h.billing.cancelStripeOnly(u); cancelErr != nil {
 				log.Printf("admin: stripe cancel error for user %s: %v", targetID, cancelErr)
-				// Continue with local suspend even if Stripe cancel fails.
+				// Continue even if Stripe cancel fails.
 			}
 		}
 	}
