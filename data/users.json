@@ -1,12 +1,102 @@
 [
   {
+    "id": "4268ac1e-08d9-4fba-bd5f-c94266ab2778",
+    "email": "jim@test.com",
+    "username": "jim",
+    "password_hash": "$2a$10$SC.S.F.uArdtN7gt3wzUvupUjHP3vlP4E0JcjNhojZHO02jUjvdmq",
+    "is_admin": false,
+    "approved": false,
+    "created_at": "2026-02-27T15:03:27.164424-05:00",
+    "stripe_customer_id": "cus_U3eZ1XOMJe6NyA",
+    "subscription_status": "suspended"
+  },
+  {
+    "id": "7b465305-e9b1-41f1-9998-bd271c336008",
+    "email": "tony2@test.com",
+    "username": "tony",
+    "password_hash": "$2a$10$p.rcChA9UmaXWio5J02Uv.KH.K5xgn12z1wPYq29dmIyrc6roLl7q",
+    "is_admin": false,
+    "approved": false,
+    "created_at": "2026-02-27T15:06:41.460534-05:00",
+    "stripe_customer_id": "cus_U3ecL23s5ljCCh",
+    "subscription_status": "suspended"
+  },
+  {
     "id": "58eec3dd-e737-4adc-a7a4-d473b0b05723",
     "email": "testing@testing.com",
     "username": "testaccount",
     "password_hash": "$2a$10$y2GsT5Bx2ssIzqf2Yl4aYOcF.EoJF5xHgUSuUQvK7xN9wIruZ0Rta",
     "is_admin": false,
     "approved": false,
-    "created_at": "2026-02-27T12:00:52.148915-05:00"
+    "created_at": "2026-02-27T12:00:52.148915-05:00",
+    "subscription_status": "suspended"
+  },
+  {
+    "id": "458cafb8-7916-4a65-899d-87bd3a1e3724",
+    "email": "tony@test.com",
+    "username": "tony",
+    "password_hash": "$2a$10$kyGHtBixzuieM58RqyAFPuoZVuwvYi70mLUIIRpzsRCTzIeuV3HDG",
+    "is_admin": false,
+    "approved": false,
+    "created_at": "2026-02-27T15:06:27.378698-05:00",
+    "stripe_customer_id": "cus_U3ec0igj10gafr",
+    "subscription_status": "suspended"
+  },
+  {
+    "id": "629d8bbb-8355-4d1f-a3fa-d138ce13f324",
+    "email": "testing123@test.com",
+    "username": "testing",
+    "password_hash": "$2a$10$/IiRFR9k4T4it78D7ZoN4.fY.P164ovOPH9aMPQCu1QHMz9EzDgeW",
+    "is_admin": false,
+    "approved": false,
+    "created_at": "2026-02-27T13:48:49.683886-05:00",
+    "stripe_customer_id": "cus_U3dMiOwnZ19yvd",
+    "subscription_status": "suspended"
+  },
+  {
+    "id": "db34fe47-9951-4fb2-8d83-fdbb7cd4ad3e",
+    "email": "bob@test.com",
+    "username": "testerre",
+    "password_hash": "$2a$10$5dxDQN1QoZR58HFurrYxGu46zcoLed4T6j2XvZc6/MvPgwEYjRzvi",
+    "is_admin": false,
+    "approved": false,
+    "created_at": "2026-02-27T14:52:03.032583-05:00",
+    "stripe_customer_id": "cus_U3eNtoJCC4P5e9",
+    "subscription_status": "suspended"
+  },
+  {
+    "id": "2e982a25-aa5e-4476-8bcb-d6f26268d153",
+    "email": "cancel@test.com",
+    "username": "cancel@test.com",
+    "password_hash": "$2a$10$OwlJw2KFJFQY.uIE12pQgO6o6pbLnl/zWfafXLh0Ixdu4xdhuooCe",
+    "is_admin": false,
+    "approved": false,
+    "created_at": "2026-02-27T15:53:11.445147-05:00",
+    "stripe_customer_id": "cus_U3fMfW79M0WlWL",
+    "stripe_subscription_id": "sub_1T5Y2SAEUgvc7PXiQivMfj5D",
+    "subscription_status": "suspended"
+  },
+  {
+    "id": "bda7d00b-5040-44c0-812a-aaa6cbb345a0",
+    "email": "tester2@gmail.com",
+    "username": "test",
+    "password_hash": "$2a$10$2UPy6Yy46hqEeMUVyiA5ruBQMsSsPXZK/gbvnVR6TyD2q9QWoRq16",
+    "is_admin": false,
+    "approved": false,
+    "created_at": "2026-02-27T13:37:42.34711-05:00",
+    "stripe_customer_id": "cus_U3dBNJ4QYFihcw",
+    "subscription_status": "suspended"
+  },
+  {
+    "id": "cd80de5e-3f9f-43fd-a382-7d43f8c84b68",
+    "email": "tester3@test.com",
+    "username": "test",
+    "password_hash": "$2a$10$XLwpTDE24XZuWINaKXBoYOMVEyfxvMxy.gjwCzo1J8FiLWoBEEQou",
+    "is_admin": false,
+    "approved": false,
+    "created_at": "2026-02-27T13:47:39.277868-05:00",
+    "stripe_customer_id": "cus_U3dLkuRCZuhWp9",
+    "subscription_status": "suspended"
   },
   {
     "id": "20e5feba-3ac1-4017-9422-0f6dad617e1b",
@@ -15,6 +105,43 @@
     "password_hash": "$2a$10$nWwNSQu3yhcyzNShllRFbuouMCYGKXO5LmdyBe2fKj.9uABnguWGS",
     "is_admin": true,
     "approved": true,
-    "created_at": "2026-02-22T10:11:20.662999-05:00"
+    "created_at": "2026-02-22T10:11:20.662999-05:00",
+    "subscription_status": "free"
+  },
+  {
+    "id": "ee44f2be-57f8-47b1-8520-940c75d86069",
+    "email": "colasante16@gmail.com",
+    "username": "tester",
+    "password_hash": "$2a$10$tq303oYi5u63tZPgEQ2Y7.wfH0ujYD8u4Wu.5UwUAp1PoVZ.qQCSi",
+    "is_admin": false,
+    "approved": false,
+    "created_at": "2026-02-27T13:31:22.336966-05:00",
+    "stripe_customer_id": "cus_U3d5wusUlYgNxm",
+    "subscription_status": "suspended"
+  },
+  {
+    "id": "b988c937-5803-4c4a-84df-7902ee226b09",
+    "email": "paid@test.com",
+    "username": "paidtest",
+    "password_hash": "$2a$10$7I/EHe7C46rH4FtoUgXKfOZrD6ZO1.OwROxgjgUmdhpH9V6YDdt8i",
+    "is_admin": false,
+    "approved": false,
+    "created_at": "2026-02-27T15:19:22.709876-05:00",
+    "stripe_customer_id": "cus_U3epL8RGTSQ8Vp",
+    "stripe_subscription_id": "sub_1T5XW5AEUgvc7PXiI1Ppws1r",
+    "subscription_status": "suspended"
+  },
+  {
+    "id": "883424d8-2a68-4024-a43e-3db30af65174",
+    "email": "halftest@test.com",
+    "username": "halftest",
+    "password_hash": "$2a$10$vspvomcxIBae6eckirA4a.eeyFJiGqF/ihAO.nIRs4Sqr7z5QWR8e",
+    "is_admin": false,
+    "approved": true,
+    "created_at": "2026-02-27T15:36:57.506806-05:00",
+    "stripe_customer_id": "cus_U3f6cPNvaO555h",
+    "stripe_subscription_id": "sub_1T5Xn5AEUgvc7PXihnm3k4z5",
+    "subscription_status": "cancelled",
+    "trial_ends_at": "2026-03-06T15:41:10.988952-05:00"
   }
 ]
