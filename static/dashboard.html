@@ -52,8 +52,15 @@
         <div class="step-num">1</div>
         <h2 id="lang-step">Choose your language</h2>
       </div>
-      <div class="language-grid" id="languageGrid">
-        <!-- Populated by JS -->
+      <div class="lang-section-content">
+        <div class="language-grid" id="languageGrid">
+          <!-- Populated by JS -->
+        </div>
+        <div class="lang-load-more" id="langLoadMoreWrap" style="display:none">
+          <button class="lang-load-more-btn" onclick="loadMoreLanguages()">
+            + More Languages
+          </button>
+        </div>
       </div>
     </section>
 
@@ -91,6 +98,6 @@
   </div>
 
   <script src="/js/api.js?v=14"></script>
-  <script src="/js/dashboard.js?v=6"></script>
+  <script src="/js/dashboard.js?v=7"></script>
 </body>
 </html>

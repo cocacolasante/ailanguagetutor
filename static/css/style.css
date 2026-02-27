@@ -488,6 +488,39 @@ input::placeholder { color: var(--text-3); }
 }
 .language-card.selected .lang-check { display: flex; }
 
+/* ── Load-more button (languages) ───────────────────────────────────────────── */
+.lang-section-content {
+  margin-bottom: 48px;   /* owns the bottom spacing, replaces grid's margin */
+}
+.lang-section-content .language-grid {
+  margin-bottom: 16px;   /* gap between cards and the load-more button */
+}
+
+.lang-load-more { text-align: center; }
+
+.lang-extra { display: none !important; }
+
+.lang-load-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 100px;
+  color: var(--text-3);
+  padding: 9px 22px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.lang-load-more-btn:hover {
+  border-color: var(--border-hover);
+  color: var(--text-2);
+  background: var(--surface-2);
+}
+
 /* ── Level grid ──────────────────────────────────────────────────────────────── */
 .level-grid {
   display: grid;

@@ -8,6 +8,17 @@ let languages     = [];
 let topics        = [];
 let subStatus     = '';
 
+// Extra languages rendered client-side and revealed by "Load More"
+const extraLanguages = [
+  { code: 'fr', name: 'French',   native_name: 'Français',  flag: '🇫🇷' },
+  { code: 'de', name: 'German',   native_name: 'Deutsch',   flag: '🇩🇪' },
+  { code: 'ja', name: 'Japanese', native_name: '日本語',     flag: '🇯🇵' },
+  { code: 'ru', name: 'Russian',  native_name: 'Русский',   flag: '🇷🇺' },
+  { code: 'ro', name: 'Romanian', native_name: 'Română',    flag: '🇷🇴' },
+  { code: 'zh', name: 'Chinese',  native_name: '中文',       flag: '🇨🇳' },
+];
+const extraLangCodes = new Set(extraLanguages.map(l => l.code));
+
 const levels = [
   { id: 1, label: 'Beginner',     emoji: '🌱', desc: 'New to the language — vocabulary, pronunciation & basics' },
   { id: 2, label: 'Elementary',   emoji: '📖', desc: 'Simple phrases & everyday grammar with guided support' },
@@ -83,11 +94,10 @@ async function loadData() {
 }
 
 /* ── Language cards ─────────────────────────────────────────────────────────── */
-function renderLanguages() {
-  const grid = document.getElementById('languageGrid');
-  grid.innerHTML = languages.map(lang => `
+function langCardHTML(lang, isExtra) {
+  return `
     <div
-      class="language-card"
+      class="language-card${isExtra ? ' lang-extra' : ''}"
       id="lang-${lang.code}"
       onclick="selectLanguage('${lang.code}')"
       role="radio"
@@ -99,8 +109,28 @@ function renderLanguages() {
       <div class="lang-flag">${lang.flag}</div>
       <div class="lang-name">${lang.name}</div>
       <div class="lang-native">${lang.native_name}</div>
-    </div>
-  `).join('');
+    </div>`;
+}
+
+function renderLanguages() {
+  const grid = document.getElementById('languageGrid');
+
+  // Primary: API languages, excluding any that are already in the extra set
+  const primaryHTML = languages
+    .filter(l => !extraLangCodes.has(l.code))
+    .map(l => langCardHTML(l, false))
+    .join('');
+
+  // Extra: always from the hardcoded list, hidden until "Load More" is clicked
+  const extraHTML = extraLanguages.map(l => langCardHTML(l, true)).join('');
+
+  grid.innerHTML = primaryHTML + extraHTML;
+  document.getElementById('langLoadMoreWrap').style.display = '';
+}
+
+function loadMoreLanguages() {
+  document.querySelectorAll('.lang-extra').forEach(el => el.classList.remove('lang-extra'));
+  document.getElementById('langLoadMoreWrap').style.display = 'none';
 }
 
 function selectLanguage(code) {
@@ -218,7 +248,7 @@ function updateStartBar() {
     return;
   }
 
-  const lang  = languages.find(l => l.code === selectedLang);
+  const lang  = languages.find(l => l.code === selectedLang) || extraLanguages.find(l => l.code === selectedLang);
   const lv    = levels.find(l => l.id === selectedLevel);
   const topic = topics.find(t => t.id === selectedTopic);
 
