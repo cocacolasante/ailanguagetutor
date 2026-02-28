@@ -388,14 +388,15 @@ func (ss *SessionStore) GetMessages(id string) ([]Message, error) {
 }
 
 // ── Context Store ─────────────────────────────────────────────────────────────
-// Persists the last session's messages per (userID, language, level) so the AI
-// can reference prior conversations when a new session starts.
+// Persists the last N sessions per (userID, language, level) so the AI can
+// reference prior conversations when a new session starts.
 
-const maxContextMessages = 20 // keep last 10 exchanges (20 messages)
+const maxContextSessions = 5  // rolling window of past sessions to carry forward
+const maxContextMessages  = 30 // max messages kept per session (~15 exchanges)
 
 type contextEntry struct {
-	Messages  []Message `json:"messages"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Sessions  [][]Message `json:"sessions"`  // up to maxContextSessions past sessions
+	UpdatedAt time.Time   `json:"updated_at"`
 }
 
 type ContextStore struct {
@@ -417,8 +418,8 @@ func contextKey(userID, language string, level int) string {
 	return fmt.Sprintf("%s:%s:%d", userID, language, level)
 }
 
-// Save replaces the stored context for this (userID, language, level) with the
-// most recent messages from the session (excluding the system message).
+// Save appends the current session's messages to the rolling window for this
+// (userID, language, level), keeping the last maxContextSessions sessions.
 func (cs *ContextStore) Save(userID, language string, level int, messages []Message) {
 	var msgs []Message
 	for _, m := range messages {
@@ -426,29 +427,42 @@ func (cs *ContextStore) Save(userID, language string, level int, messages []Mess
 			msgs = append(msgs, m)
 		}
 	}
+	if len(msgs) == 0 {
+		return
+	}
 	if len(msgs) > maxContextMessages {
 		msgs = msgs[len(msgs)-maxContextMessages:]
 	}
 
 	cs.mu.Lock()
 	defer cs.mu.Unlock()
-	cs.data[contextKey(userID, language, level)] = contextEntry{
-		Messages:  msgs,
-		UpdatedAt: time.Now(),
+
+	key := contextKey(userID, language, level)
+	entry := cs.data[key]
+	entry.Sessions = append(entry.Sessions, msgs)
+	if len(entry.Sessions) > maxContextSessions {
+		entry.Sessions = entry.Sessions[len(entry.Sessions)-maxContextSessions:]
 	}
+	entry.UpdatedAt = time.Now()
+	cs.data[key] = entry
 	cs.persist()
 }
 
-// Get returns the stored prior-session messages for (userID, language, level),
-// or nil if none exist.
+// Get returns all prior-session messages for (userID, language, level) as a
+// flat list ordered oldest-to-newest, or nil if no history exists.
 func (cs *ContextStore) Get(userID, language string, level int) []Message {
 	cs.mu.RLock()
 	defer cs.mu.RUnlock()
+
 	entry, ok := cs.data[contextKey(userID, language, level)]
-	if !ok {
+	if !ok || len(entry.Sessions) == 0 {
 		return nil
 	}
-	return entry.Messages
+	var all []Message
+	for _, session := range entry.Sessions {
+		all = append(all, session...)
+	}
+	return all
 }
 
 func (cs *ContextStore) load() {

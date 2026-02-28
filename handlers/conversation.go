@@ -173,12 +173,17 @@ func (h *ConversationHandler) Message(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Call IONOS
+	// IONOS may use a reasoning model (e.g. gpt-oss-120b) that streams hundreds of
+	// reasoning tokens before emitting any content. max_tokens must be large enough
+	// to cover the full reasoning phase + the actual response. 4096 is safe for all
+	// levels; the level profile instructions already constrain response length.
+	maxTokens := 4096
+
 	payload := ionosPayload{
 		Model:       h.cfg.IONOSModel,
 		Messages:    messages,
 		Stream:      true,
-		MaxTokens:   512,
+		MaxTokens:   maxTokens,
 		Temperature: 0.75,
 	}
 	body, err := json.Marshal(payload)
@@ -215,7 +220,10 @@ func (h *ConversationHandler) Message(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Stream chunks to client
+	// Stream chunks to client.
+	// IONOS may use a reasoning model that streams reasoning tokens in
+	// delta.reasoning / delta.reasoning_content before emitting delta.content.
+	// We skip reasoning chunks and only forward content to the browser.
 	var fullResponse strings.Builder
 	scanner := bufio.NewScanner(resp.Body)
 
@@ -242,7 +250,7 @@ func (h *ConversationHandler) Message(w http.ResponseWriter, r *http.Request) {
 		if len(chunk.Choices) == 0 {
 			continue
 		}
-		
+
 		content := chunk.Choices[0].Delta.Content
 		if content == "" {
 			continue
@@ -253,6 +261,13 @@ func (h *ConversationHandler) Message(w http.ResponseWriter, r *http.Request) {
 		chunkJSON, _ := json.Marshal(map[string]string{"content": content})
 		fmt.Fprintf(w, "data: %s\n\n", chunkJSON)
 		flusher.Flush()
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Printf("IONOS scanner error (session %s): %v", req.SessionID, err)
+	}
+	if fullResponse.Len() == 0 {
+		log.Printf("IONOS empty response (session %s, level %d, lang %s) — model may need higher max_tokens", req.SessionID, session.Level, session.Language)
 	}
 
 	// Persist assistant response
@@ -378,41 +393,26 @@ func (h *ConversationHandler) History(w http.ResponseWriter, r *http.Request) {
 func levelProfile(level int) string {
 	switch level {
 	case 1:
-		return `STUDENT LEVEL: Beginner (1/5)
-- The student is brand new to this language. They may know almost nothing.
-- Communicate primarily in English to ensure understanding. Introduce only 1–2 key phrases or vocabulary words in the target language per response, always accompanied by a clear English translation.
-- Use extremely simple, short sentences when you do write in the target language.
-- Praise every attempt enthusiastically — even a single correct word is worth celebrating.
-- Never expect full sentences from the student; a single word response is completely fine.
-- Explicitly teach: say the target-language word/phrase, provide the pronunciation hint if helpful, and use it in a simple example sentence.`
+		return `Student level: Beginner (1/5) — conversational language tutor.
+LANGUAGE RULE — MANDATORY AND PERMANENT: Always speak mostly in English for the entire conversation, no matter what language the student uses. Do NOT switch to full target language just because the student responded in it. Your messages must be primarily English with only a few target-language words or one short phrase woven in per turn.
+Each turn: introduce one target-language word or short phrase with a pronunciation hint, use it naturally in an English sentence, then ask the student to try it. Correct mistakes briefly: praise, correct form, one-line reason.`
+
 	case 2:
-		return `STUDENT LEVEL: Elementary (2/5)
-- The student knows basic greetings and very common vocabulary but still needs significant support.
-- Write roughly 50% of your response in the target language and 50% in English. Place English translations in [square brackets] immediately after any word or phrase the student might not know.
-- Use only simple, common grammar structures (present tense, basic questions).
-- Gently model correct forms without calling out errors by name.
-- Encourage the student to try responding in the target language, but accept English with a soft nudge.`
+		return `Student level: Elementary (2/5). Lead through prompts and scenarios.
+Each turn: weave in one vocabulary word naturally (word = English meaning), give a situational prompt to respond to. After every 2–3 exchanges add one brief correction note. Write about 60% in the target language, 40% English. Translations in brackets after unfamiliar words.`
+
 	case 3:
-		return `STUDENT LEVEL: Intermediate (3/5)
-- The student can handle everyday conversation on familiar topics.
-- Speak primarily in the target language. Use English only for brief clarifications of complex ideas — place these in [square brackets].
-- Use standard everyday vocabulary and a range of tenses.
-- Subtly reinforce correct grammar by echoing corrected forms naturally in your own sentences.
-- Push the student gently: ask follow-up questions that require a bit more than a yes/no answer.`
+		return `Student level: Intermediate (3/5). Conversation partner who also coaches.
+Have genuine exchanges and let minor errors slide for 4–5 turns. Then give one short coaching block: 1–2 grammar corrections with one-line reasons, one vocabulary upgrade, one fluency tip. Then continue naturally. Speak primarily in the target language; English only in brackets for quick clarifications.`
+
 	case 4:
-		return `STUDENT LEVEL: Advanced (4/5)
-- The student is comfortable with the language and can discuss a wide range of topics.
-- Speak entirely in the target language. Avoid English unless a cultural concept has no translation.
-- Use rich vocabulary, idiomatic expressions, and varied grammar structures freely.
-- Challenge the student with nuanced questions, hypotheticals, and opinions.
-- Correct errors only by naturally and smoothly using the correct form in your response — never interrupt flow.`
+		return `Student level: Advanced (4/5). Natural conversation — no vocabulary preview.
+Speak entirely in the target language. Let minor errors pass; only interrupt for errors that block understanding. After every 6–8 turns give a brief review: top 1–2 grammar corrections, one vocabulary upgrade, one fluency tip. Challenge the student with nuanced questions, hypotheticals, and opinions.`
+
 	case 5:
-		return `STUDENT LEVEL: Fluent (5/5)
-- The student is near-native. Treat them as a fluent peer, not a learner.
-- Speak entirely in the target language at natural native speed and complexity.
-- Use idioms, colloquialisms, humor, cultural references, and register variation freely.
-- Do not simplify vocabulary, grammar, or sentence length in any way.
-- Engage as you would with any native speaker — debate, joke, tell stories, explore nuance.`
+		return `Student level: Fluent (5/5). Native-speaking peer, not a tutor.
+Speak entirely in the target language at full native speed. Pursue opinions, debate, humor, storytelling, hypotheticals. Only correct when communication breaks down. After every 8–10 turns offer one brief tonal or idiomatic refinement, then resume immediately. No accommodations.`
+
 	default:
 		return levelProfile(3)
 	}
@@ -422,20 +422,20 @@ func buildSystemPrompt(langCode string, level int, topicName, topicDesc string, 
 	lang := LanguageName(langCode)
 	contextNote := ""
 	if hasPriorContext {
-		contextNote = "\n\nNote: The conversation history below is from this student's most recent previous session. You may naturally reference what was discussed or acknowledge their progress, but always open this new session with a warm, fresh greeting."
+		contextNote = "\n\nNote: The conversation history below contains messages from this student's recent previous sessions. Use it to remember what vocabulary and topics were already covered, acknowledge their progress naturally, and avoid re-teaching things they already know. Always open this new session with a warm, fresh greeting."
 	}
-	return fmt.Sprintf(`You are an expert, warm, and encouraging language tutor specializing in %s. Your mission is to help the student practice %s through natural conversation about "%s".
+	return fmt.Sprintf(`You are an expert language tutor specializing in %s. Your mission is to help the student practice %s through engaging conversation about "%s".
 
 Topic context: %s
 
 %s
 
-General guidelines (apply at all levels):
-- Keep the conversation naturally centered on the topic without being rigid.
-- Always end with a question or invitation that encourages the student to keep talking.
-- Never use markdown formatting, asterisks, or bullet points — speak naturally in prose.
-- Keep responses concise: typically 2–4 sentences.
-- You may occasionally weave in a brief cultural note or fun fact relevant to the topic.%s`,
+RESPONSE LENGTH RULE — THIS IS MANDATORY: Every reply must be 2 sentences. 3 sentences absolute maximum. Never more. Do not explain, elaborate, or add extra context beyond those sentences. If you are tempted to write more, stop and cut it down.
+
+Other guidelines:
+- End each turn with one short question or prompt.
+- Plain prose only. No bullet points except inside correction or review blocks.
+- Acknowledge effort warmly but briefly.%s`,
 		lang, lang, topicName, topicDesc, levelProfile(level), contextNote)
 }
 
@@ -444,22 +444,27 @@ func buildGreetPrompt(langCode string, level int) string {
 	switch level {
 	case 1:
 		return fmt.Sprintf(
-			"[Begin the session. Welcome the student warmly in English. Tell them you'll be learning %s together today and introduce the topic. Then teach them one simple greeting phrase in %s with its English translation to get started.]",
+			"[Open in English. Welcome the student briefly, name the topic, introduce one %s word or short phrase with a pronunciation hint, and ask them to try it. Speak primarily in English — this is a beginner lesson taught in English with %s words woven in. 2–3 sentences only.]",
 			lang, lang,
 		)
 	case 2:
 		return fmt.Sprintf(
-			"[Begin the session. Greet the student in a mix of English and %s. Introduce the topic simply and invite them to try responding — even in English is fine for now.]",
+			"[Begin the session. Greet the student in a mix of %s and English. Drop in 2–3 useful vocabulary words for the topic (word = English meaning). Then set up a simple scenario related to the topic and give the student their first situational prompt to respond to.]",
 			lang,
 		)
 	case 3:
 		return fmt.Sprintf(
-			"[Begin the session. Greet the student primarily in %s and introduce the conversation topic naturally. Keep it brief, warm, and end with an easy question to get the conversation going.]",
+			"[Begin the session. Set the context naturally — describe the conversational scenario related to the topic in 1 sentence. Greet the student primarily in %s and open with an engaging question that invites a real response. Keep it brief, warm, and natural.]",
 			lang,
 		)
-	case 4, 5:
+	case 4:
 		return fmt.Sprintf(
-			"[Begin the session. Greet the student entirely in %s and dive into the topic naturally, as you would with a confident speaker. Ask an engaging, open-ended question right away.]",
+			"[Begin the session. Jump straight into natural conversation in %s — no preamble. Ask an interesting, open-ended question related to the topic that requires a real opinion or thought, not a yes/no answer.]",
+			lang,
+		)
+	case 5:
+		return fmt.Sprintf(
+			"[Begin the session entirely in %s. Start immediately — no greeting ritual. Open with something that invites real engagement: a bold opinion on the topic, a hypothetical, a cultural reference, or a question worth debating. Set the tone of a real conversation between equals.]",
 			lang,
 		)
 	default:

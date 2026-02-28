@@ -1,53 +1,654 @@
 {
-  "20e5feba-3ac1-4017-9422-0f6dad617e1b:es:3": {
-    "messages": [
-      {
-        "role": "assistant",
-        "content": "¡Hola! Me alegra verte de nuevo. Hoy podemos charlar sobre cómo va tu día y esas pequeñas cosas cotidianas que nos hacen sonreír. ¿Qué hiciste esta mañana que te haya gustado?"
-      },
-      {
-        "role": "assistant",
-        "content": "¡Hola! Qué gusto saludarte de nuevo. Hoy vamos a charlar un poco sobre las cosas cotidianas: cómo empieza tu día, qué sueles hacer en tu tiempo libre y esas pequeñas anécdotas que nos alegran. Cuéntame, ¿cómo está el clima donde vives hoy?"
-      },
-      {
-        "role": "user",
-        "content": "hola mucho gusto, mi llamo anthony y tango 31 annos"
-      },
-      {
-        "role": "assistant",
-        "content": "¡Hola, Anthony! Mucho gusto. Me llamo [tu nombre] y tengo 31 años también, ¡qué coincidencia! Cuéntame, ¿qué sueles hacer en tu tiempo libre cuando no estás trabajando?"
-      },
-      {
-        "role": "user",
-        "content": "mi gusto a jugar futbol"
-      },
-      {
-        "role": "assistant",
-        "content": "¡Qué bien, Anthony! A mí también me gusta jugar al fútbol los fines de semana. ¿Sueles jugar en algún equipo o prefieres partidos informales con amigos? Cuéntame cómo organizas esas jornadas y si tienes algún lugar favorito para entrenar."
-      },
-      {
-        "role": "assistant",
-        "content": "¡Hola, Anthony! Qué alegría volver a conversar contigo. Hoy me gustaría hablar de las cosas cotidianas: cómo empieza tu día, qué sueles hacer después del trabajo y esas pequeñas anécdotas que hacen la vida más interesante. Cuéntame, ¿cómo suele ser una mañana típica para ti?"
-      }
+  "20e5feba-3ac1-4017-9422-0f6dad617e1b:es:2": {
+    "sessions": [
+      [
+        {
+          "role": "assistant",
+          "content": "¡Hola y bienvenido a nuestra práctica, today we’ll use palabras como saludo = greeting, charla = chat, y clima = weather. Imagina que estás en la parada del bus y ves a un vecino; ¿qué dirías para iniciar una pequeña charla?"
+        }
+      ],
+      [
+        {
+          "role": "assistant",
+          "content": "¡Hola y bienvenido a nuestra práctica, today we’ll use palabras como saludo = greeting, charla = chat, y clima = weather. Imagina que estás en la parada del bus y ves a un vecino; ¿qué dirías para iniciar una pequeña charla?"
+        },
+        {
+          "role": "user",
+          "content": "Hola cómo estás Me llamo Anthony mucho gusto Qué haces hoy"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony, mucho gusto! Hoy estoy tomando un café en la terraza y pensando en qué hacer. (Corrección: usa signos de interrogación y la tilde en “¿cómo?” y “¿Qué haces hoy?”) ¿Te gustaría ir al parque más tarde?"
+        }
+      ]
     ],
-    "updated_at": "2026-02-27T11:29:03.07187-05:00"
+    "updated_at": "2026-02-27T22:22:25.163806-05:00"
+  },
+  "20e5feba-3ac1-4017-9422-0f6dad617e1b:es:3": {
+    "sessions": null,
+    "updated_at": "2026-02-27T21:18:49.853134-05:00"
+  },
+  "20e5feba-3ac1-4017-9422-0f6dad617e1b:pt:1": {
+    "sessions": [
+      [
+        {
+          "role": "assistant",
+          "content": "Hi there! Today we’ll be practicing some everyday small talk in Portuguese – “General Conversation.” Let’s start with the friendly greeting **“Tudo bem?”** (pronounced /too‑doo beng/), which means “How are you?” I’m doing great, **tudo bem**, thanks for asking! Now it’s your turn: can you reply with **“Tudo bem”** (or a short answer) in your next message?"
+        },
+        {
+          "role": "user",
+          "content": "tudo bem"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job – “tudo bem!” (pronounced /too‑doo beng/) is perfect.  \nNow let’s add a simple way to say **“My name is …”**: **“Meu nome é …”** (pronounced /meh‑oo NOH‑mee eh). For example, I could say **“Meu nome é Carlos.”**  \nCan you tell me **“Meu nome é …”** with your name? Feel free to add “tudo bem” again if you like!"
+        },
+        {
+          "role": "user",
+          "content": "meu nome é Adri"
+        },
+        {
+          "role": "assistant",
+          "content": "Excelente, Adri! You said **“Meu nome é Adri.”** (pronounced /meh‑oo NOH‑mee eh AH‑dree).  \n\nNow let’s learn a friendly way to ask someone’s name: **“Como você se chama?”** (pronounced /KO‑moo vo‑SEH see SHA‑mah?), which means “What’s your name?”  \n\nTry answering my question with **“Eu me chamo …”** (pronounced /eh‑oo mee SHA‑moo …) using your name again. What will you say?"
+        },
+        {
+          "role": "user",
+          "content": "não"
+        },
+        {
+          "role": "assistant",
+          "content": "No problem, Adri! Let’s try it together: **“Eu me chamo Adri.”** (pronounced /eh‑oo mee SHA‑moo AH‑dri). This means “My name is Adri.”  \n\nNow it’s your turn – please say **“Eu me chamo …”** with your name (you can repeat “Adri” again).  \n\nAfter you write it, we’ll add a short reply: **“Prazer em conhecer você!”** (nice to meet you). Ready?"
+        },
+        {
+          "role": "user",
+          "content": "não My name is Andrey entrem"
+        },
+        {
+          "role": "assistant",
+          "content": "Great effort, Andrey! Let’s keep it simple and use the Portuguese phrase we just learned:\n\n**“Eu me chamo Andrey.”** (pronounced /eh‑oo mee SHA‑moo ahn‑DRAY/)\n\nThat means “My name is Andrey.” Try saying that out loud and type it back to me.\n\nNow we can add a friendly reply: **“Prazer em conhecer você.”** (pronounced /prah‑ZER eng koh‑neh‑SEHR vo‑SEH/) – “Nice to meet you.”  \n\n**Your turn:** Write **“Eu me chamo Andrey. Prazer em conhecer você.”** and then tell me **“De onde você é?”** (pronounced /djee OHN‑jee vo‑SEH eh?) – “Where are you from?” so we can keep the conversation going!"
+        },
+        {
+          "role": "user",
+          "content": "no my name is anthony"
+        },
+        {
+          "role": "assistant",
+          "content": "Great, Anthony! In Portuguese you would say:\n\n**“Eu me chamo Anthony.”** (pronounced /eh‑oo mee SHA‑moo AH‑n‑thi /)\n\nTry typing that sentence exactly as shown. Then we can keep the chat going with a common follow‑up:\n\n**“De onde você é?”** (pronounced /djee OHN‑jee vo‑SEH eh) – “Where are you from?”\n\nIf you’d like, you can answer with something like **“Eu sou dos Estados Unidos.”** (“I’m from the United States”).  \n\nYour turn: write **“Eu me chamo Anthony.”** and then answer **“De onde você é?”** with your own country. 😊"
+        },
+        {
+          "role": "assistant",
+          "content": "Hi there! Today we’ll practice some everyday greetings in Portuguese. Let’s start with **“Tudo bem?”** (pronounced /too‑doo beng/), a friendly way to ask “How are you?” You can use it like: “Tudo bem, eu estou feliz em te conhecer.” Now it’s your turn—reply with **“Tudo bem”** in a short sentence!"
+        },
+        {
+          "role": "assistant",
+          "content": "Hey there! Today we’ll start with a friendly Portuguese greeting: **“Oi”** (pronounced /oy/), which means “hi” – you can say “Oi, tudo bem?” Can you try using “Oi” in a short sentence?"
+        },
+        {
+          "role": "user",
+          "content": "Oi tudo bem"
+        },
+        {
+          "role": "assistant",
+          "content": "Ótimo, Adri, diga “Prazer em conhecer você” (prah‑ZER eng koh‑neh‑SEHR vo‑SEH) para ser educado. De onde você é?"
+        },
+        {
+          "role": "user",
+          "content": "meu nome é Anthony"
+        },
+        {
+          "role": "assistant",
+          "content": "Ótimo, Anthony! Você fala português? (pronounced /vo‑SEH FAH‑lah por‑tu‑GAYSH/)"
+        },
+        {
+          "role": "user",
+          "content": "não não você fala em português"
+        },
+        {
+          "role": "assistant",
+          "content": "Bom, diga “Eu não falo português” (pronounced /eh‑oo nah‑o FAH‑loh por‑tu‑GAYSH/). Agora tente dizer “Eu falo um pouco” (pronounced /eh‑oo FAH‑loh oom POH‑koo/); como fica?"
+        },
+        {
+          "role": "assistant",
+          "content": "Welcome back, today we’ll practice basic greetings in Portuguese. Try saying **“Bom dia”** (pronounced /bohm DEE‑ah), which means “good morning,” and let me know how it sounds."
+        },
+        {
+          "role": "user",
+          "content": "Bom dia"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job saying “Bom dia” (pronounced /bohm DEE‑ah). Now try the friendly follow‑up “Como vai?” (pronounced /KOH‑moo VAH‑ee?) to ask how someone is. Can you write “Como vai?” for me?"
+        },
+        {
+          "role": "user",
+          "content": "como vai"
+        },
+        {
+          "role": "assistant",
+          "content": "Great, “Como vai?” is perfect (pronounced /KOH‑moo VAH‑ee?); you can answer with “Estou bem, obrigado” (/eh‑STOH beng, oh‑bri‑GAH‑doo/). De onde você é?"
+        },
+        {
+          "role": "user",
+          "content": "estou bem obrigado"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job—“Estou bem, obrigado” is perfect. Now try saying “Prazer em conhecer você” (prah‑ZER eng koh‑neh‑SEHR vo‑SEH) and tell me “Qual é a sua cidade?” (pronounced /kwow eh ah SOO‑ah see‑DAH‑jee?)."
+        },
+        {
+          "role": "user",
+          "content": "prazer é conserva você"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice try! The correct phrase is **“Prazer em conhecer você”** (prah‑ZER eng koh‑neh‑SEHR vo‑SEH).  \n\nNow say **“Qual é a sua cidade?”** (kwow eh ah SOO‑ah see‑DAH‑jee) and tell me which city you’re from."
+        },
+        {
+          "role": "user",
+          "content": "Qual é acessório"
+        },
+        {
+          "role": "assistant",
+          "content": "Good try, but the phrase should be “Qual é a sua cidade?” (pronounced /kwow eh ah SOO‑ah see‑DAH‑jee) meaning “What city are you from?”. Now you can answer with “Eu moro em …” (pronounced /eh‑oo MOH‑roo eng …) — can you write “Eu moro em” followed by your city?"
+        }
+      ],
+      [
+        {
+          "role": "assistant",
+          "content": "Great job – “tudo bem!” (pronounced /too‑doo beng/) is perfect.  \nNow let’s add a simple way to say **“My name is …”**: **“Meu nome é …”** (pronounced /meh‑oo NOH‑mee eh). For example, I could say **“Meu nome é Carlos.”**  \nCan you tell me **“Meu nome é …”** with your name? Feel free to add “tudo bem” again if you like!"
+        },
+        {
+          "role": "user",
+          "content": "meu nome é Adri"
+        },
+        {
+          "role": "assistant",
+          "content": "Excelente, Adri! You said **“Meu nome é Adri.”** (pronounced /meh‑oo NOH‑mee eh AH‑dree).  \n\nNow let’s learn a friendly way to ask someone’s name: **“Como você se chama?”** (pronounced /KO‑moo vo‑SEH see SHA‑mah?), which means “What’s your name?”  \n\nTry answering my question with **“Eu me chamo …”** (pronounced /eh‑oo mee SHA‑moo …) using your name again. What will you say?"
+        },
+        {
+          "role": "user",
+          "content": "não"
+        },
+        {
+          "role": "assistant",
+          "content": "No problem, Adri! Let’s try it together: **“Eu me chamo Adri.”** (pronounced /eh‑oo mee SHA‑moo AH‑dri). This means “My name is Adri.”  \n\nNow it’s your turn – please say **“Eu me chamo …”** with your name (you can repeat “Adri” again).  \n\nAfter you write it, we’ll add a short reply: **“Prazer em conhecer você!”** (nice to meet you). Ready?"
+        },
+        {
+          "role": "user",
+          "content": "não My name is Andrey entrem"
+        },
+        {
+          "role": "assistant",
+          "content": "Great effort, Andrey! Let’s keep it simple and use the Portuguese phrase we just learned:\n\n**“Eu me chamo Andrey.”** (pronounced /eh‑oo mee SHA‑moo ahn‑DRAY/)\n\nThat means “My name is Andrey.” Try saying that out loud and type it back to me.\n\nNow we can add a friendly reply: **“Prazer em conhecer você.”** (pronounced /prah‑ZER eng koh‑neh‑SEHR vo‑SEH/) – “Nice to meet you.”  \n\n**Your turn:** Write **“Eu me chamo Andrey. Prazer em conhecer você.”** and then tell me **“De onde você é?”** (pronounced /djee OHN‑jee vo‑SEH eh?) – “Where are you from?” so we can keep the conversation going!"
+        },
+        {
+          "role": "user",
+          "content": "no my name is anthony"
+        },
+        {
+          "role": "assistant",
+          "content": "Great, Anthony! In Portuguese you would say:\n\n**“Eu me chamo Anthony.”** (pronounced /eh‑oo mee SHA‑moo AH‑n‑thi /)\n\nTry typing that sentence exactly as shown. Then we can keep the chat going with a common follow‑up:\n\n**“De onde você é?”** (pronounced /djee OHN‑jee vo‑SEH eh) – “Where are you from?”\n\nIf you’d like, you can answer with something like **“Eu sou dos Estados Unidos.”** (“I’m from the United States”).  \n\nYour turn: write **“Eu me chamo Anthony.”** and then answer **“De onde você é?”** with your own country. 😊"
+        },
+        {
+          "role": "assistant",
+          "content": "Hi there! Today we’ll practice some everyday greetings in Portuguese. Let’s start with **“Tudo bem?”** (pronounced /too‑doo beng/), a friendly way to ask “How are you?” You can use it like: “Tudo bem, eu estou feliz em te conhecer.” Now it’s your turn—reply with **“Tudo bem”** in a short sentence!"
+        },
+        {
+          "role": "assistant",
+          "content": "Hey there! Today we’ll start with a friendly Portuguese greeting: **“Oi”** (pronounced /oy/), which means “hi” – you can say “Oi, tudo bem?” Can you try using “Oi” in a short sentence?"
+        },
+        {
+          "role": "user",
+          "content": "Oi tudo bem"
+        },
+        {
+          "role": "assistant",
+          "content": "Ótimo, Adri, diga “Prazer em conhecer você” (prah‑ZER eng koh‑neh‑SEHR vo‑SEH) para ser educado. De onde você é?"
+        },
+        {
+          "role": "user",
+          "content": "meu nome é Anthony"
+        },
+        {
+          "role": "assistant",
+          "content": "Ótimo, Anthony! Você fala português? (pronounced /vo‑SEH FAH‑lah por‑tu‑GAYSH/)"
+        },
+        {
+          "role": "user",
+          "content": "não não você fala em português"
+        },
+        {
+          "role": "assistant",
+          "content": "Bom, diga “Eu não falo português” (pronounced /eh‑oo nah‑o FAH‑loh por‑tu‑GAYSH/). Agora tente dizer “Eu falo um pouco” (pronounced /eh‑oo FAH‑loh oom POH‑koo/); como fica?"
+        },
+        {
+          "role": "assistant",
+          "content": "Welcome back, today we’ll practice basic greetings in Portuguese. Try saying **“Bom dia”** (pronounced /bohm DEE‑ah), which means “good morning,” and let me know how it sounds."
+        },
+        {
+          "role": "user",
+          "content": "Bom dia"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job saying “Bom dia” (pronounced /bohm DEE‑ah). Now try the friendly follow‑up “Como vai?” (pronounced /KOH‑moo VAH‑ee?) to ask how someone is. Can you write “Como vai?” for me?"
+        },
+        {
+          "role": "user",
+          "content": "como vai"
+        },
+        {
+          "role": "assistant",
+          "content": "Great, “Como vai?” is perfect (pronounced /KOH‑moo VAH‑ee?); you can answer with “Estou bem, obrigado” (/eh‑STOH beng, oh‑bri‑GAH‑doo/). De onde você é?"
+        },
+        {
+          "role": "user",
+          "content": "estou bem obrigado"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job—“Estou bem, obrigado” is perfect. Now try saying “Prazer em conhecer você” (prah‑ZER eng koh‑neh‑SEHR vo‑SEH) and tell me “Qual é a sua cidade?” (pronounced /kwow eh ah SOO‑ah see‑DAH‑jee?)."
+        },
+        {
+          "role": "user",
+          "content": "prazer é conserva você"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice try! The correct phrase is **“Prazer em conhecer você”** (prah‑ZER eng koh‑neh‑SEHR vo‑SEH).  \n\nNow say **“Qual é a sua cidade?”** (kwow eh ah SOO‑ah see‑DAH‑jee) and tell me which city you’re from."
+        },
+        {
+          "role": "user",
+          "content": "Qual é acessório"
+        },
+        {
+          "role": "assistant",
+          "content": "Good try, but the phrase should be “Qual é a sua cidade?” (pronounced /kwow eh ah SOO‑ah see‑DAH‑jee) meaning “What city are you from?”. Now you can answer with “Eu moro em …” (pronounced /eh‑oo MOH‑roo eng …) — can you write “Eu moro em” followed by your city?"
+        },
+        {
+          "role": "user",
+          "content": "Qual é esse horário"
+        },
+        {
+          "role": "assistant",
+          "content": "Good try—normally you’d ask “Que horas são?” (pronounced /keh OH‑rahss sown/). Can you write that question in your next reply?"
+        }
+      ],
+      [
+        {
+          "role": "assistant",
+          "content": "Excelente, Adri! You said **“Meu nome é Adri.”** (pronounced /meh‑oo NOH‑mee eh AH‑dree).  \n\nNow let’s learn a friendly way to ask someone’s name: **“Como você se chama?”** (pronounced /KO‑moo vo‑SEH see SHA‑mah?), which means “What’s your name?”  \n\nTry answering my question with **“Eu me chamo …”** (pronounced /eh‑oo mee SHA‑moo …) using your name again. What will you say?"
+        },
+        {
+          "role": "user",
+          "content": "não"
+        },
+        {
+          "role": "assistant",
+          "content": "No problem, Adri! Let’s try it together: **“Eu me chamo Adri.”** (pronounced /eh‑oo mee SHA‑moo AH‑dri). This means “My name is Adri.”  \n\nNow it’s your turn – please say **“Eu me chamo …”** with your name (you can repeat “Adri” again).  \n\nAfter you write it, we’ll add a short reply: **“Prazer em conhecer você!”** (nice to meet you). Ready?"
+        },
+        {
+          "role": "user",
+          "content": "não My name is Andrey entrem"
+        },
+        {
+          "role": "assistant",
+          "content": "Great effort, Andrey! Let’s keep it simple and use the Portuguese phrase we just learned:\n\n**“Eu me chamo Andrey.”** (pronounced /eh‑oo mee SHA‑moo ahn‑DRAY/)\n\nThat means “My name is Andrey.” Try saying that out loud and type it back to me.\n\nNow we can add a friendly reply: **“Prazer em conhecer você.”** (pronounced /prah‑ZER eng koh‑neh‑SEHR vo‑SEH/) – “Nice to meet you.”  \n\n**Your turn:** Write **“Eu me chamo Andrey. Prazer em conhecer você.”** and then tell me **“De onde você é?”** (pronounced /djee OHN‑jee vo‑SEH eh?) – “Where are you from?” so we can keep the conversation going!"
+        },
+        {
+          "role": "user",
+          "content": "no my name is anthony"
+        },
+        {
+          "role": "assistant",
+          "content": "Great, Anthony! In Portuguese you would say:\n\n**“Eu me chamo Anthony.”** (pronounced /eh‑oo mee SHA‑moo AH‑n‑thi /)\n\nTry typing that sentence exactly as shown. Then we can keep the chat going with a common follow‑up:\n\n**“De onde você é?”** (pronounced /djee OHN‑jee vo‑SEH eh) – “Where are you from?”\n\nIf you’d like, you can answer with something like **“Eu sou dos Estados Unidos.”** (“I’m from the United States”).  \n\nYour turn: write **“Eu me chamo Anthony.”** and then answer **“De onde você é?”** with your own country. 😊"
+        },
+        {
+          "role": "assistant",
+          "content": "Hi there! Today we’ll practice some everyday greetings in Portuguese. Let’s start with **“Tudo bem?”** (pronounced /too‑doo beng/), a friendly way to ask “How are you?” You can use it like: “Tudo bem, eu estou feliz em te conhecer.” Now it’s your turn—reply with **“Tudo bem”** in a short sentence!"
+        },
+        {
+          "role": "assistant",
+          "content": "Hey there! Today we’ll start with a friendly Portuguese greeting: **“Oi”** (pronounced /oy/), which means “hi” – you can say “Oi, tudo bem?” Can you try using “Oi” in a short sentence?"
+        },
+        {
+          "role": "user",
+          "content": "Oi tudo bem"
+        },
+        {
+          "role": "assistant",
+          "content": "Ótimo, Adri, diga “Prazer em conhecer você” (prah‑ZER eng koh‑neh‑SEHR vo‑SEH) para ser educado. De onde você é?"
+        },
+        {
+          "role": "user",
+          "content": "meu nome é Anthony"
+        },
+        {
+          "role": "assistant",
+          "content": "Ótimo, Anthony! Você fala português? (pronounced /vo‑SEH FAH‑lah por‑tu‑GAYSH/)"
+        },
+        {
+          "role": "user",
+          "content": "não não você fala em português"
+        },
+        {
+          "role": "assistant",
+          "content": "Bom, diga “Eu não falo português” (pronounced /eh‑oo nah‑o FAH‑loh por‑tu‑GAYSH/). Agora tente dizer “Eu falo um pouco” (pronounced /eh‑oo FAH‑loh oom POH‑koo/); como fica?"
+        },
+        {
+          "role": "assistant",
+          "content": "Welcome back, today we’ll practice basic greetings in Portuguese. Try saying **“Bom dia”** (pronounced /bohm DEE‑ah), which means “good morning,” and let me know how it sounds."
+        },
+        {
+          "role": "user",
+          "content": "Bom dia"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job saying “Bom dia” (pronounced /bohm DEE‑ah). Now try the friendly follow‑up “Como vai?” (pronounced /KOH‑moo VAH‑ee?) to ask how someone is. Can you write “Como vai?” for me?"
+        },
+        {
+          "role": "user",
+          "content": "como vai"
+        },
+        {
+          "role": "assistant",
+          "content": "Great, “Como vai?” is perfect (pronounced /KOH‑moo VAH‑ee?); you can answer with “Estou bem, obrigado” (/eh‑STOH beng, oh‑bri‑GAH‑doo/). De onde você é?"
+        },
+        {
+          "role": "user",
+          "content": "estou bem obrigado"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job—“Estou bem, obrigado” is perfect. Now try saying “Prazer em conhecer você” (prah‑ZER eng koh‑neh‑SEHR vo‑SEH) and tell me “Qual é a sua cidade?” (pronounced /kwow eh ah SOO‑ah see‑DAH‑jee?)."
+        },
+        {
+          "role": "user",
+          "content": "prazer é conserva você"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice try! The correct phrase is **“Prazer em conhecer você”** (prah‑ZER eng koh‑neh‑SEHR vo‑SEH).  \n\nNow say **“Qual é a sua cidade?”** (kwow eh ah SOO‑ah see‑DAH‑jee) and tell me which city you’re from."
+        },
+        {
+          "role": "user",
+          "content": "Qual é acessório"
+        },
+        {
+          "role": "assistant",
+          "content": "Good try, but the phrase should be “Qual é a sua cidade?” (pronounced /kwow eh ah SOO‑ah see‑DAH‑jee) meaning “What city are you from?”. Now you can answer with “Eu moro em …” (pronounced /eh‑oo MOH‑roo eng …) — can you write “Eu moro em” followed by your city?"
+        },
+        {
+          "role": "user",
+          "content": "Qual é esse horário"
+        },
+        {
+          "role": "assistant",
+          "content": "Good try—normally you’d ask “Que horas são?” (pronounced /keh OH‑rahss sown/). Can you write that question in your next reply?"
+        },
+        {
+          "role": "user",
+          "content": "Qual é cidade"
+        },
+        {
+          "role": "assistant",
+          "content": "Great try, but the correct question is “Qual é a sua cidade?” (pronounced /kwow eh ah SOO‑ah see‑DAH‑jee) – you need the article “a sua” for “your.” Now you can answer with “Eu moro em [city]” (pronounced /eh‑oo MOH‑roo eng …) – could you write that sentence with your city?"
+        }
+      ],
+      [
+        {
+          "role": "assistant",
+          "content": "No problem, Adri! Let’s try it together: **“Eu me chamo Adri.”** (pronounced /eh‑oo mee SHA‑moo AH‑dri). This means “My name is Adri.”  \n\nNow it’s your turn – please say **“Eu me chamo …”** with your name (you can repeat “Adri” again).  \n\nAfter you write it, we’ll add a short reply: **“Prazer em conhecer você!”** (nice to meet you). Ready?"
+        },
+        {
+          "role": "user",
+          "content": "não My name is Andrey entrem"
+        },
+        {
+          "role": "assistant",
+          "content": "Great effort, Andrey! Let’s keep it simple and use the Portuguese phrase we just learned:\n\n**“Eu me chamo Andrey.”** (pronounced /eh‑oo mee SHA‑moo ahn‑DRAY/)\n\nThat means “My name is Andrey.” Try saying that out loud and type it back to me.\n\nNow we can add a friendly reply: **“Prazer em conhecer você.”** (pronounced /prah‑ZER eng koh‑neh‑SEHR vo‑SEH/) – “Nice to meet you.”  \n\n**Your turn:** Write **“Eu me chamo Andrey. Prazer em conhecer você.”** and then tell me **“De onde você é?”** (pronounced /djee OHN‑jee vo‑SEH eh?) – “Where are you from?” so we can keep the conversation going!"
+        },
+        {
+          "role": "user",
+          "content": "no my name is anthony"
+        },
+        {
+          "role": "assistant",
+          "content": "Great, Anthony! In Portuguese you would say:\n\n**“Eu me chamo Anthony.”** (pronounced /eh‑oo mee SHA‑moo AH‑n‑thi /)\n\nTry typing that sentence exactly as shown. Then we can keep the chat going with a common follow‑up:\n\n**“De onde você é?”** (pronounced /djee OHN‑jee vo‑SEH eh) – “Where are you from?”\n\nIf you’d like, you can answer with something like **“Eu sou dos Estados Unidos.”** (“I’m from the United States”).  \n\nYour turn: write **“Eu me chamo Anthony.”** and then answer **“De onde você é?”** with your own country. 😊"
+        },
+        {
+          "role": "assistant",
+          "content": "Hi there! Today we’ll practice some everyday greetings in Portuguese. Let’s start with **“Tudo bem?”** (pronounced /too‑doo beng/), a friendly way to ask “How are you?” You can use it like: “Tudo bem, eu estou feliz em te conhecer.” Now it’s your turn—reply with **“Tudo bem”** in a short sentence!"
+        },
+        {
+          "role": "assistant",
+          "content": "Hey there! Today we’ll start with a friendly Portuguese greeting: **“Oi”** (pronounced /oy/), which means “hi” – you can say “Oi, tudo bem?” Can you try using “Oi” in a short sentence?"
+        },
+        {
+          "role": "user",
+          "content": "Oi tudo bem"
+        },
+        {
+          "role": "assistant",
+          "content": "Ótimo, Adri, diga “Prazer em conhecer você” (prah‑ZER eng koh‑neh‑SEHR vo‑SEH) para ser educado. De onde você é?"
+        },
+        {
+          "role": "user",
+          "content": "meu nome é Anthony"
+        },
+        {
+          "role": "assistant",
+          "content": "Ótimo, Anthony! Você fala português? (pronounced /vo‑SEH FAH‑lah por‑tu‑GAYSH/)"
+        },
+        {
+          "role": "user",
+          "content": "não não você fala em português"
+        },
+        {
+          "role": "assistant",
+          "content": "Bom, diga “Eu não falo português” (pronounced /eh‑oo nah‑o FAH‑loh por‑tu‑GAYSH/). Agora tente dizer “Eu falo um pouco” (pronounced /eh‑oo FAH‑loh oom POH‑koo/); como fica?"
+        },
+        {
+          "role": "assistant",
+          "content": "Welcome back, today we’ll practice basic greetings in Portuguese. Try saying **“Bom dia”** (pronounced /bohm DEE‑ah), which means “good morning,” and let me know how it sounds."
+        },
+        {
+          "role": "user",
+          "content": "Bom dia"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job saying “Bom dia” (pronounced /bohm DEE‑ah). Now try the friendly follow‑up “Como vai?” (pronounced /KOH‑moo VAH‑ee?) to ask how someone is. Can you write “Como vai?” for me?"
+        },
+        {
+          "role": "user",
+          "content": "como vai"
+        },
+        {
+          "role": "assistant",
+          "content": "Great, “Como vai?” is perfect (pronounced /KOH‑moo VAH‑ee?); you can answer with “Estou bem, obrigado” (/eh‑STOH beng, oh‑bri‑GAH‑doo/). De onde você é?"
+        },
+        {
+          "role": "user",
+          "content": "estou bem obrigado"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job—“Estou bem, obrigado” is perfect. Now try saying “Prazer em conhecer você” (prah‑ZER eng koh‑neh‑SEHR vo‑SEH) and tell me “Qual é a sua cidade?” (pronounced /kwow eh ah SOO‑ah see‑DAH‑jee?)."
+        },
+        {
+          "role": "user",
+          "content": "prazer é conserva você"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice try! The correct phrase is **“Prazer em conhecer você”** (prah‑ZER eng koh‑neh‑SEHR vo‑SEH).  \n\nNow say **“Qual é a sua cidade?”** (kwow eh ah SOO‑ah see‑DAH‑jee) and tell me which city you’re from."
+        },
+        {
+          "role": "user",
+          "content": "Qual é acessório"
+        },
+        {
+          "role": "assistant",
+          "content": "Good try, but the phrase should be “Qual é a sua cidade?” (pronounced /kwow eh ah SOO‑ah see‑DAH‑jee) meaning “What city are you from?”. Now you can answer with “Eu moro em …” (pronounced /eh‑oo MOH‑roo eng …) — can you write “Eu moro em” followed by your city?"
+        },
+        {
+          "role": "user",
+          "content": "Qual é esse horário"
+        },
+        {
+          "role": "assistant",
+          "content": "Good try—normally you’d ask “Que horas são?” (pronounced /keh OH‑rahss sown/). Can you write that question in your next reply?"
+        },
+        {
+          "role": "user",
+          "content": "Qual é cidade"
+        },
+        {
+          "role": "assistant",
+          "content": "Great try, but the correct question is “Qual é a sua cidade?” (pronounced /kwow eh ah SOO‑ah see‑DAH‑jee) – you need the article “a sua” for “your.” Now you can answer with “Eu moro em [city]” (pronounced /eh‑oo MOH‑roo eng …) – could you write that sentence with your city?"
+        },
+        {
+          "role": "user",
+          "content": "Qual é a sua cidade"
+        },
+        {
+          "role": "assistant",
+          "content": "Great, you wrote the question correctly: “Qual é a sua cidade?” (pronounced /kwow eh ah soo‑ah see‑DAH‑jee/).  \nNow you can answer with “Eu moro em …” (pronounced /eh‑oo MOH‑roo eng …/, meaning “I live in …”) – can you try it with your city?"
+        }
+      ],
+      [
+        {
+          "role": "assistant",
+          "content": "Great effort, Andrey! Let’s keep it simple and use the Portuguese phrase we just learned:\n\n**“Eu me chamo Andrey.”** (pronounced /eh‑oo mee SHA‑moo ahn‑DRAY/)\n\nThat means “My name is Andrey.” Try saying that out loud and type it back to me.\n\nNow we can add a friendly reply: **“Prazer em conhecer você.”** (pronounced /prah‑ZER eng koh‑neh‑SEHR vo‑SEH/) – “Nice to meet you.”  \n\n**Your turn:** Write **“Eu me chamo Andrey. Prazer em conhecer você.”** and then tell me **“De onde você é?”** (pronounced /djee OHN‑jee vo‑SEH eh?) – “Where are you from?” so we can keep the conversation going!"
+        },
+        {
+          "role": "user",
+          "content": "no my name is anthony"
+        },
+        {
+          "role": "assistant",
+          "content": "Great, Anthony! In Portuguese you would say:\n\n**“Eu me chamo Anthony.”** (pronounced /eh‑oo mee SHA‑moo AH‑n‑thi /)\n\nTry typing that sentence exactly as shown. Then we can keep the chat going with a common follow‑up:\n\n**“De onde você é?”** (pronounced /djee OHN‑jee vo‑SEH eh) – “Where are you from?”\n\nIf you’d like, you can answer with something like **“Eu sou dos Estados Unidos.”** (“I’m from the United States”).  \n\nYour turn: write **“Eu me chamo Anthony.”** and then answer **“De onde você é?”** with your own country. 😊"
+        },
+        {
+          "role": "assistant",
+          "content": "Hi there! Today we’ll practice some everyday greetings in Portuguese. Let’s start with **“Tudo bem?”** (pronounced /too‑doo beng/), a friendly way to ask “How are you?” You can use it like: “Tudo bem, eu estou feliz em te conhecer.” Now it’s your turn—reply with **“Tudo bem”** in a short sentence!"
+        },
+        {
+          "role": "assistant",
+          "content": "Hey there! Today we’ll start with a friendly Portuguese greeting: **“Oi”** (pronounced /oy/), which means “hi” – you can say “Oi, tudo bem?” Can you try using “Oi” in a short sentence?"
+        },
+        {
+          "role": "user",
+          "content": "Oi tudo bem"
+        },
+        {
+          "role": "assistant",
+          "content": "Ótimo, Adri, diga “Prazer em conhecer você” (prah‑ZER eng koh‑neh‑SEHR vo‑SEH) para ser educado. De onde você é?"
+        },
+        {
+          "role": "user",
+          "content": "meu nome é Anthony"
+        },
+        {
+          "role": "assistant",
+          "content": "Ótimo, Anthony! Você fala português? (pronounced /vo‑SEH FAH‑lah por‑tu‑GAYSH/)"
+        },
+        {
+          "role": "user",
+          "content": "não não você fala em português"
+        },
+        {
+          "role": "assistant",
+          "content": "Bom, diga “Eu não falo português” (pronounced /eh‑oo nah‑o FAH‑loh por‑tu‑GAYSH/). Agora tente dizer “Eu falo um pouco” (pronounced /eh‑oo FAH‑loh oom POH‑koo/); como fica?"
+        },
+        {
+          "role": "assistant",
+          "content": "Welcome back, today we’ll practice basic greetings in Portuguese. Try saying **“Bom dia”** (pronounced /bohm DEE‑ah), which means “good morning,” and let me know how it sounds."
+        },
+        {
+          "role": "user",
+          "content": "Bom dia"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job saying “Bom dia” (pronounced /bohm DEE‑ah). Now try the friendly follow‑up “Como vai?” (pronounced /KOH‑moo VAH‑ee?) to ask how someone is. Can you write “Como vai?” for me?"
+        },
+        {
+          "role": "user",
+          "content": "como vai"
+        },
+        {
+          "role": "assistant",
+          "content": "Great, “Como vai?” is perfect (pronounced /KOH‑moo VAH‑ee?); you can answer with “Estou bem, obrigado” (/eh‑STOH beng, oh‑bri‑GAH‑doo/). De onde você é?"
+        },
+        {
+          "role": "user",
+          "content": "estou bem obrigado"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job—“Estou bem, obrigado” is perfect. Now try saying “Prazer em conhecer você” (prah‑ZER eng koh‑neh‑SEHR vo‑SEH) and tell me “Qual é a sua cidade?” (pronounced /kwow eh ah SOO‑ah see‑DAH‑jee?)."
+        },
+        {
+          "role": "user",
+          "content": "prazer é conserva você"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice try! The correct phrase is **“Prazer em conhecer você”** (prah‑ZER eng koh‑neh‑SEHR vo‑SEH).  \n\nNow say **“Qual é a sua cidade?”** (kwow eh ah SOO‑ah see‑DAH‑jee) and tell me which city you’re from."
+        },
+        {
+          "role": "user",
+          "content": "Qual é acessório"
+        },
+        {
+          "role": "assistant",
+          "content": "Good try, but the phrase should be “Qual é a sua cidade?” (pronounced /kwow eh ah SOO‑ah see‑DAH‑jee) meaning “What city are you from?”. Now you can answer with “Eu moro em …” (pronounced /eh‑oo MOH‑roo eng …) — can you write “Eu moro em” followed by your city?"
+        },
+        {
+          "role": "user",
+          "content": "Qual é esse horário"
+        },
+        {
+          "role": "assistant",
+          "content": "Good try—normally you’d ask “Que horas são?” (pronounced /keh OH‑rahss sown/). Can you write that question in your next reply?"
+        },
+        {
+          "role": "user",
+          "content": "Qual é cidade"
+        },
+        {
+          "role": "assistant",
+          "content": "Great try, but the correct question is “Qual é a sua cidade?” (pronounced /kwow eh ah SOO‑ah see‑DAH‑jee) – you need the article “a sua” for “your.” Now you can answer with “Eu moro em [city]” (pronounced /eh‑oo MOH‑roo eng …) – could you write that sentence with your city?"
+        },
+        {
+          "role": "user",
+          "content": "Qual é a sua cidade"
+        },
+        {
+          "role": "assistant",
+          "content": "Great, you wrote the question correctly: “Qual é a sua cidade?” (pronounced /kwow eh ah soo‑ah see‑DAH‑jee/).  \nNow you can answer with “Eu moro em …” (pronounced /eh‑oo MOH‑roo eng …/, meaning “I live in …”) – can you try it with your city?"
+        },
+        {
+          "role": "user",
+          "content": "Eu moro em Vila Velha"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job saying “Eu moro em Vila Velha” (pronounced /eh‑oo MOH‑roo eng VEE‑lah VEL‑yah/). You can also say “Obrigado” (pronounced /oh‑bri‑GAH‑doo/) to thank someone—can you try saying “Obrigado”?"
+        }
+      ]
+    ],
+    "updated_at": "2026-02-27T22:21:21.755409-05:00"
   },
   "4268ac1e-08d9-4fba-bd5f-c94266ab2778:es:3": {
-    "messages": [
-      {
-        "role": "assistant",
-        "content": "¡Hola! Me alegra mucho verte por aquí. Hoy podemos charlar sobre esas pequeñas cosas del día a día, como cómo nos saludamos o qué decimos al encontrarnos con amigos. ¿Qué sueles decir cuando te encuentras con alguien que no ves hace tiempo?"
-      }
-    ],
+    "sessions": null,
     "updated_at": "2026-02-27T15:05:43.602384-05:00"
   },
   "883424d8-2a68-4024-a43e-3db30af65174:es:5": {
-    "messages": [
-      {
-        "role": "assistant",
-        "content": "¡Hola! Qué gusto verte por aquí, ¿cómo llevas la rutina de estos días con el clima que está cambiando de repente? Cuéntame, ¿qué pequeño placer cotidiano te ha sacado una sonrisa últimamente?"
-      }
-    ],
+    "sessions": null,
     "updated_at": "2026-02-27T15:38:29.004407-05:00"
   }
 }

@@ -113,6 +113,18 @@ func (h *TTSHandler) voiceFor(lang string) string {
 		return h.cfg.ElevenLabsVoiceES
 	case "pt":
 		return h.cfg.ElevenLabsVoicePT
+	case "fr":
+		return h.cfg.ElevenLabsVoiceFR
+	case "de":
+		return h.cfg.ElevenLabsVoiceDE
+	case "ja":
+		return h.cfg.ElevenLabsVoiceJA
+	case "ru":
+		return h.cfg.ElevenLabsVoiceRU
+	case "ro":
+		return h.cfg.ElevenLabsVoiceRO
+	case "zh":
+		return h.cfg.ElevenLabsVoiceZH
 	default:
 		return h.cfg.ElevenLabsVoiceIT
 	}

@@ -4,8 +4,11 @@ requireAuth();
 const params    = new URLSearchParams(window.location.search);
 const sessionId = params.get('session');
 const language  = params.get('language') || 'it';
+const level     = parseInt(params.get('level') || '3', 10);
 const topic     = params.get('topic')    || 'general';
 const topicName = params.get('topicName') || 'General Conversation';
+
+const TTS_PLAYBACK_RATE = 1.0;
 
 if (!sessionId) window.location.href = '/dashboard.html';
 
@@ -30,8 +33,17 @@ const LANG_META = {
   it: { flag: '🇮🇹', name: 'Italian',    bcp47: 'it-IT', avatar: '🤌' },
   es: { flag: '🇪🇸', name: 'Spanish',    bcp47: 'es-ES', avatar: '💃' },
   pt: { flag: '🇧🇷', name: 'Portuguese', bcp47: 'pt-BR', avatar: '🎵' },
+  fr: { flag: '🇫🇷', name: 'French',     bcp47: 'fr-FR', avatar: '🥐' },
+  de: { flag: '🇩🇪', name: 'German',     bcp47: 'de-DE', avatar: '🎻' },
+  ja: { flag: '🇯🇵', name: 'Japanese',   bcp47: 'ja-JP', avatar: '🌸' },
+  zh: { flag: '🇨🇳', name: 'Chinese',    bcp47: 'zh-CN', avatar: '🐉' },
+  ro: { flag: '🇷🇴', name: 'Romanian',   bcp47: 'ro-RO', avatar: '🏰' },
+  ru: { flag: '🇷🇺', name: 'Russian',    bcp47: 'ru-RU', avatar: '🎭' },
+  sq: { flag: '🇦🇱', name: 'Albanian',   bcp47: 'sq-AL', avatar: '🦅' },
+  ar: { flag: '🇸🇦', name: 'Arabic',     bcp47: 'ar-SA', avatar: '🌙' },
 };
-const langMeta  = LANG_META[language] || LANG_META.it;
+// Fallback: use the raw language code so the browser still tries the right language
+const langMeta = LANG_META[language] || { flag: '🌐', name: language, bcp47: language, avatar: '💬' };
 const TOPIC_ICONS = {
   'general':'💬','daily-recap':'📅','future-plans':'🗓️','travel':'✈️',
   'food-dining':'🍽️','shopping':'🛍️','family':'👨‍👩‍👧','health':'🏥',
@@ -276,6 +288,13 @@ async function streamAIResponse(message, isGreet) {
       try { data = JSON.parse(raw); } catch { continue; }
 
       if (data.done) {
+        if (!fullText) {
+          // AI returned nothing — clear loading state and show retry prompt
+          document.getElementById('loadingState')?.remove();
+          document.getElementById('streaming-msg')?.remove();
+          appendMessage('assistant', '⚠ No response received. Please try again.');
+          return;
+        }
         finalizeStreamingMessage(fullText);
         // Schedule mic auto-restart once all TTS audio for this response ends.
         if (ttsEnabled) {
@@ -382,8 +401,22 @@ function stopCurrentAudio() {
     .forEach(b => { b.textContent = '🔊 Play'; b.classList.remove('playing'); });
 }
 
+/* ── TTS text cleanup ───────────────────────────────────────────────────────── */
+// Strip annotations that should be read visually but not spoken aloud:
+//   (pronunciation hints like "oh-LAH")
+//   [grammar/translation notes like "I like food"]
+// Also collapse any resulting double spaces.
+function cleanForTTS(text) {
+  return text
+    .replace(/\([^)]*\)/g, '')   // remove (parenthetical content)
+    .replace(/\[[^\]]*\]/g, '')  // remove [bracketed content]
+    .replace(/  +/g, ' ')
+    .trim();
+}
+
 /* ── TTS playback ───────────────────────────────────────────────────────────── */
 async function playTTS(text, onEnded) {
+  text = cleanForTTS(text);
   stopCurrentAudio();
 
   const indicator = document.getElementById('audioIndicator');
@@ -405,6 +438,7 @@ async function playTTS(text, onEnded) {
     const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
     const source = ctx.createBufferSource();
     source.buffer = audioBuffer;
+    source.playbackRate.value = TTS_PLAYBACK_RATE;
     source.connect(ctx.destination);
     currentSource = source;
 
@@ -432,6 +466,7 @@ async function playTTS(text, onEnded) {
 }
 
 async function autoPlayTTS(text) {
+  text = cleanForTTS(text);
   // Only play the first ~400 chars to keep latency low for long responses
   const excerpt = text.length > 400 ? text.slice(0, text.lastIndexOf(' ', 400)) + '…' : text;
   await playTTS(excerpt);
@@ -440,6 +475,7 @@ async function autoPlayTTS(text) {
 // Fetches and decodes TTS audio without playing it yet.
 // Returns an AudioBuffer ready to hand to playDecodedAudio, or null on error.
 async function prefetchTTS(text) {
+  text = cleanForTTS(text);
   const excerpt = text.length > 350 ? text.slice(0, text.lastIndexOf(' ', 350) || 350) + '…' : text;
   try {
     const res = await API.binary('/api/tts', { text: excerpt, language });
@@ -457,6 +493,7 @@ function playDecodedAudio(audioBuffer) {
   const ctx = getAudioCtx();
   const source = ctx.createBufferSource();
   source.buffer = audioBuffer;
+  source.playbackRate.value = TTS_PLAYBACK_RATE;
   source.connect(ctx.destination);
   currentSource = source;
   source.onended = () => {
@@ -550,14 +587,20 @@ function initSpeechRecognition() {
   rec.lang = langMeta.bcp47;
   rec.continuous = true;      // keeps mic open on mobile; user taps to stop
   rec.interimResults = true;  // live transcript preview while speaking
-  rec.maxAlternatives = 1;
+  rec.maxAlternatives = 3;    // browser returns up to 3 alternatives; we pick the best
 
   rec.onresult = (event) => {
     if (!isRecording) return;
     let final = '';
     let interim = '';
     for (let i = event.resultIndex; i < event.results.length; i++) {
-      const t = event.results[i][0].transcript;
+      // Pick the alternative with the highest confidence score
+      let t = event.results[i][0].transcript;
+      let bestConf = event.results[i][0].confidence || 0;
+      for (let j = 1; j < event.results[i].length; j++) {
+        const conf = event.results[i][j].confidence || 0;
+        if (conf > bestConf) { bestConf = conf; t = event.results[i][j].transcript; }
+      }
       if (event.results[i].isFinal) final += t;
       else interim += t;
     }
@@ -618,6 +661,9 @@ function toggleRecording() {
       sendMessage(text);
     }
   } else {
+    // Manual mic press — stop any playing TTS so the user can speak freely
+    stopCurrentAudio();
+    onAllAudioDone = null; // cancel any pending auto-restart that would fight the mic
     startRecording();
   }
 }

@@ -18,6 +18,12 @@ type Config struct {
 	ElevenLabsVoiceIT string
 	ElevenLabsVoiceES string
 	ElevenLabsVoicePT string
+	ElevenLabsVoiceFR string
+	ElevenLabsVoiceDE string
+	ElevenLabsVoiceJA string
+	ElevenLabsVoiceRU string
+	ElevenLabsVoiceRO string
+	ElevenLabsVoiceZH string
 	ElevenLabsModel   string
 
 	StripeSecretKey     string
@@ -36,10 +42,16 @@ func Load() *Config {
 		IONOSModel:   getEnv("IONOS_MODEL", "mistral-small-24b"),
 
 		ElevenLabsAPIKey: getEnvRequired("ELEVENLABS_API_KEY"),
-		// Default to ElevenLabs multilingual voice (Rachel)
+		// Default to ElevenLabs multilingual voice (Rachel) — override with native voices
 		ElevenLabsVoiceIT: getEnv("ELEVENLABS_VOICE_IT", "21m00Tcm4TlvDq8ikWAM"),
 		ElevenLabsVoiceES: getEnv("ELEVENLABS_VOICE_ES", "21m00Tcm4TlvDq8ikWAM"),
 		ElevenLabsVoicePT: getEnv("ELEVENLABS_VOICE_PT", "21m00Tcm4TlvDq8ikWAM"),
+		ElevenLabsVoiceFR: getEnv("ELEVENLABS_VOICE_FR", "21m00Tcm4TlvDq8ikWAM"),
+		ElevenLabsVoiceDE: getEnv("ELEVENLABS_VOICE_DE", "21m00Tcm4TlvDq8ikWAM"),
+		ElevenLabsVoiceJA: getEnv("ELEVENLABS_VOICE_JA", "21m00Tcm4TlvDq8ikWAM"),
+		ElevenLabsVoiceRU: getEnv("ELEVENLABS_VOICE_RU", "21m00Tcm4TlvDq8ikWAM"),
+		ElevenLabsVoiceRO: getEnv("ELEVENLABS_VOICE_RO", "21m00Tcm4TlvDq8ikWAM"),
+		ElevenLabsVoiceZH: getEnv("ELEVENLABS_VOICE_ZH", "21m00Tcm4TlvDq8ikWAM"),
 		ElevenLabsModel:   getEnv("ELEVENLABS_MODEL", "eleven_multilingual_v2"),
 
 		StripeSecretKey:     getEnv("STRIPE_SECRET_KEY", ""),
