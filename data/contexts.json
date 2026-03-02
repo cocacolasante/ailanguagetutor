@@ -1,4 +1,487 @@
 {
+  "20e5feba-3ac1-4017-9422-0f6dad617e1b:es:1": {
+    "sessions": [
+      [
+        {
+          "role": "assistant",
+          "content": "Let's start with a friendly greeting: **Hola** (oh‑lah). You can say, “Hola, me llamo Ana.”  \n\nNow, can you try saying **Hola**?"
+        },
+        {
+          "role": "user",
+          "content": "Hola mi amor"
+        },
+        {
+          "role": "assistant",
+          "content": "Great try! Just say **Hola, ¿cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”.  \n\nCan you try saying **¿Cómo estás?**?"
+        },
+        {
+          "role": "user",
+          "content": "Hola Me llamo Anthony cómo está"
+        },
+        {
+          "role": "assistant",
+          "content": "Great effort! Say **¿Cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”  \n\nCan you try saying **¿Cómo estás?**?"
+        },
+        {
+          "role": "user",
+          "content": "Cómo estás"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice work! To answer, you can say **Estoy bien, gracias** (ehs-TOY byen, GRA-see-as).  \n\nNow, can you try saying **¿Cómo estás?** again?"
+        },
+        {
+          "role": "user",
+          "content": "estoy bien gracias Y tú"
+        },
+        {
+          "role": "assistant",
+          "content": "Great, you said “Estoy bien, gracias, ¿y tú?” – just add the question marks and a tiny pause.  \n\nNow try **¿De dónde eres?** (deh DOHN‑deh EH‑res) like in “Soy de Estados Unidos.” How would you ask that?"
+        },
+        {
+          "role": "user",
+          "content": "de dónde eres soy de Estados Unidos"
+        },
+        {
+          "role": "assistant",
+          "content": "Great try! Say **¿De dónde eres?** (deh DÓN‑deh EH‑res) and then **Soy de Estados Unidos** (SOY deh ehs‑TAH‑dos oo‑NEE‑dos).  \nCan you repeat the question?"
+        },
+        {
+          "role": "user",
+          "content": "de dónde eres"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job! Now you can ask **¿Qué haces?** (keh AH‑ses) to mean “What do you do?”  \n\nCan you try saying **¿Qué haces?**?"
+        },
+        {
+          "role": "user",
+          "content": "qué haces"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Muy bien! You can answer **¿Qué haces?** with **Soy estudiante** (SOY es‑tu‑DEN‑te).  \nNow, can you tell me what you do in Spanish?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo para una Company y Cloud computing"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice effort! To say “I work for a company” you can use **Trabajo en una empresa** (tra-BA-ho en oo‑na em‑PRE-sa).  \n\nCan you try saying **Trabajo en una empresa**?"
+        }
+      ],
+      [
+        {
+          "role": "assistant",
+          "content": "Let's start with a friendly greeting: **Hola** (oh‑lah). You can say, “Hola, me llamo Ana.”  \n\nNow, can you try saying **Hola**?"
+        },
+        {
+          "role": "user",
+          "content": "Hola mi amor"
+        },
+        {
+          "role": "assistant",
+          "content": "Great try! Just say **Hola, ¿cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”.  \n\nCan you try saying **¿Cómo estás?**?"
+        },
+        {
+          "role": "user",
+          "content": "Hola Me llamo Anthony cómo está"
+        },
+        {
+          "role": "assistant",
+          "content": "Great effort! Say **¿Cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”  \n\nCan you try saying **¿Cómo estás?**?"
+        },
+        {
+          "role": "user",
+          "content": "Cómo estás"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice work! To answer, you can say **Estoy bien, gracias** (ehs-TOY byen, GRA-see-as).  \n\nNow, can you try saying **¿Cómo estás?** again?"
+        },
+        {
+          "role": "user",
+          "content": "estoy bien gracias Y tú"
+        },
+        {
+          "role": "assistant",
+          "content": "Great, you said “Estoy bien, gracias, ¿y tú?” – just add the question marks and a tiny pause.  \n\nNow try **¿De dónde eres?** (deh DOHN‑deh EH‑res) like in “Soy de Estados Unidos.” How would you ask that?"
+        },
+        {
+          "role": "user",
+          "content": "de dónde eres soy de Estados Unidos"
+        },
+        {
+          "role": "assistant",
+          "content": "Great try! Say **¿De dónde eres?** (deh DÓN‑deh EH‑res) and then **Soy de Estados Unidos** (SOY deh ehs‑TAH‑dos oo‑NEE‑dos).  \nCan you repeat the question?"
+        },
+        {
+          "role": "user",
+          "content": "de dónde eres"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job! Now you can ask **¿Qué haces?** (keh AH‑ses) to mean “What do you do?”  \n\nCan you try saying **¿Qué haces?**?"
+        },
+        {
+          "role": "user",
+          "content": "qué haces"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Muy bien! You can answer **¿Qué haces?** with **Soy estudiante** (SOY es‑tu‑DEN‑te).  \nNow, can you tell me what you do in Spanish?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo para una Company y Cloud computing"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice effort! To say “I work for a company” you can use **Trabajo en una empresa** (tra-BA-ho en oo‑na em‑PRE-sa).  \n\nCan you try saying **Trabajo en una empresa**?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo en una empresa"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job, “trabajo en una empresa” is perfect! Now try **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho) – can you say that?"
+        }
+      ],
+      [
+        {
+          "role": "assistant",
+          "content": "Let's start with a friendly greeting: **Hola** (oh‑lah). You can say, “Hola, me llamo Ana.”  \n\nNow, can you try saying **Hola**?"
+        },
+        {
+          "role": "user",
+          "content": "Hola mi amor"
+        },
+        {
+          "role": "assistant",
+          "content": "Great try! Just say **Hola, ¿cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”.  \n\nCan you try saying **¿Cómo estás?**?"
+        },
+        {
+          "role": "user",
+          "content": "Hola Me llamo Anthony cómo está"
+        },
+        {
+          "role": "assistant",
+          "content": "Great effort! Say **¿Cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”  \n\nCan you try saying **¿Cómo estás?**?"
+        },
+        {
+          "role": "user",
+          "content": "Cómo estás"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice work! To answer, you can say **Estoy bien, gracias** (ehs-TOY byen, GRA-see-as).  \n\nNow, can you try saying **¿Cómo estás?** again?"
+        },
+        {
+          "role": "user",
+          "content": "estoy bien gracias Y tú"
+        },
+        {
+          "role": "assistant",
+          "content": "Great, you said “Estoy bien, gracias, ¿y tú?” – just add the question marks and a tiny pause.  \n\nNow try **¿De dónde eres?** (deh DOHN‑deh EH‑res) like in “Soy de Estados Unidos.” How would you ask that?"
+        },
+        {
+          "role": "user",
+          "content": "de dónde eres soy de Estados Unidos"
+        },
+        {
+          "role": "assistant",
+          "content": "Great try! Say **¿De dónde eres?** (deh DÓN‑deh EH‑res) and then **Soy de Estados Unidos** (SOY deh ehs‑TAH‑dos oo‑NEE‑dos).  \nCan you repeat the question?"
+        },
+        {
+          "role": "user",
+          "content": "de dónde eres"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job! Now you can ask **¿Qué haces?** (keh AH‑ses) to mean “What do you do?”  \n\nCan you try saying **¿Qué haces?**?"
+        },
+        {
+          "role": "user",
+          "content": "qué haces"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Muy bien! You can answer **¿Qué haces?** with **Soy estudiante** (SOY es‑tu‑DEN‑te).  \nNow, can you tell me what you do in Spanish?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo para una Company y Cloud computing"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice effort! To say “I work for a company” you can use **Trabajo en una empresa** (tra-BA-ho en oo‑na em‑PRE-sa).  \n\nCan you try saying **Trabajo en una empresa**?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo en una empresa"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job, “trabajo en una empresa” is perfect! Now try **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho) – can you say that?"
+        },
+        {
+          "role": "user",
+          "content": "te gusta tu trabajo"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job! Just add the opening and closing question marks: **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho).  \n\nNow try **¿Qué haces en tu tiempo libre?** (KEH AH‑ses en too TYEM‑po LEE‑bre) – can you say that?"
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "content": "de dónde eres"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job! Now you can ask **¿Qué haces?** (keh AH‑ses) to mean “What do you do?”  \n\nCan you try saying **¿Qué haces?**?"
+        },
+        {
+          "role": "user",
+          "content": "qué haces"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Muy bien! You can answer **¿Qué haces?** with **Soy estudiante** (SOY es‑tu‑DEN‑te).  \nNow, can you tell me what you do in Spanish?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo para una Company y Cloud computing"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice effort! To say “I work for a company” you can use **Trabajo en una empresa** (tra-BA-ho en oo‑na em‑PRE-sa).  \n\nCan you try saying **Trabajo en una empresa**?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo en una empresa"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job, “trabajo en una empresa” is perfect! Now try **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho) – can you say that?"
+        },
+        {
+          "role": "assistant",
+          "content": "Let's start with a friendly greeting: **Hola** (oh‑lah). You can say, “Hola, me llamo Ana.”  \n\nNow, can you try saying **Hola**?"
+        },
+        {
+          "role": "user",
+          "content": "Hola mi amor"
+        },
+        {
+          "role": "assistant",
+          "content": "Great try! Just say **Hola, ¿cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”.  \n\nCan you try saying **¿Cómo estás?**?"
+        },
+        {
+          "role": "user",
+          "content": "Hola Me llamo Anthony cómo está"
+        },
+        {
+          "role": "assistant",
+          "content": "Great effort! Say **¿Cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”  \n\nCan you try saying **¿Cómo estás?**?"
+        },
+        {
+          "role": "user",
+          "content": "Cómo estás"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice work! To answer, you can say **Estoy bien, gracias** (ehs-TOY byen, GRA-see-as).  \n\nNow, can you try saying **¿Cómo estás?** again?"
+        },
+        {
+          "role": "user",
+          "content": "estoy bien gracias Y tú"
+        },
+        {
+          "role": "assistant",
+          "content": "Great, you said “Estoy bien, gracias, ¿y tú?” – just add the question marks and a tiny pause.  \n\nNow try **¿De dónde eres?** (deh DOHN‑deh EH‑res) like in “Soy de Estados Unidos.” How would you ask that?"
+        },
+        {
+          "role": "user",
+          "content": "de dónde eres soy de Estados Unidos"
+        },
+        {
+          "role": "assistant",
+          "content": "Great try! Say **¿De dónde eres?** (deh DÓN‑deh EH‑res) and then **Soy de Estados Unidos** (SOY deh ehs‑TAH‑dos oo‑NEE‑dos).  \nCan you repeat the question?"
+        },
+        {
+          "role": "user",
+          "content": "de dónde eres"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job! Now you can ask **¿Qué haces?** (keh AH‑ses) to mean “What do you do?”  \n\nCan you try saying **¿Qué haces?**?"
+        },
+        {
+          "role": "user",
+          "content": "qué haces"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Muy bien! You can answer **¿Qué haces?** with **Soy estudiante** (SOY es‑tu‑DEN‑te).  \nNow, can you tell me what you do in Spanish?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo para una Company y Cloud computing"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice effort! To say “I work for a company” you can use **Trabajo en una empresa** (tra-BA-ho en oo‑na em‑PRE-sa).  \n\nCan you try saying **Trabajo en una empresa**?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo en una empresa"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job, “trabajo en una empresa” is perfect! Now try **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho) – can you say that?"
+        },
+        {
+          "role": "user",
+          "content": "te gusta tu trabajo"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job! Just add the opening and closing question marks: **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho).  \n\nNow try **¿Qué haces en tu tiempo libre?** (KEH AH‑ses en too TYEM‑po LEE‑bre) – can you say that?"
+        },
+        {
+          "role": "assistant",
+          "content": "Hi Anthony! Let’s talk about cloud computing and learn the word **nube** (pronounced NOO‑beh) – you can say *Trabajo con la nube* (I work with the cloud).  \nCan you try saying **nube**?"
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "content": "qué haces"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Muy bien! You can answer **¿Qué haces?** with **Soy estudiante** (SOY es‑tu‑DEN‑te).  \nNow, can you tell me what you do in Spanish?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo para una Company y Cloud computing"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice effort! To say “I work for a company” you can use **Trabajo en una empresa** (tra-BA-ho en oo‑na em‑PRE-sa).  \n\nCan you try saying **Trabajo en una empresa**?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo en una empresa"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job, “trabajo en una empresa” is perfect! Now try **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho) – can you say that?"
+        },
+        {
+          "role": "assistant",
+          "content": "Let's start with a friendly greeting: **Hola** (oh‑lah). You can say, “Hola, me llamo Ana.”  \n\nNow, can you try saying **Hola**?"
+        },
+        {
+          "role": "user",
+          "content": "Hola mi amor"
+        },
+        {
+          "role": "assistant",
+          "content": "Great try! Just say **Hola, ¿cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”.  \n\nCan you try saying **¿Cómo estás?**?"
+        },
+        {
+          "role": "user",
+          "content": "Hola Me llamo Anthony cómo está"
+        },
+        {
+          "role": "assistant",
+          "content": "Great effort! Say **¿Cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”  \n\nCan you try saying **¿Cómo estás?**?"
+        },
+        {
+          "role": "user",
+          "content": "Cómo estás"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice work! To answer, you can say **Estoy bien, gracias** (ehs-TOY byen, GRA-see-as).  \n\nNow, can you try saying **¿Cómo estás?** again?"
+        },
+        {
+          "role": "user",
+          "content": "estoy bien gracias Y tú"
+        },
+        {
+          "role": "assistant",
+          "content": "Great, you said “Estoy bien, gracias, ¿y tú?” – just add the question marks and a tiny pause.  \n\nNow try **¿De dónde eres?** (deh DOHN‑deh EH‑res) like in “Soy de Estados Unidos.” How would you ask that?"
+        },
+        {
+          "role": "user",
+          "content": "de dónde eres soy de Estados Unidos"
+        },
+        {
+          "role": "assistant",
+          "content": "Great try! Say **¿De dónde eres?** (deh DÓN‑deh EH‑res) and then **Soy de Estados Unidos** (SOY deh ehs‑TAH‑dos oo‑NEE‑dos).  \nCan you repeat the question?"
+        },
+        {
+          "role": "user",
+          "content": "de dónde eres"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job! Now you can ask **¿Qué haces?** (keh AH‑ses) to mean “What do you do?”  \n\nCan you try saying **¿Qué haces?**?"
+        },
+        {
+          "role": "user",
+          "content": "qué haces"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Muy bien! You can answer **¿Qué haces?** with **Soy estudiante** (SOY es‑tu‑DEN‑te).  \nNow, can you tell me what you do in Spanish?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo para una Company y Cloud computing"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice effort! To say “I work for a company” you can use **Trabajo en una empresa** (tra-BA-ho en oo‑na em‑PRE-sa).  \n\nCan you try saying **Trabajo en una empresa**?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo en una empresa"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job, “trabajo en una empresa” is perfect! Now try **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho) – can you say that?"
+        },
+        {
+          "role": "user",
+          "content": "te gusta tu trabajo"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job! Just add the opening and closing question marks: **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho).  \n\nNow try **¿Qué haces en tu tiempo libre?** (KEH AH‑ses en too TYEM‑po LEE‑bre) – can you say that?"
+        },
+        {
+          "role": "assistant",
+          "content": "Hi Anthony! Let’s talk about cloud computing and learn the word **nube** (pronounced NOO‑beh) – you can say *Trabajo con la nube* (I work with the cloud).  \nCan you try saying **nube**?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo con la nube"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job, “trabajo con la nube” is perfect. Now try saying **Uso un servidor en la nube** (OO‑soh oon ser‑bee‑DOHR en la NOO‑beh); can you repeat that?"
+        }
+      ]
+    ],
+    "updated_at": "2026-02-27T22:38:17.55561-05:00"
+  },
   "20e5feba-3ac1-4017-9422-0f6dad617e1b:es:2": {
     "sessions": [
       [
@@ -20,9 +503,99 @@
           "role": "assistant",
           "content": "¡Hola, Anthony, mucho gusto! Hoy estoy tomando un café en la terraza y pensando en qué hacer. (Corrección: usa signos de interrogación y la tilde en “¿cómo?” y “¿Qué haces hoy?”) ¿Te gustaría ir al parque más tarde?"
         }
+      ],
+      [
+        {
+          "role": "assistant",
+          "content": "¡Hola y bienvenido a nuestra práctica, today we’ll use palabras como saludo = greeting, charla = chat, y clima = weather. Imagina que estás en la parada del bus y ves a un vecino; ¿qué dirías para iniciar una pequeña charla?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola y bienvenido a nuestra práctica, today we’ll use palabras como saludo = greeting, charla = chat, y clima = weather. Imagina que estás en la parada del bus y ves a un vecino; ¿qué dirías para iniciar una pequeña charla?"
+        },
+        {
+          "role": "user",
+          "content": "Hola cómo estás Me llamo Anthony mucho gusto Qué haces hoy"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony, mucho gusto! Hoy estoy tomando un café en la terraza y pensando en qué hacer. (Corrección: usa signos de interrogación y la tilde en “¿cómo?” y “¿Qué haces hoy?”) ¿Te gustaría ir al parque más tarde?"
+        },
+        {
+          "role": "assistant",
+          "content": "Hey Anthony, ¿cómo estás? Hoy vamos a practicar en una **café** (coffee shop) y usar la palabra **pedido** (order). Imagínate que entras al café, ¿qué le dices al barista para hacer tu pedido?"
+        }
+      ],
+      [
+        {
+          "role": "assistant",
+          "content": "¡Hola y bienvenido a nuestra práctica, today we’ll use palabras como saludo = greeting, charla = chat, y clima = weather. Imagina que estás en la parada del bus y ves a un vecino; ¿qué dirías para iniciar una pequeña charla?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola y bienvenido a nuestra práctica, today we’ll use palabras como saludo = greeting, charla = chat, y clima = weather. Imagina que estás en la parada del bus y ves a un vecino; ¿qué dirías para iniciar una pequeña charla?"
+        },
+        {
+          "role": "user",
+          "content": "Hola cómo estás Me llamo Anthony mucho gusto Qué haces hoy"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony, mucho gusto! Hoy estoy tomando un café en la terraza y pensando en qué hacer. (Corrección: usa signos de interrogación y la tilde en “¿cómo?” y “¿Qué haces hoy?”) ¿Te gustaría ir al parque más tarde?"
+        },
+        {
+          "role": "assistant",
+          "content": "Hey Anthony, ¿cómo estás? Hoy vamos a practicar en una **café** (coffee shop) y usar la palabra **pedido** (order). Imagínate que entras al café, ¿qué le dices al barista para hacer tu pedido?"
+        },
+        {
+          "role": "user",
+          "content": "para mi pedido a mí puedes dar un café"
+        },
+        {
+          "role": "assistant",
+          "content": "Claro, te preparo un café; dime si lo quieres en **tamaño** grande o pequeño (size).  \n¿Prefieres con leche o solo?  \n**Corrección:** se dice “¿Me puedes dar un café?” en lugar de “a mí puedes dar un café”."
+        }
+      ],
+      [
+        {
+          "role": "assistant",
+          "content": "¡Hola y bienvenido a nuestra práctica, today we’ll use palabras como saludo = greeting, charla = chat, y clima = weather. Imagina que estás en la parada del bus y ves a un vecino; ¿qué dirías para iniciar una pequeña charla?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola y bienvenido a nuestra práctica, today we’ll use palabras como saludo = greeting, charla = chat, y clima = weather. Imagina que estás en la parada del bus y ves a un vecino; ¿qué dirías para iniciar una pequeña charla?"
+        },
+        {
+          "role": "user",
+          "content": "Hola cómo estás Me llamo Anthony mucho gusto Qué haces hoy"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony, mucho gusto! Hoy estoy tomando un café en la terraza y pensando en qué hacer. (Corrección: usa signos de interrogación y la tilde en “¿cómo?” y “¿Qué haces hoy?”) ¿Te gustaría ir al parque más tarde?"
+        },
+        {
+          "role": "assistant",
+          "content": "Hey Anthony, ¿cómo estás? Hoy vamos a practicar en una **café** (coffee shop) y usar la palabra **pedido** (order). Imagínate que entras al café, ¿qué le dices al barista para hacer tu pedido?"
+        },
+        {
+          "role": "user",
+          "content": "para mi pedido a mí puedes dar un café"
+        },
+        {
+          "role": "assistant",
+          "content": "Claro, te preparo un café; dime si lo quieres en **tamaño** grande o pequeño (size).  \n¿Prefieres con leche o solo?  \n**Corrección:** se dice “¿Me puedes dar un café?” en lugar de “a mí puedes dar un café”."
+        },
+        {
+          "role": "user",
+          "content": "así una coffee negro no leche"
+        },
+        {
+          "role": "assistant",
+          "content": "Entiendo, un café negro sin leche; ¿te gustaría añadir azúcar a tu taza?  \n(Corrección: se dice “un café negro sin leche”, no “coffee negro no leche”).  \n¿Quieres que sea grande o pequeño?"
+        }
       ]
     ],
-    "updated_at": "2026-02-27T22:22:25.163806-05:00"
+    "updated_at": "2026-02-27T22:37:44.652167-05:00"
   },
   "20e5feba-3ac1-4017-9422-0f6dad617e1b:es:3": {
     "sessions": null,
@@ -642,6 +1215,17 @@
       ]
     ],
     "updated_at": "2026-02-27T22:21:21.755409-05:00"
+  },
+  "20e5feba-3ac1-4017-9422-0f6dad617e1b:pt:2": {
+    "sessions": [
+      [
+        {
+          "role": "assistant",
+          "content": "Oi! Vamos nos encontrar para um café (coffee) e um pão (bread) na padaria da esquina amanhã? Imagine que você vê seu amigo lá; o que você diria para cumprimentá‑lo?"
+        }
+      ]
+    ],
+    "updated_at": "2026-02-27T22:33:18.673521-05:00"
   },
   "4268ac1e-08d9-4fba-bd5f-c94266ab2778:es:3": {
     "sessions": null,
