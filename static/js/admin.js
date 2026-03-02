@@ -85,6 +85,12 @@ function renderUsers() {
   container.innerHTML = `<div class="admin-user-list">${users.map(u => userRow(u)).join('')}</div>`;
 }
 
+function emailBadge(verified) {
+  return verified
+    ? '<span class="badge badge-green" style="font-size:0.7rem">✓ Verified</span>'
+    : '<span class="badge badge-danger" style="font-size:0.7rem">✕ Unverified</span>';
+}
+
 function userRow(u) {
   const isSelf = u.id === currentUser.id;
   const status = u.subscription_status || '';
@@ -114,6 +120,7 @@ function userRow(u) {
       </div>
       <div class="admin-user-status">
         ${subBadge(status, u.trial_ends_at)}
+        ${emailBadge(u.email_verified)}
       </div>
       <div class="admin-user-action admin-user-action--multi">
         ${actions}

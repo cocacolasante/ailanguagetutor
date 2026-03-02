@@ -44,6 +44,10 @@ type User struct {
 	Approved     bool       `json:"approved"`
 	CreatedAt    time.Time  `json:"created_at"`
 
+	EmailVerified    bool   `json:"email_verified"`
+	EmailVerifyToken string `json:"email_verify_token,omitempty"`
+	PendingPlan      string `json:"pending_plan,omitempty"`
+
 	StripeCustomerID     string     `json:"stripe_customer_id,omitempty"`
 	StripeSubscriptionID string     `json:"stripe_subscription_id,omitempty"`
 	SubscriptionStatus   string     `json:"subscription_status,omitempty"`
@@ -115,7 +119,7 @@ func NewUserStore() *UserStore {
 	return us
 }
 
-func (us *UserStore) Create(email, username, password string) (*User, error) {
+func (us *UserStore) Create(email, username, password, pendingPlan string) (*User, error) {
 	us.mu.Lock()
 	defer us.mu.Unlock()
 
@@ -128,15 +132,24 @@ func (us *UserStore) Create(email, username, password string) (*User, error) {
 		return nil, err
 	}
 
+	isAdmin := email == AdminEmail
+	verifyToken := ""
+	if !isAdmin {
+		verifyToken = uuid.New().String()
+	}
+
 	u := &User{
 		ID:           uuid.New().String(),
 		Email:        email,
 		Username:     username,
 		PasswordHash: string(hash),
-		IsAdmin:            email == AdminEmail,
-		Approved:           email == AdminEmail,
+		IsAdmin:            isAdmin,
+		Approved:           isAdmin,
+		EmailVerified:      isAdmin,
+		EmailVerifyToken:   verifyToken,
+		PendingPlan:        pendingPlan,
 		SubscriptionStatus: func() string {
-			if email == AdminEmail {
+			if isAdmin {
 				return SubFree
 			}
 			return ""
@@ -211,6 +224,35 @@ func (us *UserStore) SetApproved(id string, approved bool) error {
 	return nil
 }
 
+func (us *UserStore) GetByEmailToken(token string) (*User, error) {
+	if token == "" {
+		return nil, ErrUserNotFound
+	}
+	us.mu.RLock()
+	defer us.mu.RUnlock()
+
+	for _, u := range us.byID {
+		if u.EmailVerifyToken == token {
+			return u, nil
+		}
+	}
+	return nil, ErrUserNotFound
+}
+
+func (us *UserStore) SetEmailVerified(id string) error {
+	us.mu.Lock()
+	defer us.mu.Unlock()
+
+	u, exists := us.byID[id]
+	if !exists {
+		return ErrUserNotFound
+	}
+	u.EmailVerified = true
+	u.EmailVerifyToken = ""
+	us.save()
+	return nil
+}
+
 func (us *UserStore) GetByStripeCustomerID(customerID string) (*User, error) {
 	us.mu.RLock()
 	defer us.mu.RUnlock()
@@ -240,12 +282,13 @@ func (us *UserStore) UpdateSubscription(userID, customerID, subscriptionID, stat
 	}
 	u.SubscriptionStatus = status
 	u.TrialEndsAt = trialEndsAt
-	// Only update Approved when a real status is being set (empty means we're
-	// just persisting a Stripe customer ID, not changing subscription state).
+	// Only update Approved/EmailVerified when a real status is being set (empty
+	// means we're just persisting a Stripe customer ID, not changing subscription state).
 	if status != "" {
 		switch status {
 		case SubTrialing, SubActive, SubFree, SubPastDue, SubCancelled:
 			u.Approved = true
+			u.EmailVerified = true // Stripe checkout proves email reachability
 		default:
 			u.Approved = false
 		}
@@ -288,12 +331,19 @@ func (us *UserStore) load() {
 	for _, u := range users {
 		// Migration: ensure admin is always flagged correctly with free subscription
 		if u.Email == AdminEmail {
-			if !u.IsAdmin || !u.Approved || u.SubscriptionStatus != SubFree {
+			if !u.IsAdmin || !u.Approved || u.SubscriptionStatus != SubFree || !u.EmailVerified {
 				u.IsAdmin = true
 				u.Approved = true
 				u.SubscriptionStatus = SubFree
+				u.EmailVerified = true
 				modified = true
 			}
+		}
+		// Migration: auto-verify existing users who already have a subscription
+		// so they aren't locked out after this feature is deployed.
+		if !u.EmailVerified && u.SubscriptionStatus != "" && u.SubscriptionStatus != SubSuspended {
+			u.EmailVerified = true
+			modified = true
 		}
 		us.byEmail[u.Email] = u
 		us.byID[u.ID] = u

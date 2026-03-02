@@ -54,6 +54,7 @@ func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		Username           string  `json:"username"`
 		IsAdmin            bool    `json:"is_admin"`
 		Approved           bool    `json:"approved"`
+		EmailVerified      bool    `json:"email_verified"`
 		SubscriptionStatus string  `json:"subscription_status"`
 		TrialEndsAt        *string `json:"trial_ends_at,omitempty"`
 		CreatedAt          string  `json:"created_at"`
@@ -67,6 +68,7 @@ func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 			Username:           u.Username,
 			IsAdmin:            u.IsAdmin,
 			Approved:           u.Approved,
+			EmailVerified:      u.EmailVerified,
 			SubscriptionStatus: u.SubscriptionStatus,
 			CreatedAt:          u.CreatedAt.Format("Jan 2, 2006"),
 		}

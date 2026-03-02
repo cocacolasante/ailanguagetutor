@@ -47,8 +47,9 @@ func main() {
 	r.Get("/checkout-complete.html", serveFile("./static/checkout-complete.html"))
 
 	// ── Auth (public) ─────────────────────────────────────────────────────────
-	r.Post("/api/auth/register", authHandler.Register)
-	r.Post("/api/auth/login",    authHandler.Login)
+	r.Post("/api/auth/register",        authHandler.Register)
+	r.Post("/api/auth/login",           authHandler.Login)
+	r.Get("/api/auth/verify-email",     authHandler.VerifyEmail)
 
 	// ── Auth (protected) ──────────────────────────────────────────────────────
 	r.Group(func(r chi.Router) {

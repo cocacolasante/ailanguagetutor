@@ -1071,7 +1071,7 @@ input::placeholder { color: var(--text-3); }
    TRIAL BANNER
 ═══════════════════════════════════════════════════════════════════════════════ */
 
-.trial-banner, .pastdue-banner {
+.trial-banner, .pastdue-banner, .email-verify-banner {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1081,6 +1081,11 @@ input::placeholder { color: var(--text-3); }
   font-weight: 500;
   flex-wrap: wrap;
   text-align: center;
+}
+.email-verify-banner {
+  background: rgba(124,58,237,0.12);
+  border-bottom: 1px solid rgba(124,58,237,0.3);
+  color: #c4b5fd;
 }
 .trial-banner {
   background: rgba(245,158,11,0.12);

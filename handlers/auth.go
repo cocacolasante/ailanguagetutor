@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 
@@ -39,6 +40,7 @@ type userDTO struct {
 	Username           string     `json:"username"`
 	IsAdmin            bool       `json:"is_admin"`
 	Approved           bool       `json:"approved"`
+	EmailVerified      bool       `json:"email_verified"`
 	SubscriptionStatus string     `json:"subscription_status"`
 	TrialEndsAt        *time.Time `json:"trial_ends_at,omitempty"`
 }
@@ -55,6 +57,7 @@ func toDTO(u *store.User) userDTO {
 		Username:           u.Username,
 		IsAdmin:            u.IsAdmin,
 		Approved:           u.Approved,
+		EmailVerified:      u.EmailVerified,
 		SubscriptionStatus: u.SubscriptionStatus,
 		TrialEndsAt:        u.TrialEndsAt,
 	}
@@ -79,7 +82,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		req.Plan = "trial"
 	}
 
-	u, err := h.store.Create(req.Email, req.Username, req.Password)
+	u, err := h.store.Create(req.Email, req.Username, req.Password, req.Plan)
 	if err != nil {
 		if err == store.ErrUserExists {
 			writeJSON(w, http.StatusConflict, map[string]string{"error": "email already registered"})
@@ -89,7 +92,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Admin gets a token immediately, no Stripe needed
+	// Admin gets a token immediately, no email verification needed
 	if u.IsAdmin {
 		token, err := h.generateToken(u.ID)
 		if err != nil {
@@ -100,15 +103,57 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Everyone else goes through Stripe Checkout
-	checkoutURL, err := h.billing.createCheckout(u, req.Plan)
-	if err != nil {
-		h.store.Delete(u.ID) // roll back so the email isn't permanently locked out
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "payment system unavailable — please try again"})
+	// Send verification email; clicking the link will redirect to Stripe Checkout
+	verifyURL := h.cfg.AppBaseURL + "/api/auth/verify-email?token=" + u.EmailVerifyToken
+	if err := sendVerificationEmail(h.cfg, u.Email, u.Username, verifyURL); err != nil {
+		log.Printf("register: email send error for %s: %v", u.Email, err)
+		h.store.Delete(u.ID)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to send verification email. Please try again."})
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, map[string]string{"checkout_url": checkoutURL})
+	writeJSON(w, http.StatusCreated, map[string]string{
+		"message": "Please check your email to verify your account.",
+	})
+}
+
+// VerifyEmail handles the email verification link. On success it redirects to
+// Stripe Checkout so the user can set up their subscription.
+func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		http.Redirect(w, r, "/?error=invalid_token", http.StatusSeeOther)
+		return
+	}
+
+	u, err := h.store.GetByEmailToken(token)
+	if err != nil {
+		http.Redirect(w, r, "/?error=invalid_token", http.StatusSeeOther)
+		return
+	}
+
+	if err := h.store.SetEmailVerified(u.ID); err != nil {
+		http.Redirect(w, r, "/?error=server_error", http.StatusSeeOther)
+		return
+	}
+
+	// Re-fetch to pick up the cleared token + verified flag
+	u, _ = h.store.GetByID(u.ID)
+
+	// Create the Stripe Checkout session using the plan the user chose at signup
+	plan := u.PendingPlan
+	if plan != "immediate" {
+		plan = "trial"
+	}
+	checkoutURL, err := h.billing.createCheckout(u, plan)
+	if err != nil {
+		log.Printf("verify-email: stripe checkout error for user %s: %v", u.ID, err)
+		// Stripe not configured or unavailable — redirect to login with a notice
+		http.Redirect(w, r, "/?verified=true", http.StatusSeeOther)
+		return
+	}
+
+	http.Redirect(w, r, checkoutURL, http.StatusSeeOther)
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -121,6 +166,14 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	u, err := h.store.Authenticate(req.Email, req.Password)
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid email or password"})
+		return
+	}
+
+	if !u.EmailVerified {
+		writeJSON(w, http.StatusForbidden, map[string]interface{}{
+			"error":  "Please verify your email address before signing in. Check your inbox for a verification link.",
+			"status": "email_unverified",
+		})
 		return
 	}
 

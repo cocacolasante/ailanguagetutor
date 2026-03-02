@@ -30,6 +30,12 @@ type Config struct {
 	StripeWebhookSecret string
 	StripePriceID       string
 	AppBaseURL          string
+
+	SMTPHost     string
+	SMTPPort     string
+	SMTPUsername string
+	SMTPPassword string
+	EmailFrom    string
 }
 
 func Load() *Config {
@@ -58,6 +64,12 @@ func Load() *Config {
 		StripeWebhookSecret: getEnv("STRIPE_WEBHOOK_SECRET", ""),
 		StripePriceID:       getEnv("STRIPE_PRICE_ID", ""),
 		AppBaseURL:          getEnv("APP_BASE_URL", "http://localhost:8080"),
+
+		SMTPHost:     getEnv("SMTP_HOST", ""),
+		SMTPPort:     getEnv("SMTP_PORT", "587"),
+		SMTPUsername: getEnv("SMTP_USERNAME", ""),
+		SMTPPassword: getEnv("SMTP_PASSWORD", ""),
+		EmailFrom:    getEnv("EMAIL_FROM", ""),
 	}
 }
 

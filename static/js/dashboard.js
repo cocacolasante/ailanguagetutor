@@ -47,6 +47,11 @@ const levels = [
     document.getElementById('adminLink').classList.remove('hidden');
   }
 
+  // Email verification banner (safety net — login normally blocks unverified users)
+  if (user.email_verified === false) {
+    document.getElementById('emailVerifyBanner').classList.remove('hidden');
+  }
+
   // Subscription banners + access control
   subStatus = user.subscription_status || '';
   const trialEndsAt = user.trial_ends_at ? new Date(user.trial_ends_at) : null;

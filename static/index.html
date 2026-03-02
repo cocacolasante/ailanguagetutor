@@ -30,6 +30,22 @@
       <!-- Alert -->
       <div class="alert alert-error" id="authAlert" role="alert"></div>
 
+      <!-- Email sent panel (shown after registration) -->
+      <div id="panel-email-sent" role="tabpanel" style="display:none">
+        <div style="text-align:center;padding:16px 0 8px;">
+          <div style="font-size:3rem;margin-bottom:16px;">✉️</div>
+          <h3 style="margin:0 0 10px;font-size:1.2rem;color:var(--text-1);">Check your inbox</h3>
+          <p style="color:var(--text-2);margin:0 0 8px;line-height:1.6;">
+            We sent a verification link to<br><strong id="emailSentAddr" style="color:var(--text-1);"></strong>
+          </p>
+          <p style="color:var(--text-2);margin:0 0 20px;line-height:1.6;font-size:0.9rem;">
+            Click the link in your email to verify your address and set up your subscription.
+          </p>
+          <p style="color:var(--text-3);font-size:0.8rem;">Didn't receive it? Check your spam folder.</p>
+          <button class="btn btn-ghost btn-sm" style="margin-top:16px;" onclick="switchTab('register')">← Back</button>
+        </div>
+      </div>
+
       <!-- Login form -->
       <div id="panel-login" role="tabpanel">
         <form class="auth-form" id="loginForm" novalidate>
@@ -84,7 +100,7 @@
           </div>
 
           <button type="submit" class="btn btn-primary btn-lg w-full" id="registerBtn">
-            <span>Continue to Payment →</span>
+            <span>Create Account →</span>
           </button>
         </form>
       </div>

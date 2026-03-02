@@ -3,11 +3,22 @@ if (localStorage.getItem('token')) {
   window.location.href = '/dashboard.html';
 }
 
-/* ── Handle ?checkout=cancelled query param ─────────────────────────────────── */
-if (new URLSearchParams(location.search).get('checkout') === 'cancelled') {
-  setTimeout(() => showAlert('Checkout was cancelled. You can try again below.'), 100);
-  switchTab('register');
-}
+/* ── Handle query params on page load ───────────────────────────────────────── */
+(function handleQueryParams() {
+  const p = new URLSearchParams(location.search);
+  if (p.get('checkout') === 'cancelled') {
+    setTimeout(() => showAlert('Checkout was cancelled. You can try again below.'), 100);
+    switchTab('register');
+  } else if (p.get('verified') === 'true') {
+    setTimeout(() => showAlert('Email verified! Sign in to continue setting up your subscription.', 'success'), 100);
+    switchTab('login');
+  } else if (p.get('error') === 'invalid_token') {
+    setTimeout(() => showAlert('This verification link is invalid or has already been used. Please register again or sign in.'), 100);
+  } else if (p.get('error') === 'server_error') {
+    setTimeout(() => showAlert('Something went wrong. Please try signing in.'), 100);
+    switchTab('login');
+  }
+})();
 
 /* ── Tab switching ──────────────────────────────────────────────────────────── */
 function switchTab(tab) {
@@ -35,13 +46,14 @@ function switchTab(tab) {
 }
 
 /* ── Alert helpers ──────────────────────────────────────────────────────────── */
-function showAlert(msg) {
+function showAlert(msg, type) {
   const el = document.getElementById('authAlert');
   el.textContent = msg;
-  el.classList.add('show');
+  el.className = 'alert ' + (type === 'success' ? 'alert-success' : 'alert-error') + ' show';
 }
 function hideAlert() {
-  document.getElementById('authAlert').classList.remove('show');
+  const el = document.getElementById('authAlert');
+  el.classList.remove('show');
 }
 
 /* ── Set button loading state ───────────────────────────────────────────────── */
@@ -63,7 +75,7 @@ document.querySelectorAll('.plan-option').forEach(label => {
 /* ── Login ──────────────────────────────────────────────────────────────────── */
 const loginForm = document.getElementById('loginForm');
 const loginBtn  = document.getElementById('loginBtn');
-loginBtn.dataset.label = 'Sign In';
+loginBtn.dataset.label = loginBtn.querySelector('span').textContent;
 
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -84,6 +96,10 @@ loginForm.addEventListener('submit', async (e) => {
     const data = await res.json();
 
     if (!res.ok) {
+      if (data.status === 'email_unverified') {
+        showAlert(data.error || 'Please verify your email before signing in.');
+        return;
+      }
       // If subscription is missing and we have a saved Stripe session_id, verify
       // the checkout directly (webhook may not have fired yet in local dev).
       if (data.status === '') {
@@ -137,7 +153,7 @@ loginForm.addEventListener('submit', async (e) => {
 /* ── Register ───────────────────────────────────────────────────────────────── */
 const registerForm = document.getElementById('registerForm');
 const registerBtn  = document.getElementById('registerBtn');
-registerBtn.dataset.label = 'Continue to Payment →';
+registerBtn.dataset.label = registerBtn.querySelector('span').textContent;
 
 registerForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -162,13 +178,13 @@ registerForm.addEventListener('submit', async (e) => {
     if (!res.ok) throw new Error(data.error || 'Registration failed');
 
     if (data.token) {
-      // Admin — immediate access
+      // Admin — immediate access, no email verification needed
       localStorage.setItem('token', data.token);
       localStorage.setItem('user',  JSON.stringify(data.user));
       window.location.href = '/dashboard.html';
-    } else if (data.checkout_url) {
-      // Redirect to Stripe Checkout
-      window.location.href = data.checkout_url;
+    } else if (data.message) {
+      // Email verification sent — show the check-email panel
+      showEmailSentPanel(email);
     } else {
       showAlert(data.message || 'Account created.');
     }
@@ -178,3 +194,13 @@ registerForm.addEventListener('submit', async (e) => {
     setLoading(registerBtn, false);
   }
 });
+
+function showEmailSentPanel(email) {
+  document.getElementById('panel-login').style.display    = 'none';
+  document.getElementById('panel-register').style.display = 'none';
+  document.getElementById('panel-email-sent').style.display = '';
+  document.getElementById('emailSentAddr').textContent = email;
+  // Hide tabs while on the email-sent panel
+  document.querySelector('.auth-tabs').style.display = 'none';
+  hideAlert();
+}
