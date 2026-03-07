@@ -4,268 +4,6 @@
       [
         {
           "role": "assistant",
-          "content": "Let's start with a friendly greeting: **Hola** (oh‑lah). You can say, “Hola, me llamo Ana.”  \n\nNow, can you try saying **Hola**?"
-        },
-        {
-          "role": "user",
-          "content": "Hola mi amor"
-        },
-        {
-          "role": "assistant",
-          "content": "Great try! Just say **Hola, ¿cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”.  \n\nCan you try saying **¿Cómo estás?**?"
-        },
-        {
-          "role": "user",
-          "content": "Hola Me llamo Anthony cómo está"
-        },
-        {
-          "role": "assistant",
-          "content": "Great effort! Say **¿Cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”  \n\nCan you try saying **¿Cómo estás?**?"
-        },
-        {
-          "role": "user",
-          "content": "Cómo estás"
-        },
-        {
-          "role": "assistant",
-          "content": "Nice work! To answer, you can say **Estoy bien, gracias** (ehs-TOY byen, GRA-see-as).  \n\nNow, can you try saying **¿Cómo estás?** again?"
-        },
-        {
-          "role": "user",
-          "content": "estoy bien gracias Y tú"
-        },
-        {
-          "role": "assistant",
-          "content": "Great, you said “Estoy bien, gracias, ¿y tú?” – just add the question marks and a tiny pause.  \n\nNow try **¿De dónde eres?** (deh DOHN‑deh EH‑res) like in “Soy de Estados Unidos.” How would you ask that?"
-        },
-        {
-          "role": "user",
-          "content": "de dónde eres soy de Estados Unidos"
-        },
-        {
-          "role": "assistant",
-          "content": "Great try! Say **¿De dónde eres?** (deh DÓN‑deh EH‑res) and then **Soy de Estados Unidos** (SOY deh ehs‑TAH‑dos oo‑NEE‑dos).  \nCan you repeat the question?"
-        },
-        {
-          "role": "user",
-          "content": "de dónde eres"
-        },
-        {
-          "role": "assistant",
-          "content": "Great job! Now you can ask **¿Qué haces?** (keh AH‑ses) to mean “What do you do?”  \n\nCan you try saying **¿Qué haces?**?"
-        },
-        {
-          "role": "user",
-          "content": "qué haces"
-        },
-        {
-          "role": "assistant",
-          "content": "¡Muy bien! You can answer **¿Qué haces?** with **Soy estudiante** (SOY es‑tu‑DEN‑te).  \nNow, can you tell me what you do in Spanish?"
-        },
-        {
-          "role": "user",
-          "content": "trabajo para una Company y Cloud computing"
-        },
-        {
-          "role": "assistant",
-          "content": "Nice effort! To say “I work for a company” you can use **Trabajo en una empresa** (tra-BA-ho en oo‑na em‑PRE-sa).  \n\nCan you try saying **Trabajo en una empresa**?"
-        }
-      ],
-      [
-        {
-          "role": "assistant",
-          "content": "Let's start with a friendly greeting: **Hola** (oh‑lah). You can say, “Hola, me llamo Ana.”  \n\nNow, can you try saying **Hola**?"
-        },
-        {
-          "role": "user",
-          "content": "Hola mi amor"
-        },
-        {
-          "role": "assistant",
-          "content": "Great try! Just say **Hola, ¿cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”.  \n\nCan you try saying **¿Cómo estás?**?"
-        },
-        {
-          "role": "user",
-          "content": "Hola Me llamo Anthony cómo está"
-        },
-        {
-          "role": "assistant",
-          "content": "Great effort! Say **¿Cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”  \n\nCan you try saying **¿Cómo estás?**?"
-        },
-        {
-          "role": "user",
-          "content": "Cómo estás"
-        },
-        {
-          "role": "assistant",
-          "content": "Nice work! To answer, you can say **Estoy bien, gracias** (ehs-TOY byen, GRA-see-as).  \n\nNow, can you try saying **¿Cómo estás?** again?"
-        },
-        {
-          "role": "user",
-          "content": "estoy bien gracias Y tú"
-        },
-        {
-          "role": "assistant",
-          "content": "Great, you said “Estoy bien, gracias, ¿y tú?” – just add the question marks and a tiny pause.  \n\nNow try **¿De dónde eres?** (deh DOHN‑deh EH‑res) like in “Soy de Estados Unidos.” How would you ask that?"
-        },
-        {
-          "role": "user",
-          "content": "de dónde eres soy de Estados Unidos"
-        },
-        {
-          "role": "assistant",
-          "content": "Great try! Say **¿De dónde eres?** (deh DÓN‑deh EH‑res) and then **Soy de Estados Unidos** (SOY deh ehs‑TAH‑dos oo‑NEE‑dos).  \nCan you repeat the question?"
-        },
-        {
-          "role": "user",
-          "content": "de dónde eres"
-        },
-        {
-          "role": "assistant",
-          "content": "Great job! Now you can ask **¿Qué haces?** (keh AH‑ses) to mean “What do you do?”  \n\nCan you try saying **¿Qué haces?**?"
-        },
-        {
-          "role": "user",
-          "content": "qué haces"
-        },
-        {
-          "role": "assistant",
-          "content": "¡Muy bien! You can answer **¿Qué haces?** with **Soy estudiante** (SOY es‑tu‑DEN‑te).  \nNow, can you tell me what you do in Spanish?"
-        },
-        {
-          "role": "user",
-          "content": "trabajo para una Company y Cloud computing"
-        },
-        {
-          "role": "assistant",
-          "content": "Nice effort! To say “I work for a company” you can use **Trabajo en una empresa** (tra-BA-ho en oo‑na em‑PRE-sa).  \n\nCan you try saying **Trabajo en una empresa**?"
-        },
-        {
-          "role": "user",
-          "content": "trabajo en una empresa"
-        },
-        {
-          "role": "assistant",
-          "content": "Great job, “trabajo en una empresa” is perfect! Now try **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho) – can you say that?"
-        }
-      ],
-      [
-        {
-          "role": "assistant",
-          "content": "Let's start with a friendly greeting: **Hola** (oh‑lah). You can say, “Hola, me llamo Ana.”  \n\nNow, can you try saying **Hola**?"
-        },
-        {
-          "role": "user",
-          "content": "Hola mi amor"
-        },
-        {
-          "role": "assistant",
-          "content": "Great try! Just say **Hola, ¿cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”.  \n\nCan you try saying **¿Cómo estás?**?"
-        },
-        {
-          "role": "user",
-          "content": "Hola Me llamo Anthony cómo está"
-        },
-        {
-          "role": "assistant",
-          "content": "Great effort! Say **¿Cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”  \n\nCan you try saying **¿Cómo estás?**?"
-        },
-        {
-          "role": "user",
-          "content": "Cómo estás"
-        },
-        {
-          "role": "assistant",
-          "content": "Nice work! To answer, you can say **Estoy bien, gracias** (ehs-TOY byen, GRA-see-as).  \n\nNow, can you try saying **¿Cómo estás?** again?"
-        },
-        {
-          "role": "user",
-          "content": "estoy bien gracias Y tú"
-        },
-        {
-          "role": "assistant",
-          "content": "Great, you said “Estoy bien, gracias, ¿y tú?” – just add the question marks and a tiny pause.  \n\nNow try **¿De dónde eres?** (deh DOHN‑deh EH‑res) like in “Soy de Estados Unidos.” How would you ask that?"
-        },
-        {
-          "role": "user",
-          "content": "de dónde eres soy de Estados Unidos"
-        },
-        {
-          "role": "assistant",
-          "content": "Great try! Say **¿De dónde eres?** (deh DÓN‑deh EH‑res) and then **Soy de Estados Unidos** (SOY deh ehs‑TAH‑dos oo‑NEE‑dos).  \nCan you repeat the question?"
-        },
-        {
-          "role": "user",
-          "content": "de dónde eres"
-        },
-        {
-          "role": "assistant",
-          "content": "Great job! Now you can ask **¿Qué haces?** (keh AH‑ses) to mean “What do you do?”  \n\nCan you try saying **¿Qué haces?**?"
-        },
-        {
-          "role": "user",
-          "content": "qué haces"
-        },
-        {
-          "role": "assistant",
-          "content": "¡Muy bien! You can answer **¿Qué haces?** with **Soy estudiante** (SOY es‑tu‑DEN‑te).  \nNow, can you tell me what you do in Spanish?"
-        },
-        {
-          "role": "user",
-          "content": "trabajo para una Company y Cloud computing"
-        },
-        {
-          "role": "assistant",
-          "content": "Nice effort! To say “I work for a company” you can use **Trabajo en una empresa** (tra-BA-ho en oo‑na em‑PRE-sa).  \n\nCan you try saying **Trabajo en una empresa**?"
-        },
-        {
-          "role": "user",
-          "content": "trabajo en una empresa"
-        },
-        {
-          "role": "assistant",
-          "content": "Great job, “trabajo en una empresa” is perfect! Now try **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho) – can you say that?"
-        },
-        {
-          "role": "user",
-          "content": "te gusta tu trabajo"
-        },
-        {
-          "role": "assistant",
-          "content": "Great job! Just add the opening and closing question marks: **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho).  \n\nNow try **¿Qué haces en tu tiempo libre?** (KEH AH‑ses en too TYEM‑po LEE‑bre) – can you say that?"
-        }
-      ],
-      [
-        {
-          "role": "user",
-          "content": "de dónde eres"
-        },
-        {
-          "role": "assistant",
-          "content": "Great job! Now you can ask **¿Qué haces?** (keh AH‑ses) to mean “What do you do?”  \n\nCan you try saying **¿Qué haces?**?"
-        },
-        {
-          "role": "user",
-          "content": "qué haces"
-        },
-        {
-          "role": "assistant",
-          "content": "¡Muy bien! You can answer **¿Qué haces?** with **Soy estudiante** (SOY es‑tu‑DEN‑te).  \nNow, can you tell me what you do in Spanish?"
-        },
-        {
-          "role": "user",
-          "content": "trabajo para una Company y Cloud computing"
-        },
-        {
-          "role": "assistant",
-          "content": "Nice effort! To say “I work for a company” you can use **Trabajo en una empresa** (tra-BA-ho en oo‑na em‑PRE-sa).  \n\nCan you try saying **Trabajo en una empresa**?"
-        },
-        {
-          "role": "user",
-          "content": "trabajo en una empresa"
-        },
-        {
-          "role": "assistant",
           "content": "Great job, “trabajo en una empresa” is perfect! Now try **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho) – can you say that?"
         },
         {
@@ -355,29 +93,37 @@
         {
           "role": "assistant",
           "content": "Hi Anthony! Let’s talk about cloud computing and learn the word **nube** (pronounced NOO‑beh) – you can say *Trabajo con la nube* (I work with the cloud).  \nCan you try saying **nube**?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo con la nube"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job, “trabajo con la nube” is perfect. Now try saying **Uso un servidor en la nube** (OO‑soh oon ser‑bee‑DOHR en la NOO‑beh); can you repeat that?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony!  \n\n**Vocabulary Set 1**\n\n1. **casa** (English: house) – Pronunciation: **KAH‑sah** – Example: *Vivo en una **casa** pequeña cerca del parque.*  \n2. **comida** (English: food/meal) – Pronunciation: **co‑MEE‑da** – Example: *La **comida** mexicana es muy sabrosa.*  \n3. **amigo** (English: friend) – Pronunciation: **a‑MEE‑go** – Example: *Mi mejor **amigo** se llama Carlos.*  \n\nReady to quiz?"
+        },
+        {
+          "role": "user",
+          "content": "pronuncia"
+        },
+        {
+          "role": "assistant",
+          "content": "**Pronunciación de “pronuncia”**  \n- **pronuncia** (English: “pronounce”) – Pronunciation: **pro‑NUN‑see‑a** (stress on the second syllable).\n\n---\n\n### ✅ Ready to quiz?\n\nFill in the blanks with the correct word from the list **casa**, **comida**, **amigo**.\n\n1. Mi ___ está al final de la calle.  \n2. Cada domingo compartimos la ___ con la familia.  \n3. Juan es mi mejor ___ y siempre me ayuda.\n\n*(Write the missing word for each sentence.)*"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony! Vamos a comenzar con tres palabras útiles para la vida cotidiana.\n\n1. **café** (English: coffee) – **Pronunciation:** ca‑**FÉ** – *Ejemplo:* “Me gusta tomar un **café** cada mañana.”  \n2. **tienda** (English: store, shop) – **Pronunciation:** **TIEN**‑da – *Ejemplo:* “Voy a la **tienda** a comprar pan.”  \n3. **familia** (English: family) – **Pronunciation:** fa‑mi‑**LIA** – *Ejemplo:* “Mi **familia** se reúne los domingos.”  \n\nReady to quiz?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony!  \n\n**Vocabulary Set 1**\n\n1. **casa** (English: house) – Pronunciation: **KAH‑sah** – Example: *Vivo en una **casa** pequeña cerca del parque.*  \n2. **comida** (English: food / meal) – Pronunciation: **co‑MEE‑da** – Example: *La **comida** mexicana es muy sabrosa.*  \n3. **amigo** (English: friend) – Pronunciation: **a‑MEE‑go** – Example: *Mi mejor **amigo** se llama Carlos.*  \n\nReady to quiz?"
         }
       ],
       [
-        {
-          "role": "user",
-          "content": "qué haces"
-        },
-        {
-          "role": "assistant",
-          "content": "¡Muy bien! You can answer **¿Qué haces?** with **Soy estudiante** (SOY es‑tu‑DEN‑te).  \nNow, can you tell me what you do in Spanish?"
-        },
-        {
-          "role": "user",
-          "content": "trabajo para una Company y Cloud computing"
-        },
-        {
-          "role": "assistant",
-          "content": "Nice effort! To say “I work for a company” you can use **Trabajo en una empresa** (tra-BA-ho en oo‑na em‑PRE-sa).  \n\nCan you try saying **Trabajo en una empresa**?"
-        },
-        {
-          "role": "user",
-          "content": "trabajo en una empresa"
-        },
         {
           "role": "assistant",
           "content": "Great job, “trabajo en una empresa” is perfect! Now try **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho) – can you say that?"
@@ -477,10 +223,396 @@
         {
           "role": "assistant",
           "content": "Great job, “trabajo con la nube” is perfect. Now try saying **Uso un servidor en la nube** (OO‑soh oon ser‑bee‑DOHR en la NOO‑beh); can you repeat that?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony!  \n\n**Vocabulary Set 1**\n\n1. **casa** (English: house) – Pronunciation: **KAH‑sah** – Example: *Vivo en una **casa** pequeña cerca del parque.*  \n2. **comida** (English: food/meal) – Pronunciation: **co‑MEE‑da** – Example: *La **comida** mexicana es muy sabrosa.*  \n3. **amigo** (English: friend) – Pronunciation: **a‑MEE‑go** – Example: *Mi mejor **amigo** se llama Carlos.*  \n\nReady to quiz?"
+        },
+        {
+          "role": "user",
+          "content": "pronuncia"
+        },
+        {
+          "role": "assistant",
+          "content": "**Pronunciación de “pronuncia”**  \n- **pronuncia** (English: “pronounce”) – Pronunciation: **pro‑NUN‑see‑a** (stress on the second syllable).\n\n---\n\n### ✅ Ready to quiz?\n\nFill in the blanks with the correct word from the list **casa**, **comida**, **amigo**.\n\n1. Mi ___ está al final de la calle.  \n2. Cada domingo compartimos la ___ con la familia.  \n3. Juan es mi mejor ___ y siempre me ayuda.\n\n*(Write the missing word for each sentence.)*"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony! Vamos a comenzar con tres palabras útiles para la vida cotidiana.\n\n1. **café** (English: coffee) – **Pronunciation:** ca‑**FÉ** – *Ejemplo:* “Me gusta tomar un **café** cada mañana.”  \n2. **tienda** (English: store, shop) – **Pronunciation:** **TIEN**‑da – *Ejemplo:* “Voy a la **tienda** a comprar pan.”  \n3. **familia** (English: family) – **Pronunciation:** fa‑mi‑**LIA** – *Ejemplo:* “Mi **familia** se reúne los domingos.”  \n\nReady to quiz?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony!  \n\n**Vocabulary Set 1**\n\n1. **casa** (English: house) – Pronunciation: **KAH‑sah** – Example: *Vivo en una **casa** pequeña cerca del parque.*  \n2. **comida** (English: food / meal) – Pronunciation: **co‑MEE‑da** – Example: *La **comida** mexicana es muy sabrosa.*  \n3. **amigo** (English: friend) – Pronunciation: **a‑MEE‑go** – Example: *Mi mejor **amigo** se llama Carlos.*  \n\nReady to quiz?"
+        }
+      ],
+      [
+        {
+          "role": "assistant",
+          "content": "Great job, “trabajo en una empresa” is perfect! Now try **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho) – can you say that?"
+        },
+        {
+          "role": "assistant",
+          "content": "Let's start with a friendly greeting: **Hola** (oh‑lah). You can say, “Hola, me llamo Ana.”  \n\nNow, can you try saying **Hola**?"
+        },
+        {
+          "role": "user",
+          "content": "Hola mi amor"
+        },
+        {
+          "role": "assistant",
+          "content": "Great try! Just say **Hola, ¿cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”.  \n\nCan you try saying **¿Cómo estás?**?"
+        },
+        {
+          "role": "user",
+          "content": "Hola Me llamo Anthony cómo está"
+        },
+        {
+          "role": "assistant",
+          "content": "Great effort! Say **¿Cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”  \n\nCan you try saying **¿Cómo estás?**?"
+        },
+        {
+          "role": "user",
+          "content": "Cómo estás"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice work! To answer, you can say **Estoy bien, gracias** (ehs-TOY byen, GRA-see-as).  \n\nNow, can you try saying **¿Cómo estás?** again?"
+        },
+        {
+          "role": "user",
+          "content": "estoy bien gracias Y tú"
+        },
+        {
+          "role": "assistant",
+          "content": "Great, you said “Estoy bien, gracias, ¿y tú?” – just add the question marks and a tiny pause.  \n\nNow try **¿De dónde eres?** (deh DOHN‑deh EH‑res) like in “Soy de Estados Unidos.” How would you ask that?"
+        },
+        {
+          "role": "user",
+          "content": "de dónde eres soy de Estados Unidos"
+        },
+        {
+          "role": "assistant",
+          "content": "Great try! Say **¿De dónde eres?** (deh DÓN‑deh EH‑res) and then **Soy de Estados Unidos** (SOY deh ehs‑TAH‑dos oo‑NEE‑dos).  \nCan you repeat the question?"
+        },
+        {
+          "role": "user",
+          "content": "de dónde eres"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job! Now you can ask **¿Qué haces?** (keh AH‑ses) to mean “What do you do?”  \n\nCan you try saying **¿Qué haces?**?"
+        },
+        {
+          "role": "user",
+          "content": "qué haces"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Muy bien! You can answer **¿Qué haces?** with **Soy estudiante** (SOY es‑tu‑DEN‑te).  \nNow, can you tell me what you do in Spanish?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo para una Company y Cloud computing"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice effort! To say “I work for a company” you can use **Trabajo en una empresa** (tra-BA-ho en oo‑na em‑PRE-sa).  \n\nCan you try saying **Trabajo en una empresa**?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo en una empresa"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job, “trabajo en una empresa” is perfect! Now try **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho) – can you say that?"
+        },
+        {
+          "role": "user",
+          "content": "te gusta tu trabajo"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job! Just add the opening and closing question marks: **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho).  \n\nNow try **¿Qué haces en tu tiempo libre?** (KEH AH‑ses en too TYEM‑po LEE‑bre) – can you say that?"
+        },
+        {
+          "role": "assistant",
+          "content": "Hi Anthony! Let’s talk about cloud computing and learn the word **nube** (pronounced NOO‑beh) – you can say *Trabajo con la nube* (I work with the cloud).  \nCan you try saying **nube**?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo con la nube"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job, “trabajo con la nube” is perfect. Now try saying **Uso un servidor en la nube** (OO‑soh oon ser‑bee‑DOHR en la NOO‑beh); can you repeat that?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony!  \n\n**Vocabulary Set 1**\n\n1. **casa** (English: house) – Pronunciation: **KAH‑sah** – Example: *Vivo en una **casa** pequeña cerca del parque.*  \n2. **comida** (English: food/meal) – Pronunciation: **co‑MEE‑da** – Example: *La **comida** mexicana es muy sabrosa.*  \n3. **amigo** (English: friend) – Pronunciation: **a‑MEE‑go** – Example: *Mi mejor **amigo** se llama Carlos.*  \n\nReady to quiz?"
+        },
+        {
+          "role": "user",
+          "content": "pronuncia"
+        },
+        {
+          "role": "assistant",
+          "content": "**Pronunciación de “pronuncia”**  \n- **pronuncia** (English: “pronounce”) – Pronunciation: **pro‑NUN‑see‑a** (stress on the second syllable).\n\n---\n\n### ✅ Ready to quiz?\n\nFill in the blanks with the correct word from the list **casa**, **comida**, **amigo**.\n\n1. Mi ___ está al final de la calle.  \n2. Cada domingo compartimos la ___ con la familia.  \n3. Juan es mi mejor ___ y siempre me ayuda.\n\n*(Write the missing word for each sentence.)*"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony! Vamos a comenzar con tres palabras útiles para la vida cotidiana.\n\n1. **café** (English: coffee) – **Pronunciation:** ca‑**FÉ** – *Ejemplo:* “Me gusta tomar un **café** cada mañana.”  \n2. **tienda** (English: store, shop) – **Pronunciation:** **TIEN**‑da – *Ejemplo:* “Voy a la **tienda** a comprar pan.”  \n3. **familia** (English: family) – **Pronunciation:** fa‑mi‑**LIA** – *Ejemplo:* “Mi **familia** se reúne los domingos.”  \n\nReady to quiz?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony!  \n\n**Vocabulary Set 1**\n\n1. **casa** (English: house) – Pronunciation: **KAH‑sah** – Example: *Vivo en una **casa** pequeña cerca del parque.*  \n2. **comida** (English: food / meal) – Pronunciation: **co‑MEE‑da** – Example: *La **comida** mexicana es muy sabrosa.*  \n3. **amigo** (English: friend) – Pronunciation: **a‑MEE‑go** – Example: *Mi mejor **amigo** se llama Carlos.*  \n\nReady to quiz?"
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "content": "Hola mi amor"
+        },
+        {
+          "role": "assistant",
+          "content": "Great try! Just say **Hola, ¿cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”.  \n\nCan you try saying **¿Cómo estás?**?"
+        },
+        {
+          "role": "user",
+          "content": "Hola Me llamo Anthony cómo está"
+        },
+        {
+          "role": "assistant",
+          "content": "Great effort! Say **¿Cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”  \n\nCan you try saying **¿Cómo estás?**?"
+        },
+        {
+          "role": "user",
+          "content": "Cómo estás"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice work! To answer, you can say **Estoy bien, gracias** (ehs-TOY byen, GRA-see-as).  \n\nNow, can you try saying **¿Cómo estás?** again?"
+        },
+        {
+          "role": "user",
+          "content": "estoy bien gracias Y tú"
+        },
+        {
+          "role": "assistant",
+          "content": "Great, you said “Estoy bien, gracias, ¿y tú?” – just add the question marks and a tiny pause.  \n\nNow try **¿De dónde eres?** (deh DOHN‑deh EH‑res) like in “Soy de Estados Unidos.” How would you ask that?"
+        },
+        {
+          "role": "user",
+          "content": "de dónde eres soy de Estados Unidos"
+        },
+        {
+          "role": "assistant",
+          "content": "Great try! Say **¿De dónde eres?** (deh DÓN‑deh EH‑res) and then **Soy de Estados Unidos** (SOY deh ehs‑TAH‑dos oo‑NEE‑dos).  \nCan you repeat the question?"
+        },
+        {
+          "role": "user",
+          "content": "de dónde eres"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job! Now you can ask **¿Qué haces?** (keh AH‑ses) to mean “What do you do?”  \n\nCan you try saying **¿Qué haces?**?"
+        },
+        {
+          "role": "user",
+          "content": "qué haces"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Muy bien! You can answer **¿Qué haces?** with **Soy estudiante** (SOY es‑tu‑DEN‑te).  \nNow, can you tell me what you do in Spanish?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo para una Company y Cloud computing"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice effort! To say “I work for a company” you can use **Trabajo en una empresa** (tra-BA-ho en oo‑na em‑PRE-sa).  \n\nCan you try saying **Trabajo en una empresa**?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo en una empresa"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job, “trabajo en una empresa” is perfect! Now try **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho) – can you say that?"
+        },
+        {
+          "role": "user",
+          "content": "te gusta tu trabajo"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job! Just add the opening and closing question marks: **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho).  \n\nNow try **¿Qué haces en tu tiempo libre?** (KEH AH‑ses en too TYEM‑po LEE‑bre) – can you say that?"
+        },
+        {
+          "role": "assistant",
+          "content": "Hi Anthony! Let’s talk about cloud computing and learn the word **nube** (pronounced NOO‑beh) – you can say *Trabajo con la nube* (I work with the cloud).  \nCan you try saying **nube**?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo con la nube"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job, “trabajo con la nube” is perfect. Now try saying **Uso un servidor en la nube** (OO‑soh oon ser‑bee‑DOHR en la NOO‑beh); can you repeat that?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony!  \n\n**Vocabulary Set 1**\n\n1. **casa** (English: house) – Pronunciation: **KAH‑sah** – Example: *Vivo en una **casa** pequeña cerca del parque.*  \n2. **comida** (English: food/meal) – Pronunciation: **co‑MEE‑da** – Example: *La **comida** mexicana es muy sabrosa.*  \n3. **amigo** (English: friend) – Pronunciation: **a‑MEE‑go** – Example: *Mi mejor **amigo** se llama Carlos.*  \n\nReady to quiz?"
+        },
+        {
+          "role": "user",
+          "content": "pronuncia"
+        },
+        {
+          "role": "assistant",
+          "content": "**Pronunciación de “pronuncia”**  \n- **pronuncia** (English: “pronounce”) – Pronunciation: **pro‑NUN‑see‑a** (stress on the second syllable).\n\n---\n\n### ✅ Ready to quiz?\n\nFill in the blanks with the correct word from the list **casa**, **comida**, **amigo**.\n\n1. Mi ___ está al final de la calle.  \n2. Cada domingo compartimos la ___ con la familia.  \n3. Juan es mi mejor ___ y siempre me ayuda.\n\n*(Write the missing word for each sentence.)*"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony! Vamos a comenzar con tres palabras útiles para la vida cotidiana.\n\n1. **café** (English: coffee) – **Pronunciation:** ca‑**FÉ** – *Ejemplo:* “Me gusta tomar un **café** cada mañana.”  \n2. **tienda** (English: store, shop) – **Pronunciation:** **TIEN**‑da – *Ejemplo:* “Voy a la **tienda** a comprar pan.”  \n3. **familia** (English: family) – **Pronunciation:** fa‑mi‑**LIA** – *Ejemplo:* “Mi **familia** se reúne los domingos.”  \n\nReady to quiz?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony!  \n\n**Vocabulary Set 1**\n\n1. **casa** (English: house) – Pronunciation: **KAH‑sah** – Example: *Vivo en una **casa** pequeña cerca del parque.*  \n2. **comida** (English: food / meal) – Pronunciation: **co‑MEE‑da** – Example: *La **comida** mexicana es muy sabrosa.*  \n3. **amigo** (English: friend) – Pronunciation: **a‑MEE‑go** – Example: *Mi mejor **amigo** se llama Carlos.*  \n\nReady to quiz?"
+        },
+        {
+          "role": "user",
+          "content": "Hello. Hello."
+        },
+        {
+          "role": "assistant",
+          "content": "Hello there! It is great to connect with you today and practice some Spanish greetings. Let us start with \"hola,\" spelled H-O-L-A and pronounced like \"oh-lah.\" Can you try saying \"hola\" for me?"
+        }
+      ],
+      [
+        {
+          "role": "user",
+          "content": "Hola Me llamo Anthony cómo está"
+        },
+        {
+          "role": "assistant",
+          "content": "Great effort! Say **¿Cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”  \n\nCan you try saying **¿Cómo estás?**?"
+        },
+        {
+          "role": "user",
+          "content": "Cómo estás"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice work! To answer, you can say **Estoy bien, gracias** (ehs-TOY byen, GRA-see-as).  \n\nNow, can you try saying **¿Cómo estás?** again?"
+        },
+        {
+          "role": "user",
+          "content": "estoy bien gracias Y tú"
+        },
+        {
+          "role": "assistant",
+          "content": "Great, you said “Estoy bien, gracias, ¿y tú?” – just add the question marks and a tiny pause.  \n\nNow try **¿De dónde eres?** (deh DOHN‑deh EH‑res) like in “Soy de Estados Unidos.” How would you ask that?"
+        },
+        {
+          "role": "user",
+          "content": "de dónde eres soy de Estados Unidos"
+        },
+        {
+          "role": "assistant",
+          "content": "Great try! Say **¿De dónde eres?** (deh DÓN‑deh EH‑res) and then **Soy de Estados Unidos** (SOY deh ehs‑TAH‑dos oo‑NEE‑dos).  \nCan you repeat the question?"
+        },
+        {
+          "role": "user",
+          "content": "de dónde eres"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job! Now you can ask **¿Qué haces?** (keh AH‑ses) to mean “What do you do?”  \n\nCan you try saying **¿Qué haces?**?"
+        },
+        {
+          "role": "user",
+          "content": "qué haces"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Muy bien! You can answer **¿Qué haces?** with **Soy estudiante** (SOY es‑tu‑DEN‑te).  \nNow, can you tell me what you do in Spanish?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo para una Company y Cloud computing"
+        },
+        {
+          "role": "assistant",
+          "content": "Nice effort! To say “I work for a company” you can use **Trabajo en una empresa** (tra-BA-ho en oo‑na em‑PRE-sa).  \n\nCan you try saying **Trabajo en una empresa**?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo en una empresa"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job, “trabajo en una empresa” is perfect! Now try **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho) – can you say that?"
+        },
+        {
+          "role": "user",
+          "content": "te gusta tu trabajo"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job! Just add the opening and closing question marks: **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho).  \n\nNow try **¿Qué haces en tu tiempo libre?** (KEH AH‑ses en too TYEM‑po LEE‑bre) – can you say that?"
+        },
+        {
+          "role": "assistant",
+          "content": "Hi Anthony! Let’s talk about cloud computing and learn the word **nube** (pronounced NOO‑beh) – you can say *Trabajo con la nube* (I work with the cloud).  \nCan you try saying **nube**?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo con la nube"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job, “trabajo con la nube” is perfect. Now try saying **Uso un servidor en la nube** (OO‑soh oon ser‑bee‑DOHR en la NOO‑beh); can you repeat that?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony!  \n\n**Vocabulary Set 1**\n\n1. **casa** (English: house) – Pronunciation: **KAH‑sah** – Example: *Vivo en una **casa** pequeña cerca del parque.*  \n2. **comida** (English: food/meal) – Pronunciation: **co‑MEE‑da** – Example: *La **comida** mexicana es muy sabrosa.*  \n3. **amigo** (English: friend) – Pronunciation: **a‑MEE‑go** – Example: *Mi mejor **amigo** se llama Carlos.*  \n\nReady to quiz?"
+        },
+        {
+          "role": "user",
+          "content": "pronuncia"
+        },
+        {
+          "role": "assistant",
+          "content": "**Pronunciación de “pronuncia”**  \n- **pronuncia** (English: “pronounce”) – Pronunciation: **pro‑NUN‑see‑a** (stress on the second syllable).\n\n---\n\n### ✅ Ready to quiz?\n\nFill in the blanks with the correct word from the list **casa**, **comida**, **amigo**.\n\n1. Mi ___ está al final de la calle.  \n2. Cada domingo compartimos la ___ con la familia.  \n3. Juan es mi mejor ___ y siempre me ayuda.\n\n*(Write the missing word for each sentence.)*"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony! Vamos a comenzar con tres palabras útiles para la vida cotidiana.\n\n1. **café** (English: coffee) – **Pronunciation:** ca‑**FÉ** – *Ejemplo:* “Me gusta tomar un **café** cada mañana.”  \n2. **tienda** (English: store, shop) – **Pronunciation:** **TIEN**‑da – *Ejemplo:* “Voy a la **tienda** a comprar pan.”  \n3. **familia** (English: family) – **Pronunciation:** fa‑mi‑**LIA** – *Ejemplo:* “Mi **familia** se reúne los domingos.”  \n\nReady to quiz?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony!  \n\n**Vocabulary Set 1**\n\n1. **casa** (English: house) – Pronunciation: **KAH‑sah** – Example: *Vivo en una **casa** pequeña cerca del parque.*  \n2. **comida** (English: food / meal) – Pronunciation: **co‑MEE‑da** – Example: *La **comida** mexicana es muy sabrosa.*  \n3. **amigo** (English: friend) – Pronunciation: **a‑MEE‑go** – Example: *Mi mejor **amigo** se llama Carlos.*  \n\nReady to quiz?"
+        },
+        {
+          "role": "user",
+          "content": "Hello. Hello."
+        },
+        {
+          "role": "assistant",
+          "content": "Hello there! It is great to connect with you today and practice some Spanish greetings. Let us start with \"hola,\" spelled H-O-L-A and pronounced like \"oh-lah.\" Can you try saying \"hola\" for me?"
+        },
+        {
+          "role": "user",
+          "content": "..."
+        },
+        {
+          "role": "assistant",
+          "content": "Hello there! I'm delighted to be your Spanish tutor today, and we'll start with some everyday small talk. Let's begin with a very common greeting: \"Hola,\" which means \"Hello\" and is pronounced like \"oh-lah.\" Can you try saying \"Hola\"?"
         }
       ]
     ],
-    "updated_at": "2026-02-27T22:38:17.55561-05:00"
+    "updated_at": "2026-03-07T17:26:18.443605-05:00"
   },
   "20e5feba-3ac1-4017-9422-0f6dad617e1b:es:2": {
     "sessions": [
@@ -598,8 +730,26 @@
     "updated_at": "2026-02-27T22:37:44.652167-05:00"
   },
   "20e5feba-3ac1-4017-9422-0f6dad617e1b:es:3": {
-    "sessions": null,
-    "updated_at": "2026-02-27T21:18:49.853134-05:00"
+    "sessions": [
+      [
+        {
+          "role": "assistant",
+          "content": "¡Hola! Bienvenido a la sesión de **Vocabulary Builder**.  \n\n**Palabra 1**  \n- **Español:** reunión  \n- **(English:** meeting)  \n- **Pronunciación:** re‑u‑NI‑ón (stress on the **NI**)  \n- **Ejemplo:** *Tengo una reunión con el equipo a las diez de la mañana.*\n\n**Palabra 2**  \n- **Español:** cobertura  \n- **(English:** coverage)  \n- **Pronunciación:** co‑bur‑TU‑ra (stress on the **TU**)  \n- **Ejemplo:** *La cobertura del seguro incluye daños por agua.*\n\n**Palabra 3**  \n- **Español:** desempeñar  \n- **(English:** to perform, to carry out)  \n- **Pronunciación:** des‑em‑pe‑ÑAR (stress on the **ÑAR**)  \n- **Ejemplo:** *Ella quiere desempeñar un papel más activo en la organización.*\n\n**Ready to quiz?**"
+        }
+      ]
+    ],
+    "updated_at": "2026-03-07T16:22:58.800952-05:00"
+  },
+  "20e5feba-3ac1-4017-9422-0f6dad617e1b:it:2": {
+    "sessions": [
+      [
+        {
+          "role": "assistant",
+          "content": "Ciao! Benvenuto/a alla nostra lezione di vocabolario.  \n\n**1️⃣ Casa** – (English: house)  \n- **Pronuncia:** caˈsa (stress on the second syllable)  \n- **Esempio:** *La mia casa è vicino al parco.*  \n\n**2️⃣ Cibo** – (English: food)  \n- **Pronuncia:** ˈtʃi.bo (stress on the first syllable)  \n- **Esempio:** *Mi piace mangiare il cibo italiano.*  \n\n**3️⃣ Amico** – (English: friend)  \n- **Pronuncia:** aˈmi.ko (stress on the second syllable)  \n- **Esempio:** *Il mio amico Marco vive a Roma.*  \n\nReady to quiz?"
+        }
+      ]
+    ],
+    "updated_at": "2026-03-07T16:13:05.433-05:00"
   },
   "20e5feba-3ac1-4017-9422-0f6dad617e1b:pt:1": {
     "sessions": [

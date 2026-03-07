@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leaderboard — LinguaAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=4" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-brand">
+      <span class="brand-icon">🌐</span>
+      <span>LinguaAI</span>
+    </div>
+    <div class="nav-right">
+      <a class="btn btn-ghost btn-sm" href="/profile.html">Profile</a>
+    </div>
+  </nav>
+
+  <!-- Page tabs -->
+  <div class="page-tabs">
+    <a href="/dashboard.html" class="page-tab">Dashboard</a>
+    <a href="/leaderboard.html" class="page-tab active">Leaderboard</a>
+  </div>
+
+  <main class="leaderboard-page">
+    <header class="leaderboard-header">
+      <h1>🏆 <span class="gradient-text">Leaderboard</span></h1>
+      <p>Top learners ranked by Fluency Points (FP)</p>
+    </header>
+
+    <div class="leaderboard-container card" id="leaderboardContainer">
+      <div class="leaderboard-loading">
+        <div class="spinner"></div>
+        <p>Loading…</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/api.js?v=14"></script>
+  <script src="/js/leaderboard.js?v=1"></script>
+</body>
+</html>

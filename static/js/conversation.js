@@ -1,12 +1,13 @@
 requireAuth();
 
 /* ── Session params from URL ────────────────────────────────────────────────── */
-const params    = new URLSearchParams(window.location.search);
-const sessionId = params.get('session');
-const language  = params.get('language') || 'it';
-const level     = parseInt(params.get('level') || '3', 10);
-const topic     = params.get('topic')    || 'general';
-const topicName = params.get('topicName') || 'General Conversation';
+const params      = new URLSearchParams(window.location.search);
+const sessionId   = params.get('session');
+const language    = params.get('language')    || 'it';
+const level       = parseInt(params.get('level') || '3', 10);
+const topic       = params.get('topic')       || 'general';
+const topicName   = params.get('topicName')   || 'General Conversation';
+const personality = params.get('personality') || '';
 
 const TTS_PLAYBACK_RATE = 1.0;
 
@@ -15,6 +16,8 @@ if (!sessionId) window.location.href = '/dashboard.html';
 /* ── State ──────────────────────────────────────────────────────────────────── */
 let isSending         = false;
 let isRecording       = false;
+let sessionStartTime  = null;
+let timerInterval     = null;
 let recognition       = null;
 let currentTranscript = '';  // accumulated final transcript during recording session
 let currentSource     = null;  // AudioBufferSourceNode — mobile-compatible
@@ -50,8 +53,23 @@ const TOPIC_ICONS = {
   'sports':'⚽','culture':'🎭','technology':'💻','cloud':'☁️',
   'marketing':'📊','finance':'💰','education':'📚','news':'📰',
   'work':'💼','entertainment':'🎬','environment':'🌿','home':'🏠',
+  'role-restaurant':'🍽️','role-job-interview':'👔','role-airport':'✈️',
+  'role-doctor':'🏥','role-business':'💼','role-apartment':'🏠','role-directions':'🗺️',
+  'travel-rome':'🇮🇹','travel-barcelona':'🇪🇸','travel-paris':'🇫🇷','travel-tokyo':'🇯🇵','travel-lisbon':'🇵🇹',
+  'grammar-vocabulary':'📚','grammar-sentences':'✏️','grammar-pronunciation':'🗣️','grammar-listening':'👂','grammar-writing':'📝',
+  'cultural-context':'🏛️','cultural-stories':'📖','cultural-idioms':'💬','cultural-food':'🍜','cultural-history':'🎭',
+  'immersion-daily':'🏡','immersion-social':'🥂','immersion-work':'💼','immersion-city':'🏙️','immersion-media':'🎬','immersion-debate':'🗣️',
 };
 const topicIcon = TOPIC_ICONS[topic] || '💬';
+
+const isImmersion = topic.startsWith('immersion-');
+
+// Immersion mode placeholders in target language
+const IMMERSION_PLACEHOLDERS = {
+  it: 'Scrivi in italiano…', es: 'Escribe en español…', pt: 'Escreva em português…',
+  fr: 'Écrivez en français…', de: 'Schreibe auf Deutsch…', ja: '日本語で書いてください…',
+  zh: '用中文写…', ro: 'Scrie în română…', ru: 'Пишите по-русски…',
+};
 
 /* ── Init UI ────────────────────────────────────────────────────────────────── */
 document.getElementById('headerLang').textContent  = `${langMeta.flag} ${langMeta.name}`;
@@ -60,6 +78,18 @@ document.title = `${langMeta.name} · ${topicName} — LinguaAI`;
 
 const ttsToggle = document.getElementById('ttsToggle');
 ttsToggle.addEventListener('change', () => { ttsEnabled = ttsToggle.checked; });
+
+/* ── Immersion mode setup ───────────────────────────────────────────────────── */
+if (isImmersion) {
+  const banner = document.getElementById('immersionBanner');
+  if (banner) {
+    banner.hidden = false;
+    const bannerText = document.getElementById('immersionBannerText');
+    if (bannerText) bannerText.textContent = `Immersion Mode — responding only in ${langMeta.name}`;
+  }
+  const placeholder = IMMERSION_PLACEHOLDERS[language] || `Write in ${langMeta.name}…`;
+  document.getElementById('messageInput').placeholder = placeholder;
+}
 
 /* ── Text area auto-resize & keyboard submit ────────────────────────────────── */
 const msgInput = document.getElementById('messageInput');
@@ -99,9 +129,9 @@ function appendMessage(role, content, id) {
     <button class="msg-play-btn" onclick="playMessage(this)" data-text="${escapeAttr(content)}" title="Play audio">
       🔊 Play
     </button>
-    <button class="msg-translate-btn" onclick="translateMessage(this)" data-text="${escapeAttr(content)}" title="Show English translation">
+    ${isImmersion ? '' : `<button class="msg-translate-btn" onclick="translateMessage(this)" data-text="${escapeAttr(content)}" title="Show English translation">
       🌐 Translate
-    </button>
+    </button>`}
   `;
 
   div.innerHTML = `
@@ -704,6 +734,71 @@ function stopRecording() {
   if (!isSending) msgInput.focus();
 }
 
+/* ── Timer ──────────────────────────────────────────────────────────────────── */
+function startTimer() {
+  sessionStartTime = Date.now();
+  timerInterval = setInterval(updateTimer, 1000);
+}
+
+function updateTimer() {
+  const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+  const m = Math.floor(elapsed / 60);
+  const s = elapsed % 60;
+  const el = document.getElementById('convTimer');
+  if (el) el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function getElapsedSecs() {
+  if (!sessionStartTime) return 0;
+  return Math.floor((Date.now() - sessionStartTime) / 1000);
+}
+
+/* ── End conversation ───────────────────────────────────────────────────────── */
+async function endConversation() {
+  if (!sessionId) return;
+
+  if (!confirm('End this conversation and generate a learning summary?')) return;
+
+  // Stop timer and audio
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  stopCurrentAudio();
+  stopRecording();
+
+  const durationSecs = getElapsedSecs();
+
+  // Disable all inputs while ending
+  document.getElementById('sendBtn').disabled = true;
+  document.getElementById('micBtn').disabled = true;
+  document.querySelector('.btn-danger')?.setAttribute('disabled', '');
+
+  // Show loading in messages
+  const container = document.getElementById('messagesContainer');
+  const loadingDiv = document.createElement('div');
+  loadingDiv.className = 'end-session-loading';
+  loadingDiv.innerHTML = `<div class="spinner"></div><span>Generating your learning summary…</span>`;
+  container.appendChild(loadingDiv);
+  container.scrollTop = container.scrollHeight;
+
+  try {
+    const data = await API.post('/api/conversation/end', {
+      session_id:    sessionId,
+      duration_secs: durationSecs,
+    });
+
+    if (!data) return;
+
+    // Redirect to summary page
+    window.location.href = `/summary.html?record=${data.record_id}`;
+  } catch (err) {
+    console.error('Failed to end conversation:', err);
+    loadingDiv.remove();
+    document.getElementById('sendBtn').disabled = false;
+    document.getElementById('micBtn').disabled = false;
+    document.querySelector('.btn-danger')?.removeAttribute('disabled');
+    alert('Failed to generate summary. Please try again.');
+  }
+}
+
 /* ── New session ────────────────────────────────────────────────────────────── */
 function newConversation() {
   window.location.href = '/dashboard.html';
@@ -744,6 +839,7 @@ async function startGreeting() {
   startBtn.addEventListener('click', () => {
     unlockAudio();      // synchronous — inside the tap gesture
     overlay.hidden = true;
+    startTimer();
     startGreeting();
   }, { once: true });
 })();

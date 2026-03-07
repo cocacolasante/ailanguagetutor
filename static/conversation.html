@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=11" />
+  <link rel="stylesheet" href="/css/style.css?v=4" />
 </head>
 <body>
 
@@ -23,6 +23,8 @@
         </div>
       </div>
       <div class="conv-header-right">
+        <!-- Timer -->
+        <div class="conv-timer" id="convTimer">0:00</div>
         <!-- Audio playing indicator -->
         <div class="audio-playing-indicator" id="audioIndicator">
           <div class="audio-bars">
@@ -36,10 +38,18 @@
           <div class="toggle-track"></div>
           <span>🔊</span>
         </label>
+        <!-- End session -->
+        <button class="btn btn-danger btn-sm" onclick="endConversation()" title="End conversation and get summary" aria-label="End conversation">End</button>
         <!-- New session -->
         <button class="btn-icon" title="New conversation" onclick="newConversation()" aria-label="New session">↺</button>
       </div>
     </header>
+
+    <!-- Immersion mode banner (shown only for immersion topics) -->
+    <div class="immersion-banner" id="immersionBanner" hidden>
+      <span class="immersion-banner-dot"></span>
+      <span id="immersionBannerText">Immersion Mode — responding only in Italian</span>
+    </div>
 
     <!-- Messages -->
     <div class="conv-messages" id="messagesContainer">
@@ -86,6 +96,6 @@
   </div>
 
   <script src="/js/api.js?v=14"></script>
-  <script src="/js/conversation.js?v=15"></script>
+  <script src="/js/agent-conversation.js?v=6"></script>
 </body>
 </html>

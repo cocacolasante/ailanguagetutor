@@ -15,6 +15,7 @@ type Config struct {
 	IONOSModel   string
 
 	ElevenLabsAPIKey  string
+	ElevenLabsAgentID string
 	ElevenLabsVoiceIT string
 	ElevenLabsVoiceES string
 	ElevenLabsVoicePT string
@@ -47,7 +48,8 @@ func Load() *Config {
 		IONOSBaseURL: getEnv("IONOS_BASE_URL", "https://openai.inference.de-txl.ionos.com/v1"),
 		IONOSModel:   getEnv("IONOS_MODEL", "mistral-small-24b"),
 
-		ElevenLabsAPIKey: getEnvRequired("ELEVENLABS_API_KEY"),
+		ElevenLabsAPIKey:  getEnvRequired("ELEVENLABS_API_KEY"),
+		ElevenLabsAgentID: getEnv("ELEVENLABS_AGENT_ID", ""),
 		// Default to ElevenLabs multilingual voice (Rachel) — override with native voices
 		ElevenLabsVoiceIT: getEnv("ELEVENLABS_VOICE_IT", "21m00Tcm4TlvDq8ikWAM"),
 		ElevenLabsVoiceES: getEnv("ELEVENLABS_VOICE_ES", "21m00Tcm4TlvDq8ikWAM"),
@@ -70,6 +72,32 @@ func Load() *Config {
 		SMTPUsername: getEnv("SMTP_USERNAME", ""),
 		SMTPPassword: getEnv("SMTP_PASSWORD", ""),
 		EmailFrom:    getEnv("EMAIL_FROM", ""),
+	}
+}
+
+// VoiceForLanguage returns the configured ElevenLabs voice ID for a language code.
+func (c *Config) VoiceForLanguage(langCode string) string {
+	switch langCode {
+	case "it":
+		return c.ElevenLabsVoiceIT
+	case "es":
+		return c.ElevenLabsVoiceES
+	case "pt":
+		return c.ElevenLabsVoicePT
+	case "fr":
+		return c.ElevenLabsVoiceFR
+	case "de":
+		return c.ElevenLabsVoiceDE
+	case "ja":
+		return c.ElevenLabsVoiceJA
+	case "ru":
+		return c.ElevenLabsVoiceRU
+	case "ro":
+		return c.ElevenLabsVoiceRO
+	case "zh":
+		return c.ElevenLabsVoiceZH
+	default:
+		return "21m00Tcm4TlvDq8ikWAM" // Rachel multilingual fallback
 	}
 }
 

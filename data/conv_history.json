@@ -1,0 +1,95 @@
+{
+  "records": [
+    {
+      "id": "43f41303-45e4-4ee2-b6c0-150ec9694da2",
+      "user_id": "20e5feba-3ac1-4017-9422-0f6dad617e1b",
+      "session_id": "5c794a70-16de-44c0-90ad-b14239c86ea7",
+      "language": "es",
+      "topic": "general",
+      "topic_name": "General Conversation",
+      "level": 1,
+      "message_count": 2,
+      "duration_secs": 14,
+      "fp_earned": 8,
+      "summary": "The student was introduced to a basic Spanish greeting and prompted to say \"Hola\".",
+      "topics_discussed": [
+        "greetings",
+        "basic small talk"
+      ],
+      "vocabulary_learned": [
+        "Hola: hello"
+      ],
+      "suggested_next_lessons": [
+        "Practice pronouncing \"Hola\" correctly",
+        "Learn how to ask and answer \"¿Cómo estás?\" (How are you?)",
+        "Introduce yourself with \"Me llamo...\" (My name is...)"
+      ],
+      "created_at": "2026-03-07T17:25:59.274016-05:00",
+      "ended_at": "2026-03-07T17:26:18.442377-05:00"
+    },
+    {
+      "id": "5cb57e49-4b5b-4dc8-923a-ca6b5afb9b0a",
+      "user_id": "20e5feba-3ac1-4017-9422-0f6dad617e1b",
+      "session_id": "a94a5ed3-90c1-4c4e-b068-ec03a387a6df",
+      "language": "es",
+      "topic": "general",
+      "topic_name": "General Conversation",
+      "level": 1,
+      "message_count": 2,
+      "duration_secs": 17,
+      "fp_earned": 8,
+      "summary": "The student practiced basic Spanish greetings, learning how to say and pronounce \"hola\".",
+      "topics_discussed": [
+        "greetings"
+      ],
+      "vocabulary_learned": [
+        "hola: hello"
+      ],
+      "suggested_next_lessons": [
+        "Practice pronouncing \"hola\" with different speakers",
+        "Learn additional greetings like \"buenos días\", \"buenas tardes\", and \"buenas noches\"",
+        "Introduce yourself in Spanish (e.g., \"Me llamo...\")",
+        "Practice simple response exchanges using greetings"
+      ],
+      "created_at": "2026-03-07T17:25:21.956544-05:00",
+      "ended_at": "2026-03-07T17:25:44.346006-05:00"
+    },
+    {
+      "id": "2a1e262c-2828-4987-97fe-e02c4c507fbf",
+      "user_id": "20e5feba-3ac1-4017-9422-0f6dad617e1b",
+      "session_id": "4c6f3d7a-a8e0-46d7-87ea-ca90faee5837",
+      "language": "es",
+      "topic": "grammar-vocabulary",
+      "topic_name": "Vocabulary Builder",
+      "level": 1,
+      "message_count": 150,
+      "duration_secs": 10,
+      "fp_earned": 100,
+      "summary": "Great practice session in Spanish! Keep it up.",
+      "suggested_next_lessons": [
+        "Keep practicing to build fluency!",
+        "Review any vocabulary from today's session."
+      ],
+      "created_at": "2026-03-07T17:21:00.571073-05:00",
+      "ended_at": "2026-03-07T17:21:14.616519-05:00"
+    },
+    {
+      "id": "a27402bd-cd11-4180-912e-4c8cccffa218",
+      "user_id": "20e5feba-3ac1-4017-9422-0f6dad617e1b",
+      "session_id": "d412263d-cb2e-4c0e-9cae-29cc24efa93f",
+      "language": "es",
+      "topic": "grammar-vocabulary",
+      "topic_name": "Vocabulary Builder",
+      "level": 1,
+      "message_count": 151,
+      "duration_secs": 107,
+      "fp_earned": 100,
+      "summary": "",
+      "suggested_next_lessons": [
+        "Keep practicing Spanish regularly!"
+      ],
+      "created_at": "2026-03-07T16:43:38.162457-05:00",
+      "ended_at": "2026-03-07T16:45:32.014832-05:00"
+    }
+  ]
+}

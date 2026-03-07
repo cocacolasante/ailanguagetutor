@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2" />
+  <link rel="stylesheet" href="/css/style.css?v=4" />
 </head>
 <body>
 
@@ -28,12 +28,18 @@
     </div>
   </nav>
 
-  <!-- Email verification banner (shown if email is not yet verified) -->
+  <!-- Page tabs -->
+  <div class="page-tabs">
+    <a href="/dashboard.html" class="page-tab active">Dashboard</a>
+    <a href="/leaderboard.html" class="page-tab">Leaderboard</a>
+  </div>
+
+  <!-- Email verification banner -->
   <div class="email-verify-banner hidden" id="emailVerifyBanner">
     ✉️ Please verify your email address — check your inbox for a verification link.
   </div>
 
-  <!-- Trial banner (shown for trialing users) -->
+  <!-- Trial banner -->
   <div class="trial-banner hidden" id="trialBanner">
     <span id="trialBannerText">⏰ Trial active</span>
     <a href="/profile.html" class="trial-upgrade-btn">Upgrade to Full Access →</a>
@@ -46,10 +52,60 @@
 
   <!-- Main content -->
   <main class="dashboard-page">
+
+    <!-- Welcome header -->
     <header class="dashboard-header">
-      <h1>Good <span id="greeting-time">day</span>, <span id="greeting-name" class="gradient-text">learner</span> 👋</h1>
-      <p>Choose a language, level, and topic to start practicing.</p>
+      <div>
+        <h1>Good <span id="greeting-time">day</span>, <span id="greeting-name" class="gradient-text">learner</span> 👋</h1>
+        <p>Choose your settings and start practicing.</p>
+      </div>
     </header>
+
+    <!-- Stats row -->
+    <div class="stats-row" id="statsRow">
+      <!-- Streak -->
+      <div class="stat-widget">
+        <div class="stat-widget-icon">🔥</div>
+        <div class="stat-widget-body">
+          <div class="stat-widget-value" id="streakValue">—</div>
+          <div class="stat-widget-label">Day Streak</div>
+        </div>
+      </div>
+
+      <!-- Total FP -->
+      <div class="stat-widget">
+        <div class="stat-widget-icon">⭐</div>
+        <div class="stat-widget-body">
+          <div class="stat-widget-value" id="fpValue">—</div>
+          <div class="stat-widget-label">Fluency Points</div>
+        </div>
+      </div>
+
+      <!-- Conversations -->
+      <div class="stat-widget">
+        <div class="stat-widget-icon">💬</div>
+        <div class="stat-widget-body">
+          <div class="stat-widget-value" id="convCount">—</div>
+          <div class="stat-widget-label">Conversations</div>
+        </div>
+      </div>
+
+      <!-- Recent conversation card -->
+      <div class="stat-widget recent-conv-widget" id="recentConvWidget" style="display:none">
+        <div class="stat-widget-icon">📖</div>
+        <div class="stat-widget-body" style="flex:1;min-width:0">
+          <div class="stat-widget-label">Last Session</div>
+          <div class="recent-conv-info" id="recentConvInfo"></div>
+          <div class="recent-conv-actions" id="recentConvActions"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Achievements row -->
+    <div class="achievements-row hidden" id="achievementsRow">
+      <div class="achievements-label">Recent achievements</div>
+      <div class="achievements-list" id="achievementsList"></div>
+    </div>
 
     <!-- Step 1: Language -->
     <section aria-labelledby="lang-step">
@@ -58,13 +114,9 @@
         <h2 id="lang-step">Choose your language</h2>
       </div>
       <div class="lang-section-content">
-        <div class="language-grid" id="languageGrid">
-          <!-- Populated by JS -->
-        </div>
+        <div class="language-grid" id="languageGrid"></div>
         <div class="lang-load-more" id="langLoadMoreWrap" style="display:none">
-          <button class="lang-load-more-btn" onclick="loadMoreLanguages()">
-            + More Languages
-          </button>
+          <button class="lang-load-more-btn" onclick="loadMoreLanguages()">+ More Languages</button>
         </div>
       </div>
     </section>
@@ -75,34 +127,47 @@
         <div class="step-num">2</div>
         <h2 id="level-step">Choose your level</h2>
       </div>
-      <div class="level-grid" id="levelGrid">
-        <!-- Populated by JS -->
-      </div>
+      <div class="level-grid" id="levelGrid"></div>
     </section>
 
-    <!-- Step 3: Topic -->
-    <section aria-labelledby="topic-step">
+    <!-- Step 3: Personality -->
+    <section aria-labelledby="personality-step">
       <div class="step-label">
         <div class="step-num">3</div>
-        <h2 id="topic-step">Choose a topic</h2>
+        <h2 id="personality-step">Choose your tutor personality</h2>
       </div>
-      <div id="topicsContainer">
-        <!-- Populated by JS -->
-      </div>
+      <div class="personality-grid" id="personalityGrid"></div>
     </section>
+
+    <!-- Step 4: Learning Mode -->
+    <section aria-labelledby="mode-step">
+      <div class="step-label">
+        <div class="step-num">4</div>
+        <h2 id="mode-step">Choose your learning mode</h2>
+      </div>
+      <div class="learning-mode-grid" id="learningModeGrid"></div>
+    </section>
+
+    <!-- Step 5: Learning Activity -->
+    <section aria-labelledby="activity-step" id="activitySection" class="hidden">
+      <div class="step-label">
+        <div class="step-num">5</div>
+        <h2 id="activity-step">Choose your activity</h2>
+      </div>
+      <div id="activityContainer"></div>
+    </section>
+
   </main>
 
-  <!-- Start bar (slides up when both selected) -->
+  <!-- Start bar -->
   <div class="start-bar" id="startBar">
-    <div class="start-selection-info" id="selectionInfo">
-      <!-- Populated by JS -->
-    </div>
+    <div class="start-selection-info" id="selectionInfo"></div>
     <button class="btn btn-primary btn-lg" id="startBtn" onclick="startConversation()">
       Start Conversation →
     </button>
   </div>
 
   <script src="/js/api.js?v=14"></script>
-  <script src="/js/dashboard.js?v=7"></script>
+  <script src="/js/dashboard.js?v=9"></script>
 </body>
 </html>

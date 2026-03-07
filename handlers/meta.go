@@ -17,6 +17,21 @@ type Topic struct {
 	Category    string `json:"category"`
 }
 
+type Personality struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Icon        string `json:"icon"`
+	Description string `json:"description"`
+}
+
+var Personalities = []Personality{
+	{ID: "professor", Name: "Professor", Icon: "🎓", Description: "Formal, structured, precise. Excellent grammar explanations."},
+	{ID: "friendly-partner", Name: "Friendly Partner", Icon: "😊", Description: "Casual, warm, encouraging. Relaxed conversation practice."},
+	{ID: "bartender", Name: "Bartender", Icon: "🍺", Description: "Laid-back, witty, authentic. Everyday slang and expressions."},
+	{ID: "business-executive", Name: "Business Executive", Icon: "💼", Description: "Professional, direct, formal. Business vocabulary focus."},
+	{ID: "travel-guide", Name: "Travel Guide", Icon: "🗺️", Description: "Enthusiastic, cultural, storytelling. Local phrases and culture."},
+}
+
 var Languages = []Language{
 	{Code: "it", Name: "Italian", NativeName: "Italiano", Flag: "🇮🇹"},
 	{Code: "es", Name: "Spanish", NativeName: "Español", Flag: "🇪🇸"},
@@ -53,6 +68,44 @@ var Topics = []Topic{
 	{ID: "marketing", Name: "Marketing & Business", Icon: "📊", Description: "Campaigns, branding, sales, and business strategy", Category: "Professional"},
 	{ID: "finance", Name: "Finance & Banking", Icon: "💰", Description: "Money, investments, banking, and economics", Category: "Professional"},
 	{ID: "news", Name: "News & Current Events", Icon: "📰", Description: "Discussing news, politics, and world affairs", Category: "Professional"},
+
+	// Role-Play Scenarios
+	{ID: "role-restaurant", Name: "Restaurant Ordering", Icon: "🍽️", Description: "Order food, ask about the menu, and pay the bill", Category: "Role-Play Scenarios"},
+	{ID: "role-job-interview", Name: "Job Interview", Icon: "👔", Description: "Practice professional interviews and workplace language", Category: "Role-Play Scenarios"},
+	{ID: "role-airport", Name: "Airport & Travel", Icon: "✈️", Description: "Check in, security, boarding, and asking for help", Category: "Role-Play Scenarios"},
+	{ID: "role-doctor", Name: "Doctor Visit", Icon: "🏥", Description: "Describe symptoms, understand medical advice", Category: "Role-Play Scenarios"},
+	{ID: "role-business", Name: "Business Meeting", Icon: "💼", Description: "Negotiate, present ideas, and follow business etiquette", Category: "Role-Play Scenarios"},
+	{ID: "role-apartment", Name: "Renting an Apartment", Icon: "🏠", Description: "View apartments, negotiate rent, sign agreements", Category: "Role-Play Scenarios"},
+	{ID: "role-directions", Name: "Asking Directions", Icon: "🗺️", Description: "Navigate a city, understand landmarks and transit", Category: "Role-Play Scenarios"},
+
+	// Immersion Mode
+	{ID: "immersion-daily", Name: "Daily Life", Icon: "🏡", Description: "Navigate everyday situations — shopping, transport, home, errands", Category: "Immersion Mode"},
+	{ID: "immersion-social", Name: "Social Scene", Icon: "🥂", Description: "A party, dinner with friends, casual social encounters with native speakers", Category: "Immersion Mode"},
+	{ID: "immersion-work", Name: "Workplace", Icon: "💼", Description: "Meetings, colleagues, and office conversations entirely in the target language", Category: "Immersion Mode"},
+	{ID: "immersion-city", Name: "City Exploration", Icon: "🏙️", Description: "Ask for directions, explore neighborhoods, navigate public transport", Category: "Immersion Mode"},
+	{ID: "immersion-media", Name: "Film & Music", Icon: "🎬", Description: "Discuss movies, TV shows, songs, and pop culture as a native would", Category: "Immersion Mode"},
+	{ID: "immersion-debate", Name: "Opinion & Debate", Icon: "🗣️", Description: "Share views, argue positions, and engage in real native-level discourse", Category: "Immersion Mode"},
+
+	// Cultural Language Learning
+	{ID: "cultural-context", Name: "Cultural Context Lessons", Icon: "🏛️", Description: "Learn social norms, etiquette, and unwritten rules through guided cultural discussion", Category: "Cultural Language Learning"},
+	{ID: "cultural-stories", Name: "Story-Based Learning", Icon: "📖", Description: "Immerse yourself in short authentic stories set in real cultural contexts", Category: "Cultural Language Learning"},
+	{ID: "cultural-idioms", Name: "Idioms & Expressions", Icon: "💬", Description: "Master common idioms, proverbs, and sayings with their cultural origins", Category: "Cultural Language Learning"},
+	{ID: "cultural-food", Name: "Food & Cuisine Culture", Icon: "🍜", Description: "Explore food traditions, dining customs, and culinary vocabulary", Category: "Cultural Language Learning"},
+	{ID: "cultural-history", Name: "History & Traditions", Icon: "🎭", Description: "Discover festivals, historical context, and regional cultural traditions", Category: "Cultural Language Learning"},
+
+	// Grammar & Skills
+	{ID: "grammar-vocabulary", Name: "Vocabulary Builder", Icon: "📚", Description: "Learn new words through guided exercises, phonetic breakdowns, and translation quizzes", Category: "Grammar & Skills"},
+	{ID: "grammar-sentences", Name: "Sentence Construction", Icon: "✏️", Description: "Build grammatically correct sentences through word-order and fill-in-the-blank exercises", Category: "Grammar & Skills"},
+	{ID: "grammar-pronunciation", Name: "Pronunciation Practice", Icon: "🗣️", Description: "Perfect your pronunciation with phonetic breakdowns, stress guides, and sound drills", Category: "Grammar & Skills"},
+	{ID: "grammar-listening", Name: "Listening Comprehension", Icon: "👂", Description: "Improve listening skills through short passages and comprehension questions", Category: "Grammar & Skills"},
+	{ID: "grammar-writing", Name: "Writing Coach", Icon: "📝", Description: "Submit writing for detailed grammar corrections, style upgrades, and encouragement", Category: "Grammar & Skills"},
+
+	// AI Travel Mode
+	{ID: "travel-rome", Name: "Rome, Italy", Icon: "🇮🇹", Description: "Explore Rome: food, art, navigation, and local culture", Category: "AI Travel Mode"},
+	{ID: "travel-barcelona", Name: "Barcelona, Spain", Icon: "🇪🇸", Description: "Navigate Barcelona's tapas bars, beaches, and architecture", Category: "AI Travel Mode"},
+	{ID: "travel-paris", Name: "Paris, France", Icon: "🇫🇷", Description: "Paris café culture, museums, and everyday Parisian life", Category: "AI Travel Mode"},
+	{ID: "travel-tokyo", Name: "Tokyo, Japan", Icon: "🇯🇵", Description: "Tokyo's subway, restaurants, and cultural etiquette", Category: "AI Travel Mode"},
+	{ID: "travel-lisbon", Name: "Lisbon, Portugal", Icon: "🇵🇹", Description: "Lisbon's neighborhoods, trams, and traditional cuisine", Category: "AI Travel Mode"},
 }
 
 func GetLanguages(w http.ResponseWriter, r *http.Request) {
@@ -61,6 +114,10 @@ func GetLanguages(w http.ResponseWriter, r *http.Request) {
 
 func GetTopics(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, Topics)
+}
+
+func GetPersonalities(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, Personalities)
 }
 
 // ── Validation helpers used by conversation handler ───────────────────────────
@@ -77,6 +134,18 @@ func IsValidLanguage(lang string) bool {
 func IsValidTopic(topic string) bool {
 	for _, t := range Topics {
 		if t.ID == topic {
+			return true
+		}
+	}
+	return false
+}
+
+func IsValidPersonality(personality string) bool {
+	if personality == "" {
+		return true
+	}
+	for _, p := range Personalities {
+		if p.ID == personality {
 			return true
 		}
 	}
