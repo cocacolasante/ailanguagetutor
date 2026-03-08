@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=12" />
+  <link rel="stylesheet" href="/css/style.css?v=13" />
 </head>
 <body>
 
@@ -61,6 +61,39 @@
       </div>
     </section>
 
+    <!-- Learning Preferences -->
+    <section style="max-width:600px; margin-top:32px;" id="prefSection">
+      <div class="step-label" style="margin-bottom:16px;">
+        <div class="step-num">🎯</div>
+        <h2>Learning Preferences</h2>
+      </div>
+      <!-- Onboarding hint shown when ?onboarding=1 -->
+      <div class="prefs-onboarding-hint hidden" id="onboardingHint">
+        👋 Welcome! Set your language, level, and tutor personality to get started.
+      </div>
+      <div class="profile-card" id="prefCard">
+        <!-- Language -->
+        <div class="pref-row">
+          <div class="pref-row-label">Language</div>
+          <div class="pref-lang-grid" id="prefLangGrid"></div>
+        </div>
+        <!-- Level -->
+        <div class="pref-row" style="margin-top:20px;">
+          <div class="pref-row-label">Proficiency Level</div>
+          <div class="pref-level-grid" id="prefLevelGrid"></div>
+        </div>
+        <!-- Personality -->
+        <div class="pref-row" style="margin-top:20px;">
+          <div class="pref-row-label">Tutor Personality</div>
+          <div class="pref-personality-grid" id="prefPersonalityGrid"></div>
+        </div>
+        <div style="margin-top:24px; display:flex; gap:12px; align-items:center;">
+          <button class="btn btn-primary" onclick="savePreferences()">Save Preferences</button>
+          <span class="pref-save-status hidden" id="prefSaveStatus">✓ Saved</span>
+        </div>
+      </div>
+    </section>
+
     <!-- Subscription info -->
     <section style="max-width: 600px; margin-top: 32px;">
       <div class="step-label" style="margin-bottom: 16px;">
@@ -77,6 +110,6 @@
   </main>
 
   <script src="/js/api.js?v=14"></script>
-  <script src="/js/profile.js?v=2"></script>
+  <script src="/js/profile.js?v=3"></script>
 </body>
 </html>

@@ -163,5 +163,133 @@ async function resubscribe() {
   }
 }
 
+/* ── Learning Preferences ────────────────────────────────────────────────────── */
+
+const PREF_LANGUAGES = [
+  { code: 'it', flag: '🇮🇹', name: 'Italian' },
+  { code: 'es', flag: '🇪🇸', name: 'Spanish' },
+  { code: 'pt', flag: '🇧🇷', name: 'Portuguese' },
+  // { code: 'fr', flag: '🇫🇷', name: 'French' },
+  // { code: 'de', flag: '🇩🇪', name: 'German' },
+  // { code: 'ja', flag: '🇯🇵', name: 'Japanese' },
+  // { code: 'ru', flag: '🇷🇺', name: 'Russian' },
+  // { code: 'ro', flag: '🇷🇴', name: 'Romanian' },
+  // { code: 'zh', flag: '🇨🇳', name: 'Chinese' },
+];
+
+const PREF_LEVELS = [
+  { value: 1, label: '1', name: 'Beginner',           desc: 'Learning the basics' },
+  { value: 2, label: '2', name: 'Elementary',         desc: 'Simple conversations' },
+  { value: 3, label: '3', name: 'Intermediate',       desc: 'Everyday topics' },
+  { value: 4, label: '4', name: 'Upper-Intermediate', desc: 'Complex discussions' },
+  { value: 5, label: '5', name: 'Fluent',             desc: 'Near-native' },
+];
+
+const PREF_PERSONALITIES = [
+  { id: '',                   icon: '🤷', name: 'No Preference',     desc: 'Balanced, adaptive tutor' },
+  { id: 'professor',          icon: '🎓', name: 'The Professor',     desc: 'Structured and academic' },
+  { id: 'friendly-partner',   icon: '😊', name: 'Friendly Partner',  desc: 'Casual and encouraging' },
+  { id: 'bartender',          icon: '🍺', name: 'The Bartender',     desc: 'Relaxed pub-style chat' },
+  { id: 'business-executive', icon: '💼', name: 'Business Executive', desc: 'Formal and professional' },
+  { id: 'travel-guide',       icon: '🗺️', name: 'Travel Guide',     desc: 'Adventure and exploration' },
+];
+
+let prefLang        = '';
+let prefLevel       = 0;
+let prefPersonality = '';
+
+async function initPreferences() {
+  // Fetch fresh user data to get latest pref values
+  let currentUser = user;
+  try {
+    currentUser = await API.get('/api/auth/me');
+  } catch {}
+
+  prefLang        = currentUser.pref_language    || '';
+  prefLevel       = currentUser.pref_level       || 0;
+  prefPersonality = currentUser.pref_personality || '';
+
+  // Onboarding hint
+  if (new URLSearchParams(location.search).get('onboarding') === '1') {
+    document.getElementById('onboardingHint')?.classList.remove('hidden');
+  }
+
+  renderPrefLanguages();
+  renderPrefLevels();
+  renderPrefPersonalities();
+}
+
+function renderPrefLanguages() {
+  const grid = document.getElementById('prefLangGrid');
+  if (!grid) return;
+  grid.innerHTML = PREF_LANGUAGES.map(l => `
+    <div class="pref-lang-card${prefLang === l.code ? ' selected' : ''}"
+         id="pref-lang-${l.code}"
+         onclick="selectPrefLang('${l.code}')">
+      <span>${l.flag}</span>
+      <span>${l.name}</span>
+    </div>`).join('');
+}
+
+function renderPrefLevels() {
+  const grid = document.getElementById('prefLevelGrid');
+  if (!grid) return;
+  grid.innerHTML = PREF_LEVELS.map(l => `
+    <div class="pref-level-card${prefLevel === l.value ? ' selected' : ''}"
+         id="pref-level-${l.value}"
+         onclick="selectPrefLevel(${l.value})">
+      <div class="pref-level-num">${l.label}</div>
+      <div class="pref-level-name">${l.name}</div>
+    </div>`).join('');
+}
+
+function renderPrefPersonalities() {
+  const grid = document.getElementById('prefPersonalityGrid');
+  if (!grid) return;
+  grid.innerHTML = PREF_PERSONALITIES.map(p => `
+    <div class="pref-personality-card${prefPersonality === p.id ? ' selected' : ''}"
+         id="pref-personality-${p.id || 'none'}"
+         onclick="selectPrefPersonality('${p.id}')">
+      <span>${p.icon}</span>
+      <span>${p.name}</span>
+    </div>`).join('');
+}
+
+function selectPrefLang(code) {
+  prefLang = code;
+  document.querySelectorAll('.pref-lang-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById(`pref-lang-${code}`)?.classList.add('selected');
+}
+
+function selectPrefLevel(value) {
+  prefLevel = value;
+  document.querySelectorAll('.pref-level-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById(`pref-level-${value}`)?.classList.add('selected');
+}
+
+function selectPrefPersonality(id) {
+  prefPersonality = id;
+  document.querySelectorAll('.pref-personality-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById(`pref-personality-${id || 'none'}`)?.classList.add('selected');
+}
+
+async function savePreferences() {
+  const statusEl = document.getElementById('prefSaveStatus');
+  try {
+    await API.patch('/api/user/preferences', {
+      language:    prefLang,
+      level:       prefLevel,
+      personality: prefPersonality,
+    });
+    if (statusEl) {
+      statusEl.classList.remove('hidden');
+      setTimeout(() => statusEl.classList.add('hidden'), 3000);
+    }
+  } catch (err) {
+    alert('Failed to save preferences: ' + (err.message || 'Unknown error'));
+  }
+}
+
 /* ── Boot ────────────────────────────────────────────────────────────────────── */
 loadStatus();
+initPreferences();

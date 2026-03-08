@@ -1,790 +1,423 @@
 requireAuth();
 
-/* ── State ──────────────────────────────────────────────────────────────────── */
-let selectedLang        = null;
-let selectedLevel       = null;
-let selectedPersonality = null;
-let selectedMode        = null;
-let selectedTopic       = null;
-let languages           = [];
-let topics              = [];
-let personalities       = [];
-let subStatus           = '';
-let userStats           = null;
+/* ── User state ─────────────────────────────────────────────────────────────── */
+let currentUser   = null;
+let selectedMode  = null;
+let selectedTopic = null;
 
-// Extra languages revealed by "Load More"
-const extraLanguages = [
-  { code: 'fr', name: 'French',   native_name: 'Français',  flag: '🇫🇷' },
-  { code: 'de', name: 'German',   native_name: 'Deutsch',   flag: '🇩🇪' },
-  { code: 'ja', name: 'Japanese', native_name: '日本語',     flag: '🇯🇵' },
-  { code: 'ru', name: 'Russian',  native_name: 'Русский',   flag: '🇷🇺' },
-  { code: 'ro', name: 'Romanian', native_name: 'Română',    flag: '🇷🇴' },
-  { code: 'zh', name: 'Chinese',  native_name: '中文',       flag: '🇨🇳' },
-];
-const extraLangCodes = new Set(extraLanguages.map(l => l.code));
+/* ── Boot ───────────────────────────────────────────────────────────────────── */
+(async function init() {
+  try {
+    currentUser = await API.get('/api/auth/me');
+  } catch {
+    window.location.href = '/';
+    return;
+  }
 
-const levels = [
-  { id: 1, label: 'Beginner',     emoji: '🌱', desc: 'New to the language — vocabulary, pronunciation & basics' },
-  { id: 2, label: 'Elementary',   emoji: '📖', desc: 'Simple phrases & everyday grammar with guided support' },
-  { id: 3, label: 'Intermediate', emoji: '💬', desc: 'Comfortable conversation on familiar topics' },
-  { id: 4, label: 'Advanced',     emoji: '🎯', desc: 'Nuanced discussion, idioms & complex grammar' },
-  { id: 5, label: 'Fluent',       emoji: '🚀', desc: 'Fully natural, native-speed conversation' },
-];
+  // Navbar
+  const u = currentUser;
+  const navAvatar = document.getElementById('navAvatar');
+  if (navAvatar) navAvatar.textContent = (u.username || '?')[0].toUpperCase();
+  const navUsername = document.getElementById('navUsername');
+  if (navUsername) navUsername.textContent = u.username || '';
+  if (u.is_admin) document.getElementById('adminLink')?.classList.remove('hidden');
 
-const MODES = [
+  // Banners
+  if (!u.email_verified) document.getElementById('emailVerifyBanner')?.classList.remove('hidden');
+  if (u.subscription_status === 'trialing') {
+    const tb = document.getElementById('trialBanner');
+    tb?.classList.remove('hidden');
+    if (u.trial_ends_at) {
+      const days = Math.max(0, Math.ceil((new Date(u.trial_ends_at) - Date.now()) / 86400000));
+      const el = document.getElementById('trialBannerText');
+      if (el) el.textContent = `⏰ ${days} day${days !== 1 ? 's' : ''} left on trial`;
+    }
+  }
+  if (u.subscription_status === 'past_due') document.getElementById('pastdueBanner')?.classList.remove('hidden');
+
+  // Prefs banner
+  if (!u.pref_language || !u.pref_level) {
+    document.getElementById('prefsBanner')?.classList.remove('hidden');
+  }
+
+  // Greeting
+  const hour = new Date().getHours();
+  const timeOfDay = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
+  document.getElementById('greeting-time').textContent = timeOfDay;
+  document.getElementById('greeting-name').textContent = u.username || 'learner';
+
+  // Update subtitle based on pref state
+  if (u.pref_language) {
+    const langName = LANG_META[u.pref_language]?.name || u.pref_language;
+    document.getElementById('greetingSubtitle').textContent =
+      `Learning ${langName} · Level ${u.pref_level || '?'} · ${u.pref_personality ? PERSONALITY_NAMES[u.pref_personality] || 'Custom tutor' : 'No tutor set'}`;
+  }
+
+  // Stats
+  loadStats();
+
+  // Build the new lesson mode grid (pre-render, hidden until needed)
+  renderModeGrid();
+})();
+
+/* ── Language / personality metadata ────────────────────────────────────────── */
+const LANG_META = {
+  it: { flag: '🇮🇹', name: 'Italian' },
+  es: { flag: '🇪🇸', name: 'Spanish' },
+  pt: { flag: '🇧🇷', name: 'Portuguese' },
+  // fr: { flag: '🇫🇷', name: 'French' },
+  // de: { flag: '🇩🇪', name: 'German' },
+  // ja: { flag: '🇯🇵', name: 'Japanese' },
+  // ru: { flag: '🇷🇺', name: 'Russian' },
+  // ro: { flag: '🇷🇴', name: 'Romanian' },
+  // zh: { flag: '🇨🇳', name: 'Chinese' },
+};
+
+const PERSONALITY_NAMES = {
+  '':                   'No Preference',
+  'professor':          'The Professor',
+  'friendly-partner':   'Friendly Partner',
+  'bartender':          'The Bartender',
+  'business-executive': 'Business Executive',
+  'travel-guide':       'Travel Guide',
+};
+
+const LEVEL_NAMES = {
+  1: 'Beginner', 2: 'Elementary', 3: 'Intermediate', 4: 'Upper-Intermediate', 5: 'Fluent',
+};
+
+/* ── Stats ──────────────────────────────────────────────────────────────────── */
+async function loadStats() {
+  try {
+    const stats = await API.get('/api/user/stats');
+    if (!stats) return;
+    document.getElementById('streakValue').textContent = stats.streak ?? 0;
+    document.getElementById('fpValue').textContent     = stats.total_fp ?? 0;
+    document.getElementById('convCount').textContent   = stats.conversation_count ?? 0;
+
+    const badges = stats.achievements || [];
+    if (badges.length) {
+      const row  = document.getElementById('achievementsRow');
+      const list = document.getElementById('achievementsList');
+      row?.classList.remove('hidden');
+      const last3 = badges.slice(-3).reverse();
+      list.innerHTML = last3.map(id => {
+        const b = BADGE_META[id] || { icon: '🏅', name: id };
+        return `<div class="achievement-pill" title="${b.name}">${b.icon} ${b.name}</div>`;
+      }).join('');
+    }
+  } catch {}
+}
+
+const BADGE_META = {
+  streak_3:      { icon: '🔥', name: '3-Day Streak' },
+  streak_7:      { icon: '🔥', name: 'Week Warrior' },
+  streak_30:     { icon: '🌟', name: 'Monthly Master' },
+  streak_100:    { icon: '💎', name: 'Century Streak' },
+  first_conv:    { icon: '👶', name: 'First Steps' },
+  conv_10:       { icon: '📖', name: 'Getting Started' },
+  conv_50:       { icon: '🎓', name: 'Dedicated Learner' },
+  conv_100:      { icon: '🏆', name: 'Language Champion' },
+  fp_100:        { icon: '⭐', name: 'FP Collector' },
+  fp_500:        { icon: '🌟', name: 'FP Enthusiast' },
+  fp_1000:       { icon: '💫', name: 'FP Expert' },
+  fp_5000:       { icon: '✨', name: 'FP Legend' },
+  lang_level_5:  { icon: '📈', name: 'Intermediate' },
+  lang_level_10: { icon: '🎯', name: 'Advanced' },
+  lang_level_20: { icon: '👑', name: 'Master' },
+};
+
+/* ── Continue Lesson panel ──────────────────────────────────────────────────── */
+function showContinuePanel() {
+  document.getElementById('continuePanel').classList.remove('hidden');
+  document.getElementById('newLessonPanel').classList.add('hidden');
+  document.getElementById('startBar').classList.remove('show');
+  selectedTopic = null;
+  selectedMode  = null;
+  loadRecentLessons();
+}
+
+async function loadRecentLessons() {
+  const grid = document.getElementById('recentLessonsList');
+  grid.innerHTML = '<div class="conv-loading-state" style="padding:32px 0"><div class="spinner"></div><p>Loading…</p></div>';
+  try {
+    const data = await API.get('/api/conversation/records');
+    const records = data?.records || [];
+    if (!records.length) {
+      grid.innerHTML = '<p style="color:var(--text-2);padding:24px 0">No recent lessons yet. Start your first one!</p>';
+      return;
+    }
+    const recent = records.slice(0, 3);
+    grid.innerHTML = recent.map(r => {
+      const lang = LANG_META[r.language] || { flag: '🌐', name: r.language };
+      const date = new Date(r.created_at || r.ended_at || Date.now()).toLocaleDateString([], { month: 'short', day: 'numeric' });
+      const personality = r.personality ? (PERSONALITY_NAMES[r.personality] || r.personality) : 'Default tutor';
+      return `
+        <div class="recent-lesson-card" onclick="continueLesson(${JSON.stringify(r).replace(/"/g, '&quot;')})">
+          <div class="recent-lesson-flag">${lang.flag}</div>
+          <div class="recent-lesson-body">
+            <div class="recent-lesson-topic">${r.topic_name || r.topic}</div>
+            <div class="recent-lesson-meta">${lang.name} · Level ${r.level} · ${personality}</div>
+            <div class="recent-lesson-date">${date}</div>
+          </div>
+          <div class="recent-lesson-arrow">→</div>
+        </div>`;
+    }).join('');
+  } catch {
+    grid.innerHTML = '<p style="color:var(--text-2);padding:24px 0">Could not load recent lessons.</p>';
+  }
+}
+
+function continueLesson(record) {
+  // Start a new session with the same parameters as the selected record
+  startConversationWithParams(record.language, record.level, record.personality || '', record.topic, record.topic_name || record.topic);
+}
+
+/* ── New Lesson panel ───────────────────────────────────────────────────────── */
+function showNewLessonPanel() {
+  document.getElementById('newLessonPanel').classList.remove('hidden');
+  document.getElementById('continuePanel').classList.add('hidden');
+  document.getElementById('startBar').classList.remove('show');
+  selectedTopic = null;
+  selectedMode  = null;
+  // Reset activity section
+  document.getElementById('activitySection')?.classList.add('hidden');
+  // Deselect mode cards
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+}
+
+/* ── Learning mode grid ─────────────────────────────────────────────────────── */
+const LEARNING_MODES = [
   {
     id: 'conversational',
     icon: '💬',
     name: 'Conversational Practice',
-    desc: 'Practice real conversations, role-play scenarios, and travel simulations.',
-    comingSoon: false,
+    desc: 'Real conversations, role-play scenarios, and travel simulations.',
+    available: true,
   },
   {
     id: 'grammar',
     icon: '📝',
     name: 'Grammar & Skills',
     desc: 'Vocabulary builder, sentence construction, pronunciation, listening, writing.',
-    comingSoon: false,
+    available: false,
   },
   {
     id: 'cultural',
     icon: '🌍',
-    name: 'Cultural Language Learning',
-    desc: 'Cultural context, stories, idioms, food culture, and history.',
-    comingSoon: false,
+    name: 'Cultural Learning',
+    desc: 'Cultural context lessons and story-based learning.',
+    available: false,
   },
   {
     id: 'immersion',
     icon: '🔵',
     name: 'Immersion Mode',
-    desc: 'Zero English. The AI speaks only your target language at native speed.',
-    comingSoon: false,
+    desc: 'The entire session is conducted only in your target language.',
+    available: false,
   },
 ];
 
-const BADGE_META = {
-  streak_3:      { name: '3-Day Streak',      icon: '🔥' },
-  streak_7:      { name: 'Week Warrior',       icon: '🔥' },
-  streak_30:     { name: 'Monthly Master',     icon: '🌟' },
-  streak_100:    { name: 'Century Streak',     icon: '💎' },
-  first_conv:    { name: 'First Steps',        icon: '👶' },
-  conv_10:       { name: 'Getting Started',    icon: '📖' },
-  conv_50:       { name: 'Dedicated Learner',  icon: '🎓' },
-  conv_100:      { name: 'Language Champion',  icon: '🏆' },
-  fp_100:        { name: 'FP Collector',       icon: '⭐' },
-  fp_500:        { name: 'FP Enthusiast',      icon: '🌟' },
-  fp_1000:       { name: 'FP Expert',          icon: '💫' },
-  fp_5000:       { name: 'FP Legend',          icon: '✨' },
-  lang_level_5:  { name: 'Intermediate',       icon: '📈' },
-  lang_level_10: { name: 'Advanced',           icon: '🎯' },
-  lang_level_20: { name: 'Master',             icon: '👑' },
-};
-
-const LANG_FLAGS = {
-  it:'🇮🇹', es:'🇪🇸', pt:'🇧🇷', fr:'🇫🇷', de:'🇩🇪',
-  ja:'🇯🇵', ru:'🇷🇺', ro:'🇷🇴', zh:'🇨🇳',
-};
-
-/* ── Greeting + auth ────────────────────────────────────────────────────────── */
-(function initGreeting() {
-  const hour = new Date().getHours();
-  const time = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
-  document.getElementById('greeting-time').textContent = time;
-
-  const user = getUser();
-  const name = user.username || 'learner';
-  document.getElementById('greeting-name').textContent = name;
-
-  const avatar = document.getElementById('navAvatar');
-  avatar.textContent = name.charAt(0).toUpperCase();
-  document.getElementById('navUsername').textContent = name;
-
-  if (user.is_admin) {
-    document.getElementById('adminLink').classList.remove('hidden');
-  }
-
-  if (user.email_verified === false) {
-    document.getElementById('emailVerifyBanner').classList.remove('hidden');
-  }
-
-  subStatus = user.subscription_status || '';
-  const trialEndsAt = user.trial_ends_at ? new Date(user.trial_ends_at) : null;
-  const trialExpired = trialEndsAt && trialEndsAt <= new Date();
-
-  if (subStatus === 'cancelled' && trialExpired) {
-    window.location.href = '/profile.html?expired=true';
-    return;
-  }
-
-  if (subStatus === 'trialing') {
-    const banner = document.getElementById('trialBanner');
-    banner.classList.remove('hidden');
-    let txt = '⏰ Trial active — levels 1–3 only.';
-    if (trialEndsAt) {
-      const days = Math.max(0, Math.ceil((trialEndsAt - Date.now()) / 86400000));
-      txt = `⏰ Trial: ${days} day${days !== 1 ? 's' : ''} remaining · Levels 1–3 only.`;
-    }
-    document.getElementById('trialBannerText').textContent = txt;
-  } else if (subStatus === 'cancelled') {
-    const banner = document.getElementById('trialBanner');
-    banner.classList.remove('hidden');
-    const days = trialEndsAt ? Math.max(0, Math.ceil((trialEndsAt - Date.now()) / 86400000)) : 0;
-    document.getElementById('trialBannerText').textContent =
-      `⚠️ Subscription cancelled — trial access ends in ${days} day${days !== 1 ? 's' : ''}. Levels 1–3 only.`;
-  } else if (subStatus === 'past_due') {
-    document.getElementById('pastdueBanner').classList.remove('hidden');
-  }
-})();
-
-/* ── Load all data ──────────────────────────────────────────────────────────── */
-async function loadData() {
-  try {
-    [languages, topics, personalities, userStats] = await Promise.all([
-      API.get('/api/languages'),
-      API.get('/api/topics'),
-      API.get('/api/personalities'),
-      API.get('/api/user/stats').catch(() => null),
-    ]);
-    renderLanguages();
-    renderPersonalities();
-    if (userStats) renderStats(userStats);
-  } catch (err) {
-    console.error('Failed to load data:', err);
-  }
-}
-
-/* ── Stats widgets ──────────────────────────────────────────────────────────── */
-function renderStats(stats) {
-  document.getElementById('streakValue').textContent =
-    stats.streak > 0 ? `${stats.streak}` : '0';
-  document.getElementById('fpValue').textContent =
-    stats.total_fp > 0 ? stats.total_fp.toLocaleString() : '0';
-  document.getElementById('convCount').textContent =
-    stats.conversation_count > 0 ? stats.conversation_count : '0';
-
-  // Recent conversation widget
-  const recent = stats.recent_conversations;
-  if (recent && recent.length > 0) {
-    const r = recent[0];
-    const widget = document.getElementById('recentConvWidget');
-    widget.style.display = '';
-    const flag = LANG_FLAGS[r.language] || '🌐';
-    const dur = r.duration_secs > 0
-      ? `${Math.floor(r.duration_secs / 60)}m ${r.duration_secs % 60}s`
-      : '—';
-
-    document.getElementById('recentConvInfo').innerHTML = `
-      <div class="recent-lang">${flag} ${capitalize(r.language)} · Level ${r.level}</div>
-      <div class="recent-topic">${r.topic_name}</div>
-      <div class="recent-dur">⏱ ${dur} · ${r.message_count} messages · +${r.fp_earned} FP</div>
-      <div class="recent-summary">${escapeHtml(r.summary || '')}</div>
-    `;
-    document.getElementById('recentConvActions').innerHTML = `
-      <a href="/summary.html?record=${r.id}" class="btn btn-secondary btn-sm">View Summary</a>
-    `;
-  }
-
-  // Achievements
-  const achievements = stats.achievements || [];
-  if (achievements.length > 0) {
-    const row = document.getElementById('achievementsRow');
-    row.classList.remove('hidden');
-    const list = document.getElementById('achievementsList');
-    const toShow = achievements.slice(-5).reverse();
-    list.innerHTML = toShow.map(id => {
-      const b = BADGE_META[id] || { name: id, icon: '🏅' };
-      return `<div class="achievement-pill" title="${b.name}">${b.icon} ${b.name}</div>`;
-    }).join('');
-  }
-}
-
-function capitalize(str) {
-  return str ? str.charAt(0).toUpperCase() + str.slice(1) : str;
-}
-
-function escapeHtml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
-/* ── Language cards ─────────────────────────────────────────────────────────── */
-function langCardHTML(lang, isExtra) {
-  return `
-    <div
-      class="language-card${isExtra ? ' lang-extra' : ''}"
-      id="lang-${lang.code}"
-      onclick="selectLanguage('${lang.code}')"
-      role="radio"
-      aria-checked="false"
-      tabindex="0"
-      onkeydown="if(event.key==='Enter'||event.key===' ')selectLanguage('${lang.code}')"
-    >
-      <div class="lang-check">✓</div>
-      <div class="lang-flag">${lang.flag}</div>
-      <div class="lang-name">${lang.name}</div>
-      <div class="lang-native">${lang.native_name}</div>
-    </div>`;
-}
-
-function renderLanguages() {
-  const grid = document.getElementById('languageGrid');
-  const primaryHTML = languages
-    .filter(l => !extraLangCodes.has(l.code))
-    .map(l => langCardHTML(l, false))
-    .join('');
-  const extraHTML = extraLanguages.map(l => langCardHTML(l, true)).join('');
-  grid.innerHTML = primaryHTML + extraHTML;
-  document.getElementById('langLoadMoreWrap').style.display = '';
-}
-
-function loadMoreLanguages() {
-  document.querySelectorAll('.lang-extra').forEach(el => el.classList.remove('lang-extra'));
-  document.getElementById('langLoadMoreWrap').style.display = 'none';
-}
-
-function selectLanguage(code) {
-  if (selectedLang) {
-    const prev = document.getElementById(`lang-${selectedLang}`);
-    if (prev) { prev.classList.remove('selected'); prev.setAttribute('aria-checked', 'false'); }
-  }
-  selectedLang = code;
-  const card = document.getElementById(`lang-${code}`);
-  if (card) { card.classList.add('selected'); card.setAttribute('aria-checked', 'true'); }
-  updateStartBar();
-}
-
-/* ── Level cards ────────────────────────────────────────────────────────────── */
-function renderLevels() {
-  const isTrial = subStatus === 'trialing' || subStatus === 'cancelled';
-  const grid = document.getElementById('levelGrid');
-  grid.innerHTML = levels.map(lv => {
-    const locked = isTrial && lv.id > 3;
-    return `
-    <div
-      class="level-card${locked ? ' level-locked' : ''}"
-      id="level-${lv.id}"
-      onclick="${locked ? 'showUpgradePrompt()' : `selectLevel(${lv.id})`}"
-      role="radio"
-      aria-checked="false"
-      tabindex="0"
-      title="${locked ? 'Upgrade to unlock' : ''}"
-    >
-      <div class="level-check">✓</div>
-      ${locked ? '<div class="level-lock">🔒</div>' : ''}
-      <div class="level-num">${lv.id}</div>
-      <div class="level-emoji">${lv.emoji}</div>
-      <div class="level-label">${lv.label}</div>
-      <div class="level-desc">${lv.desc}</div>
-    </div>`;
-  }).join('');
-}
-
-function showUpgradePrompt() {
-  if (confirm('Levels 4 and 5 require a full subscription.\n\nUpgrade now?')) {
-    window.location.href = '/profile.html';
-  }
-}
-
-function selectLevel(id) {
-  if (selectedLevel) {
-    const prev = document.getElementById(`level-${selectedLevel}`);
-    if (prev) { prev.classList.remove('selected'); prev.setAttribute('aria-checked', 'false'); }
-  }
-  selectedLevel = id;
-  const card = document.getElementById(`level-${id}`);
-  if (card) { card.classList.add('selected'); card.setAttribute('aria-checked', 'true'); }
-  updateStartBar();
-}
-
-/* ── Personality cards ──────────────────────────────────────────────────────── */
-function renderPersonalities() {
-  const grid = document.getElementById('personalityGrid');
-  const none = `
-    <div
-      class="personality-card selected"
-      id="personality-none"
-      onclick="selectPersonality('')"
-      role="radio"
-      aria-checked="true"
-      tabindex="0"
-    >
-      <div class="personality-check">✓</div>
-      <div class="personality-icon">🎲</div>
-      <div class="personality-name">No Preference</div>
-      <div class="personality-desc">Standard AI tutor — balanced and adaptive.</div>
-    </div>`;
-
-  const cards = personalities.map(p => `
-    <div
-      class="personality-card"
-      id="personality-${p.id}"
-      onclick="selectPersonality('${p.id}')"
-      role="radio"
-      aria-checked="false"
-      tabindex="0"
-    >
-      <div class="personality-check">✓</div>
-      <div class="personality-icon">${p.icon}</div>
-      <div class="personality-name">${p.name}</div>
-      <div class="personality-desc">${p.description}</div>
-    </div>`).join('');
-
-  grid.innerHTML = none + cards;
-  selectedPersonality = '';
-}
-
-function selectPersonality(id) {
-  const prevId = selectedPersonality === '' ? 'none' : selectedPersonality;
-  const prev = document.getElementById(`personality-${prevId}`);
-  if (prev) { prev.classList.remove('selected'); prev.setAttribute('aria-checked', 'false'); }
-
-  selectedPersonality = id;
-  const newId = id === '' ? 'none' : id;
-  const card = document.getElementById(`personality-${newId}`);
-  if (card) { card.classList.add('selected'); card.setAttribute('aria-checked', 'true'); }
-
-  updateStartBar();
-}
-
-/* ── Learning Mode cards (Step 4) ───────────────────────────────────────────── */
-function renderModes() {
+function renderModeGrid() {
   const grid = document.getElementById('learningModeGrid');
-  grid.innerHTML = MODES.map(m => `
-    <div
-      class="learning-mode-card${m.comingSoon ? ' coming-soon' : ''}"
-      id="mode-${m.id}"
-      onclick="${m.comingSoon ? '' : `selectMode('${m.id}')`}"
-      role="radio"
-      aria-checked="false"
-      tabindex="${m.comingSoon ? '-1' : '0'}"
-    >
-      <div class="learning-mode-icon">${m.icon}</div>
-      <div class="learning-mode-name">${m.name}</div>
-      <div class="learning-mode-desc">${m.desc}</div>
-      ${m.comingSoon ? '<div class="coming-soon-badge">Coming Soon</div>' : ''}
-    </div>
-  `).join('');
+  if (!grid) return;
+  grid.innerHTML = LEARNING_MODES.map(m => `
+    <div class="mode-card${m.available ? '' : ' mode-card-coming-soon'}" id="mode-${m.id}"
+         onclick="${m.available ? `selectMode('${m.id}')` : `showComingSoon('${m.name}')`}">
+      <div class="mode-card-icon">${m.icon}</div>
+      <div class="mode-card-body">
+        <div class="mode-card-name">${m.name}${m.available ? '' : ' <span class="coming-soon-badge">Coming Soon</span>'}</div>
+        <div class="mode-card-desc">${m.desc}</div>
+      </div>
+    </div>`).join('');
 }
 
-function selectMode(id) {
-  if (selectedMode) {
-    const prev = document.getElementById(`mode-${selectedMode}`);
-    if (prev) { prev.classList.remove('selected'); prev.setAttribute('aria-checked', 'false'); }
-  }
-  selectedMode = id;
-  const card = document.getElementById(`mode-${id}`);
-  if (card) { card.classList.add('selected'); card.setAttribute('aria-checked', 'true'); }
-
-  // Clear selected topic
-  if (selectedTopic) {
-    const prev = document.getElementById(`topic-${selectedTopic}`);
-    if (prev) { prev.classList.remove('selected'); prev.setAttribute('aria-checked', 'false'); }
-    selectedTopic = null;
-  }
-
-  renderActivitySection(id);
-  updateStartBar();
-}
-
-/* ── Activity Section (Step 5) ──────────────────────────────────────────────── */
-function renderActivitySection(mode) {
-  const section = document.getElementById('activitySection');
+function showComingSoon(name) {
   const container = document.getElementById('activityContainer');
-
-  section.classList.remove('hidden');
-
-  if (mode === 'conversational') {
-    renderConversationalActivities(container);
-  } else if (mode === 'grammar') {
-    renderGrammarActivities(container);
-  } else if (mode === 'cultural') {
-    renderCulturalActivities(container);
-  } else if (mode === 'immersion') {
-    renderImmersionActivities(container);
-  } else {
-    const modeInfo = MODES.find(m => m.id === mode);
-    renderComingSoonPanel(container, modeInfo);
-  }
-
-  section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-const GRAMMAR_ACTIVITIES = [
-  {
-    id: 'grammar-vocabulary',
-    icon: '📚',
-    name: 'Vocabulary Builder',
-    desc: 'Learn new words through guided exercises, phonetic breakdowns, and translation quizzes.',
-    tag: 'Vocabulary',
-  },
-  {
-    id: 'grammar-sentences',
-    icon: '✏️',
-    name: 'Sentence Construction',
-    desc: 'Build grammatically correct sentences through word-order and fill-in-the-blank exercises.',
-    tag: 'Grammar',
-  },
-  {
-    id: 'grammar-pronunciation',
-    icon: '🗣️',
-    name: 'Pronunciation Practice',
-    desc: 'Perfect your pronunciation with phonetic breakdowns, syllable stress guides, and sound drills.',
-    tag: 'Pronunciation',
-  },
-  {
-    id: 'grammar-listening',
-    icon: '👂',
-    name: 'Listening Comprehension',
-    desc: 'Improve listening skills through short passages and targeted comprehension questions.',
-    tag: 'Listening',
-  },
-  {
-    id: 'grammar-writing',
-    icon: '📝',
-    name: 'Writing Coach',
-    desc: 'Submit your writing for detailed grammar corrections, style upgrades, and encouragement.',
-    tag: 'Writing',
-  },
-];
-
-function renderGrammarActivities(container) {
-  container.innerHTML = `
-    <p class="activity-section-intro">Choose an exercise type. Each session is structured, adaptive, and ends with an AI performance summary.</p>
-    <div class="grammar-grid">
-      ${GRAMMAR_ACTIVITIES.map(a => `
-        <div
-          class="grammar-card"
-          id="topic-${a.id}"
-          onclick="selectTopic('${a.id}')"
-          role="radio"
-          aria-checked="false"
-          tabindex="0"
-          onkeydown="if(event.key==='Enter'||event.key===' ')selectTopic('${a.id}')"
-        >
-          <div class="grammar-card-header">
-            <div class="grammar-card-icon">${a.icon}</div>
-            <div class="grammar-card-tag">${a.tag}</div>
-          </div>
-          <div class="grammar-card-name">${a.name}</div>
-          <div class="grammar-card-desc">${a.desc}</div>
-        </div>
-      `).join('')}
-    </div>
-  `;
-}
-
-const IMMERSION_SCENARIOS = [
-  { id: 'immersion-daily',  icon: '🏡', name: 'Daily Life',      desc: 'Shopping, transport, home, errands — the full texture of everyday life.' },
-  { id: 'immersion-social', icon: '🥂', name: 'Social Scene',    desc: 'A dinner party, night out, or casual get-together with native speakers.' },
-  { id: 'immersion-work',   icon: '💼', name: 'Workplace',       desc: 'Meetings, colleagues, and office life entirely in the target language.' },
-  { id: 'immersion-city',   icon: '🏙️', name: 'City Exploration', desc: 'Ask locals for help, navigate transit, and explore neighbourhoods.' },
-  { id: 'immersion-media',  icon: '🎬', name: 'Film & Music',    desc: 'Discuss movies, TV shows, and music as a native-speaking friend would.' },
-  { id: 'immersion-debate', icon: '🗣️', name: 'Opinion & Debate', desc: 'Share views and argue positions in real native-level discourse.' },
-];
-
-function renderImmersionActivities(container) {
-  const lang = languages.find(l => l.code === selectedLang) || extraLanguages.find(l => l.code === selectedLang);
-  const langName = lang ? lang.name : 'your target language';
-
-  container.innerHTML = `
-    <div class="immersion-warning">
-      <div class="immersion-warning-icon">🔵</div>
-      <div>
-        <strong>Full ${langName} Immersion</strong>
-        <p>The AI will speak only in ${langName} — no English, no translations, no corrections. Choose a scene and dive in.</p>
-        <ul class="immersion-rules-list">
-          <li>Zero English from the AI, no matter what</li>
-          <li>If you write in English, the AI continues as if you responded in ${langName}</li>
-          <li>Grammar errors are ignored unless meaning breaks down</li>
-        </ul>
-      </div>
-    </div>
-    <div class="immersion-grid">
-      ${IMMERSION_SCENARIOS.map(s => `
-        <div
-          class="immersion-card"
-          id="topic-${s.id}"
-          onclick="selectTopic('${s.id}')"
-          role="radio"
-          aria-checked="false"
-          tabindex="0"
-          onkeydown="if(event.key==='Enter'||event.key===' ')selectTopic('${s.id}')"
-        >
-          <div class="immersion-card-icon">${s.icon}</div>
-          <div class="immersion-card-name">${s.name}</div>
-          <div class="immersion-card-desc">${s.desc}</div>
-        </div>
-      `).join('')}
-    </div>
-  `;
-}
-
-const CULTURAL_ACTIVITIES = [
-  {
-    id: 'cultural-context',
-    icon: '🏛️',
-    name: 'Cultural Context Lessons',
-    desc: 'Learn social norms, etiquette, and unwritten rules through guided cultural discussion.',
-    tag: 'Culture',
-  },
-  {
-    id: 'cultural-stories',
-    icon: '📖',
-    name: 'Story-Based Learning',
-    desc: 'Immerse yourself in short authentic stories set in real cultural contexts.',
-    tag: 'Stories',
-  },
-  {
-    id: 'cultural-idioms',
-    icon: '💬',
-    name: 'Idioms & Expressions',
-    desc: 'Master common idioms, proverbs, and sayings with their cultural origins and real usage.',
-    tag: 'Idioms',
-  },
-  {
-    id: 'cultural-food',
-    icon: '🍜',
-    name: 'Food & Cuisine Culture',
-    desc: 'Explore food traditions, dining customs, regional dishes, and culinary vocabulary.',
-    tag: 'Food',
-  },
-  {
-    id: 'cultural-history',
-    icon: '🎭',
-    name: 'History & Traditions',
-    desc: 'Discover festivals, historical milestones, and the stories behind regional cultural traditions.',
-    tag: 'History',
-  },
-];
-
-function renderCulturalActivities(container) {
-  container.innerHTML = `
-    <p class="activity-section-intro">Choose a cultural topic. Each session blends language practice with genuine cultural insight.</p>
-    <div class="grammar-grid">
-      ${CULTURAL_ACTIVITIES.map(a => `
-        <div
-          class="grammar-card"
-          id="topic-${a.id}"
-          onclick="selectTopic('${a.id}')"
-          role="radio"
-          aria-checked="false"
-          tabindex="0"
-          onkeydown="if(event.key==='Enter'||event.key===' ')selectTopic('${a.id}')"
-        >
-          <div class="grammar-card-header">
-            <div class="grammar-card-icon">${a.icon}</div>
-            <div class="cultural-tag">${a.tag}</div>
-          </div>
-          <div class="grammar-card-name">${a.name}</div>
-          <div class="grammar-card-desc">${a.desc}</div>
-        </div>
-      `).join('')}
-    </div>
-  `;
-}
-
-function renderConversationalActivities(container) {
-  const regularCats = new Set(['Everyday Life', 'Social', 'Travel & Leisure', 'Health & Learning', 'Professional']);
-  const regularTopics = topics.filter(t => regularCats.has(t.category));
-  const rolePlayTopics = topics.filter(t => t.category === 'Role-Play Scenarios');
-  const travelTopics = topics.filter(t => t.category === 'AI Travel Mode');
-
-  container.innerHTML = `
-    <div class="activity-tabs">
-      <button class="activity-tab-btn active" onclick="switchActivityTab(event, 'tab-topics')">Topics</button>
-      <button class="activity-tab-btn" onclick="switchActivityTab(event, 'tab-roleplay')">Role-Play Scenarios</button>
-      <button class="activity-tab-btn" onclick="switchActivityTab(event, 'tab-travel')">AI Travel Mode</button>
-    </div>
-
-    <div class="activity-tab-panel active" id="tab-topics">
-      ${renderTopicsByCategory(regularTopics)}
-    </div>
-
-    <div class="activity-tab-panel" id="tab-roleplay">
-      <div class="topic-grid">
-        ${rolePlayTopics.map(t => topicCardHTML(t)).join('')}
-      </div>
-    </div>
-
-    <div class="activity-tab-panel" id="tab-travel">
-      <div class="topic-grid travel-grid">
-        ${travelTopics.map(t => travelCardHTML(t)).join('')}
-      </div>
-    </div>
-  `;
-}
-
-function renderTopicsByCategory(topicList) {
-  const categories = {};
-  topicList.forEach(t => {
-    if (!categories[t.category]) categories[t.category] = [];
-    categories[t.category].push(t);
-  });
-
-  return Object.entries(categories).map(([cat, items]) => `
-    <div class="category-section">
-      <div class="category-title">${cat}</div>
-      <div class="topic-grid">
-        ${items.map(t => topicCardHTML(t)).join('')}
-      </div>
-    </div>
-  `).join('');
-}
-
-function topicCardHTML(t) {
-  return `
-    <div
-      class="topic-card"
-      id="topic-${t.id}"
-      onclick="selectTopic('${t.id}')"
-      role="radio"
-      aria-checked="false"
-      tabindex="0"
-      onkeydown="if(event.key==='Enter'||event.key===' ')selectTopic('${t.id}')"
-    >
-      <div class="topic-icon">${t.icon}</div>
-      <div class="topic-name">${t.name}</div>
-      <div class="topic-desc">${t.description}</div>
-    </div>`;
-}
-
-function travelCardHTML(t) {
-  return `
-    <div
-      class="travel-card"
-      id="topic-${t.id}"
-      onclick="selectTopic('${t.id}')"
-      role="radio"
-      aria-checked="false"
-      tabindex="0"
-      onkeydown="if(event.key==='Enter'||event.key===' ')selectTopic('${t.id}')"
-    >
-      <div class="travel-card-flag">${t.icon}</div>
-      <div class="travel-card-city">${t.name}</div>
-      <div class="travel-card-desc">${t.description}</div>
-    </div>`;
-}
-
-function renderComingSoonPanel(container, modeInfo) {
-  const descriptions = {
-    grammar:   'Vocabulary Builder, Sentence Construction, Pronunciation Training, Listening Exercises, and Writing Coach — all coming soon.',
-    cultural:  'Cultural Context Lessons and Story-Based Learning to understand the culture behind the language — coming soon.',
-    immersion: 'Full interface immersion — every button, label, and prompt switches to your target language — coming soon.',
-  };
-
+  const section   = document.getElementById('activitySection');
   container.innerHTML = `
     <div class="coming-soon-panel">
-      <div class="coming-soon-panel-icon">${modeInfo.icon}</div>
-      <h3>${modeInfo.name}</h3>
-      <p>${descriptions[modeInfo.id] || 'This mode is coming soon!'}</p>
-    </div>
-  `;
+      <div class="coming-soon-panel-icon">🚧</div>
+      <h3>${name}</h3>
+      <p>This learning mode is coming soon. Stay tuned for updates!</p>
+    </div>`;
+  section.classList.remove('hidden');
 }
 
-function switchActivityTab(event, tabId) {
-  document.querySelectorAll('.activity-tab-btn').forEach(btn => btn.classList.remove('active'));
-  event.target.classList.add('active');
+function selectMode(modeId) {
+  selectedMode  = modeId;
+  selectedTopic = null;
+  document.getElementById('startBar').classList.remove('show');
 
-  document.querySelectorAll('.activity-tab-panel').forEach(panel => panel.classList.remove('active'));
-  document.getElementById(tabId).classList.add('active');
+  // Highlight selected mode card
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById(`mode-${modeId}`)?.classList.add('selected');
 
-  if (selectedTopic) {
-    const prev = document.getElementById(`topic-${selectedTopic}`);
-    if (prev) { prev.classList.remove('selected'); prev.setAttribute('aria-checked', 'false'); }
-    selectedTopic = null;
-    updateStartBar();
-  }
+  // Show activity section
+  const section = document.getElementById('activitySection');
+  section.classList.remove('hidden');
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  renderActivitySection(modeId);
 }
 
-/* ── Topic selection ────────────────────────────────────────────────────────── */
-function selectTopic(id) {
-  if (selectedTopic) {
-    const prev = document.getElementById(`topic-${selectedTopic}`);
-    if (prev) { prev.classList.remove('selected'); prev.setAttribute('aria-checked', 'false'); }
+/* ── Activity / topic data ──────────────────────────────────────────────────── */
+
+const CONVERSATIONAL_TOPICS = [
+  {
+    category: 'Everyday Life',
+    topics: [
+      { id: 'general',      icon: '💬', name: 'General Conversation',  desc: 'Free-form practice on any subject' },
+      { id: 'daily-recap',  icon: '📅', name: 'Daily Recap',           desc: 'Talk about your day and recent events' },
+      { id: 'future-plans', icon: '🗓️', name: 'Future Plans',         desc: 'Discuss goals, dreams, and upcoming events' },
+      { id: 'home',         icon: '🏠', name: 'Home & Living',         desc: 'Describe your home, neighbourhood, and daily routine' },
+      { id: 'food-dining',  icon: '🍽️', name: 'Food & Dining',        desc: 'Restaurants, recipes, and food culture' },
+      { id: 'shopping',     icon: '🛍️', name: 'Shopping',             desc: 'Stores, fashion, and buying decisions' },
+      { id: 'family',       icon: '👨‍👩‍👧', name: 'Family Life',       desc: 'Relationships, traditions, and home life' },
+    ],
+  },
+  {
+    category: 'Social & Entertainment',
+    topics: [
+      { id: 'culture',        icon: '🎭', name: 'Arts & Culture',       desc: 'Music, art, movies, and traditions' },
+      { id: 'sports',         icon: '⚽', name: 'Sports & Fitness',     desc: 'Teams, workouts, and sporting events' },
+      { id: 'entertainment',  icon: '🎬', name: 'Entertainment',        desc: 'TV, film, gaming, and pop culture' },
+      { id: 'news',           icon: '📰', name: 'News & Current Events', desc: 'Headlines, global issues, and opinions' },
+    ],
+  },
+  {
+    category: 'Travel & Nature',
+    topics: [
+      { id: 'travel',      icon: '✈️', name: 'Travel',       desc: 'Trips, destinations, and travel stories' },
+      { id: 'environment', icon: '🌿', name: 'Environment',  desc: 'Climate, sustainability, and nature' },
+    ],
+  },
+  {
+    category: 'Health & Learning',
+    topics: [
+      { id: 'health',    icon: '🏥', name: 'Health & Wellness', desc: 'Fitness, medical care, and mental health' },
+      { id: 'education', icon: '📚', name: 'Education',         desc: 'School, learning strategies, and academia' },
+    ],
+  },
+  {
+    category: 'Professional',
+    topics: [
+      { id: 'work',       icon: '💼', name: 'Work & Career',    desc: 'Jobs, interviews, and professional life' },
+      { id: 'technology', icon: '💻', name: 'Technology',       desc: 'Gadgets, software, and the digital world' },
+      { id: 'cloud',      icon: '☁️', name: 'Cloud & SaaS',     desc: 'Cloud tools, infrastructure, and tech teams' },
+      { id: 'marketing',  icon: '📊', name: 'Marketing',        desc: 'Branding, campaigns, and digital marketing' },
+      { id: 'finance',    icon: '💰', name: 'Finance',          desc: 'Money, investing, and financial planning' },
+    ],
+  },
+  {
+    category: 'Role-Play Scenarios',
+    topics: [
+      { id: 'role-restaurant',    icon: '🍽️', name: 'Restaurant Ordering',   desc: 'Order food, ask about the menu, and pay the bill' },
+      { id: 'role-job-interview', icon: '👔', name: 'Job Interview',          desc: 'Practice professional interviews and workplace language' },
+      { id: 'role-airport',       icon: '✈️', name: 'Airport & Travel',       desc: 'Check in, security, boarding, and asking for help' },
+      { id: 'role-doctor',        icon: '🏥', name: 'Doctor Visit',           desc: 'Describe symptoms, understand medical advice' },
+      { id: 'role-business',      icon: '💼', name: 'Business Meeting',       desc: 'Negotiate, present ideas, and follow business etiquette' },
+      { id: 'role-apartment',     icon: '🏠', name: 'Renting an Apartment',   desc: 'View apartments, negotiate rent, sign agreements' },
+      { id: 'role-directions',    icon: '🗺️', name: 'Asking Directions',     desc: 'Navigate a city, understand landmarks and transit' },
+    ],
+  },
+  {
+    category: 'AI Travel Mode',
+    topics: [
+      { id: 'travel-rome',      icon: '🇮🇹', name: 'Rome, Italy',        desc: 'Explore Rome: food, art, navigation, and local culture' },
+      { id: 'travel-barcelona', icon: '🇪🇸', name: 'Barcelona, Spain',   desc: "Navigate Barcelona's tapas bars, beaches, and architecture" },
+      { id: 'travel-paris',     icon: '🇫🇷', name: 'Paris, France',      desc: 'Paris café culture, museums, and everyday Parisian life' },
+      { id: 'travel-tokyo',     icon: '🇯🇵', name: 'Tokyo, Japan',       desc: "Tokyo's subway, restaurants, and cultural etiquette" },
+      { id: 'travel-lisbon',    icon: '🇵🇹', name: 'Lisbon, Portugal',   desc: "Lisbon's neighborhoods, trams, and traditional cuisine" },
+    ],
+  },
+];
+
+function renderActivitySection(modeId) {
+  const container = document.getElementById('activityContainer');
+  if (modeId !== 'conversational') {
+    // Coming soon panel already handled in showComingSoon
+    return;
   }
-  selectedTopic = id;
-  const card = document.getElementById(`topic-${id}`);
-  if (card) { card.classList.add('selected'); card.setAttribute('aria-checked', 'true'); }
-  card?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  container.innerHTML = CONVERSATIONAL_TOPICS.map(cat => `
+    <div class="topic-category">
+      <div class="topic-category-label">${cat.category}</div>
+      <div class="topic-grid">
+        ${cat.topics.map(t => `
+          <div class="topic-card" id="topic-${t.id}" onclick="selectTopic('${t.id}', '${escapeAttr(t.name)}')">
+            <span class="topic-icon">${t.icon}</span>
+            <div class="topic-info">
+              <div class="topic-name">${t.name}</div>
+              <div class="topic-desc">${t.desc}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function selectTopic(id, name) {
+  selectedTopic = { id, name };
+  document.querySelectorAll('.topic-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById(`topic-${id}`)?.classList.add('selected');
   updateStartBar();
 }
 
 /* ── Start bar ──────────────────────────────────────────────────────────────── */
 function updateStartBar() {
-  const bar  = document.getElementById('startBar');
-  const info = document.getElementById('selectionInfo');
-
-  const conversationalModes = new Set(['conversational', 'grammar', 'cultural', 'immersion']);
-  if (!selectedLang || !selectedLevel || !conversationalModes.has(selectedMode) || !selectedTopic) {
-    bar.classList.remove('visible');
+  if (!selectedTopic || !currentUser?.pref_language) {
+    document.getElementById('startBar').classList.remove('show');
     return;
   }
+  const u    = currentUser;
+  const lang = LANG_META[u.pref_language] || { flag: '🌐', name: u.pref_language };
+  const lvl  = LEVEL_NAMES[u.pref_level]  || `Level ${u.pref_level}`;
+  const pers = u.pref_personality ? (PERSONALITY_NAMES[u.pref_personality] || u.pref_personality) : '';
 
-  const lang  = languages.find(l => l.code === selectedLang) || extraLanguages.find(l => l.code === selectedLang);
-  const lv    = levels.find(l => l.id === selectedLevel);
-  const topic = topics.find(t => t.id === selectedTopic)
-    || GRAMMAR_ACTIVITIES.find(a => a.id === selectedTopic)
-    || CULTURAL_ACTIVITIES.find(a => a.id === selectedTopic)
-    || IMMERSION_SCENARIOS.find(s => s.id === selectedTopic);
-  const pers  = selectedPersonality
-    ? personalities.find(p => p.id === selectedPersonality)
-    : null;
-
-  const startBtn = document.getElementById('startBtn');
-  if (startBtn) {
-    const btnLabels = { grammar: 'Start Exercise →', cultural: 'Start Session →', immersion: 'Enter Immersion →' };
-    startBtn.textContent = btnLabels[selectedMode] || 'Start Conversation →';
-  }
-
-  info.innerHTML = `
-    <span class="badge badge-purple">${lang.flag} ${lang.name}</span>
-    <span style="color:var(--text-3)">·</span>
-    <span class="badge badge-green">${lv.emoji} Level ${lv.id} — ${lv.label}</span>
-    ${pers && selectedMode === 'conversational' ? `<span style="color:var(--text-3)">·</span><span class="badge badge-yellow">${pers.icon} ${pers.name}</span>` : ''}
-    <span style="color:var(--text-3)">·</span>
-    <span class="badge badge-blue">${topic.icon} ${topic.name}</span>
+  const infoEl = document.getElementById('selectionInfo');
+  infoEl.innerHTML = `
+    <span class="start-chip">${lang.flag} ${lang.name}</span>
+    <span class="start-chip">Level ${u.pref_level} · ${lvl}</span>
+    ${pers ? `<span class="start-chip">🎭 ${pers}</span>` : ''}
+    <span class="start-chip">📌 ${selectedTopic.name}</span>
   `;
-  bar.classList.add('visible');
+  document.getElementById('startBar').classList.add('show');
 }
 
 /* ── Start conversation ─────────────────────────────────────────────────────── */
 async function startConversation() {
-  if (!selectedLang || !selectedLevel || !selectedTopic) return;
+  if (!selectedTopic || !currentUser?.pref_language) return;
+  const u = currentUser;
+  startConversationWithParams(u.pref_language, u.pref_level || 3, u.pref_personality || '', selectedTopic.id, selectedTopic.name);
+}
 
+async function startConversationWithParams(language, level, personality, topicId, topicName) {
   const btn = document.getElementById('startBtn');
-  btn.disabled = true;
-  btn.textContent = 'Starting…';
-
+  if (btn) { btn.disabled = true; btn.textContent = 'Starting…'; }
   try {
-    const data = await API.post('/api/conversation/start', {
-      language:    selectedLang,
-      level:       selectedLevel,
-      topic:       selectedTopic,
-      personality: selectedPersonality || '',
+    const session = await API.post('/api/conversation/start', { language, level, personality, topic: topicId });
+    const params  = new URLSearchParams({
+      session:     session.session_id,
+      language:    session.language,
+      level:       session.level,
+      topic:       session.topic,
+      topicName:   topicName || session.topic,
+      personality: session.personality || '',
     });
-
-    if (!data) return;
-
-    const params = new URLSearchParams({
-      session:     data.session_id,
-      language:    data.language,
-      level:       selectedLevel,
-      topic:       data.topic,
-      topicName:   data.topic_name,
-      personality: data.personality || '',
-    });
-    window.location.href = `/conversation.html?${params}`;
+    window.location.href = '/conversation.html?' + params.toString();
   } catch (err) {
-    console.error('Failed to start session:', err);
-    btn.disabled = false;
-    btn.textContent = 'Start Conversation →';
-    alert('Failed to start session. Please try again.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Start Conversation →'; }
+    alert('Could not start conversation: ' + (err.message || 'Unknown error'));
   }
 }
 
-/* ── Init ───────────────────────────────────────────────────────────────────── */
-renderLevels();
-renderModes();
-loadData();
+/* ── Auth logout ────────────────────────────────────────────────────────────── */
+async function logout() {
+  try { await API.post('/api/auth/logout', {}); } catch {}
+  localStorage.removeItem('auth_token');
+  window.location.href = '/';
+}
+
+/* ── Helpers ────────────────────────────────────────────────────────────────── */
+function escapeAttr(str) {
+  return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}

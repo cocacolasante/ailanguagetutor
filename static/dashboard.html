@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=4" />
+  <link rel="stylesheet" href="/css/style.css?v=13" />
 </head>
 <body>
 
@@ -22,7 +22,6 @@
         <div class="nav-avatar" id="navAvatar">?</div>
         <span id="navUsername"></span>
       </div>
-      <a class="btn btn-ghost btn-sm" href="/profile.html" title="Profile &amp; Billing">⚙</a>
       <a class="btn btn-ghost btn-sm hidden" id="adminLink" href="/admin.html">Admin</a>
       <button class="btn btn-ghost btn-sm" onclick="logout()">Sign out</button>
     </div>
@@ -32,6 +31,7 @@
   <div class="page-tabs">
     <a href="/dashboard.html" class="page-tab active">Dashboard</a>
     <a href="/leaderboard.html" class="page-tab">Leaderboard</a>
+    <a href="/profile.html" class="page-tab">Profile</a>
   </div>
 
   <!-- Email verification banner -->
@@ -50,6 +50,12 @@
     ⚠️ Your payment is past due. <a href="/profile.html">Update payment method →</a>
   </div>
 
+  <!-- Preferences not set banner -->
+  <div class="prefs-banner hidden" id="prefsBanner">
+    🎯 Set your <strong>language</strong>, <strong>level</strong>, and <strong>tutor personality</strong> in your profile before starting.
+    <a href="/profile.html" class="trial-upgrade-btn">Go to Profile →</a>
+  </div>
+
   <!-- Main content -->
   <main class="dashboard-page">
 
@@ -57,13 +63,12 @@
     <header class="dashboard-header">
       <div>
         <h1>Good <span id="greeting-time">day</span>, <span id="greeting-name" class="gradient-text">learner</span> 👋</h1>
-        <p>Choose your settings and start practicing.</p>
+        <p id="greetingSubtitle">Ready to practice today?</p>
       </div>
     </header>
 
     <!-- Stats row -->
     <div class="stats-row" id="statsRow">
-      <!-- Streak -->
       <div class="stat-widget">
         <div class="stat-widget-icon">🔥</div>
         <div class="stat-widget-body">
@@ -71,8 +76,6 @@
           <div class="stat-widget-label">Day Streak</div>
         </div>
       </div>
-
-      <!-- Total FP -->
       <div class="stat-widget">
         <div class="stat-widget-icon">⭐</div>
         <div class="stat-widget-body">
@@ -80,23 +83,11 @@
           <div class="stat-widget-label">Fluency Points</div>
         </div>
       </div>
-
-      <!-- Conversations -->
       <div class="stat-widget">
         <div class="stat-widget-icon">💬</div>
         <div class="stat-widget-body">
           <div class="stat-widget-value" id="convCount">—</div>
           <div class="stat-widget-label">Conversations</div>
-        </div>
-      </div>
-
-      <!-- Recent conversation card -->
-      <div class="stat-widget recent-conv-widget" id="recentConvWidget" style="display:none">
-        <div class="stat-widget-icon">📖</div>
-        <div class="stat-widget-body" style="flex:1;min-width:0">
-          <div class="stat-widget-label">Last Session</div>
-          <div class="recent-conv-info" id="recentConvInfo"></div>
-          <div class="recent-conv-actions" id="recentConvActions"></div>
         </div>
       </div>
     </div>
@@ -107,55 +98,58 @@
       <div class="achievements-list" id="achievementsList"></div>
     </div>
 
-    <!-- Step 1: Language -->
-    <section aria-labelledby="lang-step">
-      <div class="step-label">
-        <div class="step-num">1</div>
-        <h2 id="lang-step">Choose your language</h2>
-      </div>
-      <div class="lang-section-content">
-        <div class="language-grid" id="languageGrid"></div>
-        <div class="lang-load-more" id="langLoadMoreWrap" style="display:none">
-          <button class="lang-load-more-btn" onclick="loadMoreLanguages()">+ More Languages</button>
+    <!-- Action cards -->
+    <div class="action-card-grid">
+      <div class="action-card action-card-continue" id="continueLessonBtn" onclick="showContinuePanel()">
+        <div class="action-card-icon">▶</div>
+        <div class="action-card-body">
+          <div class="action-card-name">Continue Lesson</div>
+          <div class="action-card-desc">Pick up where you left off</div>
         </div>
       </div>
-    </section>
-
-    <!-- Step 2: Level -->
-    <section aria-labelledby="level-step">
-      <div class="step-label">
-        <div class="step-num">2</div>
-        <h2 id="level-step">Choose your level</h2>
+      <div class="action-card action-card-new" onclick="showNewLessonPanel()">
+        <div class="action-card-icon">✦</div>
+        <div class="action-card-body">
+          <div class="action-card-name">Start New Lesson</div>
+          <div class="action-card-desc">Choose a topic and mode</div>
+        </div>
       </div>
-      <div class="level-grid" id="levelGrid"></div>
-    </section>
+    </div>
 
-    <!-- Step 3: Personality -->
-    <section aria-labelledby="personality-step">
-      <div class="step-label">
-        <div class="step-num">3</div>
-        <h2 id="personality-step">Choose your tutor personality</h2>
+    <!-- Continue Lesson panel -->
+    <div id="continuePanel" class="hidden">
+      <div class="step-label" style="margin-top:24px">
+        <h2>Recent Lessons</h2>
       </div>
-      <div class="personality-grid" id="personalityGrid"></div>
-    </section>
+      <div id="recentLessonsList" class="recent-lessons-grid">
+        <div class="conv-loading-state" style="padding:32px 0">
+          <div class="spinner"></div><p>Loading…</p>
+        </div>
+      </div>
+    </div>
 
-    <!-- Step 4: Learning Mode -->
-    <section aria-labelledby="mode-step">
-      <div class="step-label">
-        <div class="step-num">4</div>
-        <h2 id="mode-step">Choose your learning mode</h2>
-      </div>
-      <div class="learning-mode-grid" id="learningModeGrid"></div>
-    </section>
+    <!-- New Lesson panel -->
+    <div id="newLessonPanel" class="hidden">
 
-    <!-- Step 5: Learning Activity -->
-    <section aria-labelledby="activity-step" id="activitySection" class="hidden">
-      <div class="step-label">
-        <div class="step-num">5</div>
-        <h2 id="activity-step">Choose your activity</h2>
-      </div>
-      <div id="activityContainer"></div>
-    </section>
+      <!-- Step 1: Learning Mode -->
+      <section aria-labelledby="mode-step" style="margin-top:24px">
+        <div class="step-label">
+          <div class="step-num">1</div>
+          <h2 id="mode-step">Choose your learning mode</h2>
+        </div>
+        <div class="learning-mode-grid" id="learningModeGrid"></div>
+      </section>
+
+      <!-- Step 2: Activity -->
+      <section aria-labelledby="activity-step" id="activitySection" class="hidden">
+        <div class="step-label">
+          <div class="step-num">2</div>
+          <h2 id="activity-step">Choose your activity</h2>
+        </div>
+        <div id="activityContainer"></div>
+      </section>
+
+    </div>
 
   </main>
 
@@ -168,6 +162,6 @@
   </div>
 
   <script src="/js/api.js?v=14"></script>
-  <script src="/js/dashboard.js?v=9"></script>
+  <script src="/js/dashboard.js?v=12"></script>
 </body>
 </html>

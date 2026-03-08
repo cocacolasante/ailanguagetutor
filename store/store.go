@@ -62,6 +62,11 @@ type User struct {
 	LanguageLevel     map[string]int `json:"language_level,omitempty"`
 	Achievements      []string       `json:"achievements,omitempty"`
 	ConversationCount int            `json:"conversation_count"`
+
+	// Learning preferences (set on profile page)
+	PrefLanguage    string `json:"pref_language,omitempty"`
+	PrefLevel       int    `json:"pref_level,omitempty"`
+	PrefPersonality string `json:"pref_personality,omitempty"`
 }
 
 // HasFullAccess returns true when the user can use all levels.
@@ -417,6 +422,21 @@ func (us *UserStore) UpdateSubscription(userID, customerID, subscriptionID, stat
 			u.Approved = false
 		}
 	}
+	us.save()
+	return nil
+}
+
+// UpdatePreferences saves the user's language/level/personality preferences.
+func (us *UserStore) UpdatePreferences(id, language string, level int, personality string) error {
+	us.mu.Lock()
+	defer us.mu.Unlock()
+	u, exists := us.byID[id]
+	if !exists {
+		return ErrUserNotFound
+	}
+	u.PrefLanguage    = language
+	u.PrefLevel       = level
+	u.PrefPersonality = personality
 	us.save()
 	return nil
 }

@@ -27,6 +27,13 @@ type Config struct {
 	ElevenLabsVoiceZH string
 	ElevenLabsModel   string
 
+	// Per-personality voices (override language voice when personality is set)
+	ElevenLabsVoiceProfessor  string // The Professor  — Adam:  deep, authoritative male
+	ElevenLabsVoiceFriendly   string // Friendly Partner — Antoni: warm, conversational male
+	ElevenLabsVoiceBartender  string // The Bartender  — Sam:   raspy, casual male
+	ElevenLabsVoiceExecutive  string // Business Exec  — Josh:  confident, professional male
+	ElevenLabsVoiceTravel     string // Travel Guide   — Arnold: energetic, adventurous male
+
 	StripeSecretKey     string
 	StripeWebhookSecret string
 	StripePriceID       string
@@ -62,6 +69,13 @@ func Load() *Config {
 		ElevenLabsVoiceZH: getEnv("ELEVENLABS_VOICE_ZH", "21m00Tcm4TlvDq8ikWAM"),
 		ElevenLabsModel:   getEnv("ELEVENLABS_MODEL", "eleven_multilingual_v2"),
 
+		// Per-personality voices — defaults are well-known ElevenLabs pre-made voices
+		ElevenLabsVoiceProfessor: getEnv("ELEVENLABS_VOICE_PROFESSOR", "pNInz6obpgDQGcFmaJgB"), // Adam
+		ElevenLabsVoiceFriendly:  getEnv("ELEVENLABS_VOICE_FRIENDLY",  "ErXwobaYiN019PkySvjV"), // Antoni
+		ElevenLabsVoiceBartender: getEnv("ELEVENLABS_VOICE_BARTENDER", "yoZ06aMxZJJ28mfd3POQ"), // Sam
+		ElevenLabsVoiceExecutive: getEnv("ELEVENLABS_VOICE_EXECUTIVE", "TxGEqnHWrfWFTfGW9XjX"), // Josh
+		ElevenLabsVoiceTravel:    getEnv("ELEVENLABS_VOICE_TRAVEL",    "VR6AewLTigWG4xSOukaG"), // Arnold
+
 		StripeSecretKey:     getEnv("STRIPE_SECRET_KEY", ""),
 		StripeWebhookSecret: getEnv("STRIPE_WEBHOOK_SECRET", ""),
 		StripePriceID:       getEnv("STRIPE_PRICE_ID", ""),
@@ -73,6 +87,24 @@ func Load() *Config {
 		SMTPPassword: getEnv("SMTP_PASSWORD", ""),
 		EmailFrom:    getEnv("EMAIL_FROM", ""),
 	}
+}
+
+// VoiceForPersonality returns the voice ID for a personality, falling back to the
+// language voice when no personality is set.
+func (c *Config) VoiceForPersonality(personality, langCode string) string {
+	switch personality {
+	case "professor":
+		return c.ElevenLabsVoiceProfessor
+	case "friendly-partner":
+		return c.ElevenLabsVoiceFriendly
+	case "bartender":
+		return c.ElevenLabsVoiceBartender
+	case "business-executive":
+		return c.ElevenLabsVoiceExecutive
+	case "travel-guide":
+		return c.ElevenLabsVoiceTravel
+	}
+	return c.VoiceForLanguage(langCode)
 }
 
 // VoiceForLanguage returns the configured ElevenLabs voice ID for a language code.

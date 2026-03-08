@@ -247,128 +247,6 @@
       ],
       [
         {
-          "role": "assistant",
-          "content": "Great job, “trabajo en una empresa” is perfect! Now try **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho) – can you say that?"
-        },
-        {
-          "role": "assistant",
-          "content": "Let's start with a friendly greeting: **Hola** (oh‑lah). You can say, “Hola, me llamo Ana.”  \n\nNow, can you try saying **Hola**?"
-        },
-        {
-          "role": "user",
-          "content": "Hola mi amor"
-        },
-        {
-          "role": "assistant",
-          "content": "Great try! Just say **Hola, ¿cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”.  \n\nCan you try saying **¿Cómo estás?**?"
-        },
-        {
-          "role": "user",
-          "content": "Hola Me llamo Anthony cómo está"
-        },
-        {
-          "role": "assistant",
-          "content": "Great effort! Say **¿Cómo estás?** (koh‑mo ehs‑TAHS) to ask “How are you?”  \n\nCan you try saying **¿Cómo estás?**?"
-        },
-        {
-          "role": "user",
-          "content": "Cómo estás"
-        },
-        {
-          "role": "assistant",
-          "content": "Nice work! To answer, you can say **Estoy bien, gracias** (ehs-TOY byen, GRA-see-as).  \n\nNow, can you try saying **¿Cómo estás?** again?"
-        },
-        {
-          "role": "user",
-          "content": "estoy bien gracias Y tú"
-        },
-        {
-          "role": "assistant",
-          "content": "Great, you said “Estoy bien, gracias, ¿y tú?” – just add the question marks and a tiny pause.  \n\nNow try **¿De dónde eres?** (deh DOHN‑deh EH‑res) like in “Soy de Estados Unidos.” How would you ask that?"
-        },
-        {
-          "role": "user",
-          "content": "de dónde eres soy de Estados Unidos"
-        },
-        {
-          "role": "assistant",
-          "content": "Great try! Say **¿De dónde eres?** (deh DÓN‑deh EH‑res) and then **Soy de Estados Unidos** (SOY deh ehs‑TAH‑dos oo‑NEE‑dos).  \nCan you repeat the question?"
-        },
-        {
-          "role": "user",
-          "content": "de dónde eres"
-        },
-        {
-          "role": "assistant",
-          "content": "Great job! Now you can ask **¿Qué haces?** (keh AH‑ses) to mean “What do you do?”  \n\nCan you try saying **¿Qué haces?**?"
-        },
-        {
-          "role": "user",
-          "content": "qué haces"
-        },
-        {
-          "role": "assistant",
-          "content": "¡Muy bien! You can answer **¿Qué haces?** with **Soy estudiante** (SOY es‑tu‑DEN‑te).  \nNow, can you tell me what you do in Spanish?"
-        },
-        {
-          "role": "user",
-          "content": "trabajo para una Company y Cloud computing"
-        },
-        {
-          "role": "assistant",
-          "content": "Nice effort! To say “I work for a company” you can use **Trabajo en una empresa** (tra-BA-ho en oo‑na em‑PRE-sa).  \n\nCan you try saying **Trabajo en una empresa**?"
-        },
-        {
-          "role": "user",
-          "content": "trabajo en una empresa"
-        },
-        {
-          "role": "assistant",
-          "content": "Great job, “trabajo en una empresa” is perfect! Now try **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho) – can you say that?"
-        },
-        {
-          "role": "user",
-          "content": "te gusta tu trabajo"
-        },
-        {
-          "role": "assistant",
-          "content": "Great job! Just add the opening and closing question marks: **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho).  \n\nNow try **¿Qué haces en tu tiempo libre?** (KEH AH‑ses en too TYEM‑po LEE‑bre) – can you say that?"
-        },
-        {
-          "role": "assistant",
-          "content": "Hi Anthony! Let’s talk about cloud computing and learn the word **nube** (pronounced NOO‑beh) – you can say *Trabajo con la nube* (I work with the cloud).  \nCan you try saying **nube**?"
-        },
-        {
-          "role": "user",
-          "content": "trabajo con la nube"
-        },
-        {
-          "role": "assistant",
-          "content": "Great job, “trabajo con la nube” is perfect. Now try saying **Uso un servidor en la nube** (OO‑soh oon ser‑bee‑DOHR en la NOO‑beh); can you repeat that?"
-        },
-        {
-          "role": "assistant",
-          "content": "¡Hola, Anthony!  \n\n**Vocabulary Set 1**\n\n1. **casa** (English: house) – Pronunciation: **KAH‑sah** – Example: *Vivo en una **casa** pequeña cerca del parque.*  \n2. **comida** (English: food/meal) – Pronunciation: **co‑MEE‑da** – Example: *La **comida** mexicana es muy sabrosa.*  \n3. **amigo** (English: friend) – Pronunciation: **a‑MEE‑go** – Example: *Mi mejor **amigo** se llama Carlos.*  \n\nReady to quiz?"
-        },
-        {
-          "role": "user",
-          "content": "pronuncia"
-        },
-        {
-          "role": "assistant",
-          "content": "**Pronunciación de “pronuncia”**  \n- **pronuncia** (English: “pronounce”) – Pronunciation: **pro‑NUN‑see‑a** (stress on the second syllable).\n\n---\n\n### ✅ Ready to quiz?\n\nFill in the blanks with the correct word from the list **casa**, **comida**, **amigo**.\n\n1. Mi ___ está al final de la calle.  \n2. Cada domingo compartimos la ___ con la familia.  \n3. Juan es mi mejor ___ y siempre me ayuda.\n\n*(Write the missing word for each sentence.)*"
-        },
-        {
-          "role": "assistant",
-          "content": "¡Hola, Anthony! Vamos a comenzar con tres palabras útiles para la vida cotidiana.\n\n1. **café** (English: coffee) – **Pronunciation:** ca‑**FÉ** – *Ejemplo:* “Me gusta tomar un **café** cada mañana.”  \n2. **tienda** (English: store, shop) – **Pronunciation:** **TIEN**‑da – *Ejemplo:* “Voy a la **tienda** a comprar pan.”  \n3. **familia** (English: family) – **Pronunciation:** fa‑mi‑**LIA** – *Ejemplo:* “Mi **familia** se reúne los domingos.”  \n\nReady to quiz?"
-        },
-        {
-          "role": "assistant",
-          "content": "¡Hola, Anthony!  \n\n**Vocabulary Set 1**\n\n1. **casa** (English: house) – Pronunciation: **KAH‑sah** – Example: *Vivo en una **casa** pequeña cerca del parque.*  \n2. **comida** (English: food / meal) – Pronunciation: **co‑MEE‑da** – Example: *La **comida** mexicana es muy sabrosa.*  \n3. **amigo** (English: friend) – Pronunciation: **a‑MEE‑go** – Example: *Mi mejor **amigo** se llama Carlos.*  \n\nReady to quiz?"
-        }
-      ],
-      [
-        {
           "role": "user",
           "content": "Hola mi amor"
         },
@@ -610,18 +488,134 @@
           "role": "assistant",
           "content": "Hello there! I'm delighted to be your Spanish tutor today, and we'll start with some everyday small talk. Let's begin with a very common greeting: \"Hola,\" which means \"Hello\" and is pronounced like \"oh-lah.\" Can you try saying \"Hola\"?"
         }
+      ],
+      [
+        {
+          "role": "user",
+          "content": "trabajo en una empresa"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job, “trabajo en una empresa” is perfect! Now try **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho) – can you say that?"
+        },
+        {
+          "role": "user",
+          "content": "te gusta tu trabajo"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job! Just add the opening and closing question marks: **¿Te gusta tu trabajo?** (teh GOOS‑ta too tra‑BA‑ho).  \n\nNow try **¿Qué haces en tu tiempo libre?** (KEH AH‑ses en too TYEM‑po LEE‑bre) – can you say that?"
+        },
+        {
+          "role": "assistant",
+          "content": "Hi Anthony! Let’s talk about cloud computing and learn the word **nube** (pronounced NOO‑beh) – you can say *Trabajo con la nube* (I work with the cloud).  \nCan you try saying **nube**?"
+        },
+        {
+          "role": "user",
+          "content": "trabajo con la nube"
+        },
+        {
+          "role": "assistant",
+          "content": "Great job, “trabajo con la nube” is perfect. Now try saying **Uso un servidor en la nube** (OO‑soh oon ser‑bee‑DOHR en la NOO‑beh); can you repeat that?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony!  \n\n**Vocabulary Set 1**\n\n1. **casa** (English: house) – Pronunciation: **KAH‑sah** – Example: *Vivo en una **casa** pequeña cerca del parque.*  \n2. **comida** (English: food/meal) – Pronunciation: **co‑MEE‑da** – Example: *La **comida** mexicana es muy sabrosa.*  \n3. **amigo** (English: friend) – Pronunciation: **a‑MEE‑go** – Example: *Mi mejor **amigo** se llama Carlos.*  \n\nReady to quiz?"
+        },
+        {
+          "role": "user",
+          "content": "pronuncia"
+        },
+        {
+          "role": "assistant",
+          "content": "**Pronunciación de “pronuncia”**  \n- **pronuncia** (English: “pronounce”) – Pronunciation: **pro‑NUN‑see‑a** (stress on the second syllable).\n\n---\n\n### ✅ Ready to quiz?\n\nFill in the blanks with the correct word from the list **casa**, **comida**, **amigo**.\n\n1. Mi ___ está al final de la calle.  \n2. Cada domingo compartimos la ___ con la familia.  \n3. Juan es mi mejor ___ y siempre me ayuda.\n\n*(Write the missing word for each sentence.)*"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony! Vamos a comenzar con tres palabras útiles para la vida cotidiana.\n\n1. **café** (English: coffee) – **Pronunciation:** ca‑**FÉ** – *Ejemplo:* “Me gusta tomar un **café** cada mañana.”  \n2. **tienda** (English: store, shop) – **Pronunciation:** **TIEN**‑da – *Ejemplo:* “Voy a la **tienda** a comprar pan.”  \n3. **familia** (English: family) – **Pronunciation:** fa‑mi‑**LIA** – *Ejemplo:* “Mi **familia** se reúne los domingos.”  \n\nReady to quiz?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony!  \n\n**Vocabulary Set 1**\n\n1. **casa** (English: house) – Pronunciation: **KAH‑sah** – Example: *Vivo en una **casa** pequeña cerca del parque.*  \n2. **comida** (English: food / meal) – Pronunciation: **co‑MEE‑da** – Example: *La **comida** mexicana es muy sabrosa.*  \n3. **amigo** (English: friend) – Pronunciation: **a‑MEE‑go** – Example: *Mi mejor **amigo** se llama Carlos.*  \n\nReady to quiz?"
+        },
+        {
+          "role": "user",
+          "content": "Hello. Hello."
+        },
+        {
+          "role": "assistant",
+          "content": "Hello there! It is great to connect with you today and practice some Spanish greetings. Let us start with \"hola,\" spelled H-O-L-A and pronounced like \"oh-lah.\" Can you try saying \"hola\" for me?"
+        },
+        {
+          "role": "user",
+          "content": "..."
+        },
+        {
+          "role": "assistant",
+          "content": "Hello there! I'm delighted to be your Spanish tutor today, and we'll start with some everyday small talk. Let's begin with a very common greeting: \"Hola,\" which means \"Hello\" and is pronounced like \"oh-lah.\" Can you try saying \"Hola\"?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola! Soy tu tutor de español. ¿Cómo te llamas?"
+        },
+        {
+          "role": "user",
+          "content": "Mi llamo Anthony."
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola Anthony! Mucho gusto. That's a great start; we say \"Me llamo\" which means \"I call myself,\" so it's \"Me llamo Anthony.\"\n\nTo say \"how are you\" in Spanish, we say \"cómo estás\" (CO-mo es-TAS). Would you like to try saying \"cómo estás\"?"
+        },
+        {
+          "role": "user",
+          "content": "Como estas?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Excelente, Anthony! Lo dijiste muy bien. To answer \"cómo estás,\" you can say \"Estoy bien\" (es-TOY bee-EN), which means \"I am well.\"\n\nCan you try saying \"Estoy bien\"?"
+        },
+        {
+          "role": "user",
+          "content": "Estoy bien muchas gracias."
+        },
+        {
+          "role": "assistant",
+          "content": "¡Muy bien, Anthony! \"Estoy bien\" y \"muchas gracias\" (MOO-chas GRA-see-as) es perfecto, significa \"thank you very much.\"\n\nNow, to ask someone how they are in return, you can say \"y tú\" (ee TOO), which means \"and you?\" Would you like to try saying \"y tú\"?"
+        },
+        {
+          "role": "user",
+          "content": "Y tú?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Perfecto, Anthony! Estoy bien, gracias.\n\nAnother common greeting is \"Buenos días\" (BWEH-nos DEE-as), which means \"good morning.\" Can you try saying \"Buenos días\"?"
+        },
+        {
+          "role": "user",
+          "content": "Buenos días."
+        },
+        {
+          "role": "assistant",
+          "content": "¡Genial, Anthony! Lo pronunciaste muy bien. Another very common greeting is \"Hola\" (OH-la), which just means \"hello.\"\n\nCan you try saying \"Hola\"?"
+        },
+        {
+          "role": "user",
+          "content": "Hola"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Excelente, Anthony! Lo dijiste perfectamente. To say goodbye, we often say \"Adiós\" (ah-dee-OHS), which means \"goodbye.\"\n\nCan you try saying \"Adiós\"?"
+        },
+        {
+          "role": "user",
+          "content": ", adiós."
+        }
       ]
     ],
-    "updated_at": "2026-03-07T17:26:18.443605-05:00"
+    "updated_at": "2026-03-08T10:52:00.877357-04:00"
   },
   "20e5feba-3ac1-4017-9422-0f6dad617e1b:es:2": {
     "sessions": [
-      [
-        {
-          "role": "assistant",
-          "content": "¡Hola y bienvenido a nuestra práctica, today we’ll use palabras como saludo = greeting, charla = chat, y clima = weather. Imagina que estás en la parada del bus y ves a un vecino; ¿qué dirías para iniciar una pequeña charla?"
-        }
-      ],
       [
         {
           "role": "assistant",
@@ -725,9 +719,123 @@
           "role": "assistant",
           "content": "Entiendo, un café negro sin leche; ¿te gustaría añadir azúcar a tu taza?  \n(Corrección: se dice “un café negro sin leche”, no “coffee negro no leche”).  \n¿Quieres que sea grande o pequeño?"
         }
+      ],
+      [
+        {
+          "role": "assistant",
+          "content": "¡Hola y bienvenido a nuestra práctica, today we’ll use palabras como saludo = greeting, charla = chat, y clima = weather. Imagina que estás en la parada del bus y ves a un vecino; ¿qué dirías para iniciar una pequeña charla?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola y bienvenido a nuestra práctica, today we’ll use palabras como saludo = greeting, charla = chat, y clima = weather. Imagina que estás en la parada del bus y ves a un vecino; ¿qué dirías para iniciar una pequeña charla?"
+        },
+        {
+          "role": "user",
+          "content": "Hola cómo estás Me llamo Anthony mucho gusto Qué haces hoy"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony, mucho gusto! Hoy estoy tomando un café en la terraza y pensando en qué hacer. (Corrección: usa signos de interrogación y la tilde en “¿cómo?” y “¿Qué haces hoy?”) ¿Te gustaría ir al parque más tarde?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola y bienvenido a nuestra práctica, today we’ll use palabras como saludo = greeting, charla = chat, y clima = weather. Imagina que estás en la parada del bus y ves a un vecino; ¿qué dirías para iniciar una pequeña charla?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola y bienvenido a nuestra práctica, today we’ll use palabras como saludo = greeting, charla = chat, y clima = weather. Imagina que estás en la parada del bus y ves a un vecino; ¿qué dirías para iniciar una pequeña charla?"
+        },
+        {
+          "role": "user",
+          "content": "Hola cómo estás Me llamo Anthony mucho gusto Qué haces hoy"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony, mucho gusto! Hoy estoy tomando un café en la terraza y pensando en qué hacer. (Corrección: usa signos de interrogación y la tilde en “¿cómo?” y “¿Qué haces hoy?”) ¿Te gustaría ir al parque más tarde?"
+        },
+        {
+          "role": "assistant",
+          "content": "Hey Anthony, ¿cómo estás? Hoy vamos a practicar en una **café** (coffee shop) y usar la palabra **pedido** (order). Imagínate que entras al café, ¿qué le dices al barista para hacer tu pedido?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola y bienvenido a nuestra práctica, today we’ll use palabras como saludo = greeting, charla = chat, y clima = weather. Imagina que estás en la parada del bus y ves a un vecino; ¿qué dirías para iniciar una pequeña charla?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola y bienvenido a nuestra práctica, today we’ll use palabras como saludo = greeting, charla = chat, y clima = weather. Imagina que estás en la parada del bus y ves a un vecino; ¿qué dirías para iniciar una pequeña charla?"
+        },
+        {
+          "role": "user",
+          "content": "Hola cómo estás Me llamo Anthony mucho gusto Qué haces hoy"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony, mucho gusto! Hoy estoy tomando un café en la terraza y pensando en qué hacer. (Corrección: usa signos de interrogación y la tilde en “¿cómo?” y “¿Qué haces hoy?”) ¿Te gustaría ir al parque más tarde?"
+        },
+        {
+          "role": "assistant",
+          "content": "Hey Anthony, ¿cómo estás? Hoy vamos a practicar en una **café** (coffee shop) y usar la palabra **pedido** (order). Imagínate que entras al café, ¿qué le dices al barista para hacer tu pedido?"
+        },
+        {
+          "role": "user",
+          "content": "para mi pedido a mí puedes dar un café"
+        },
+        {
+          "role": "assistant",
+          "content": "Claro, te preparo un café; dime si lo quieres en **tamaño** grande o pequeño (size).  \n¿Prefieres con leche o solo?  \n**Corrección:** se dice “¿Me puedes dar un café?” en lugar de “a mí puedes dar un café”."
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola y bienvenido a nuestra práctica, today we’ll use palabras como saludo = greeting, charla = chat, y clima = weather. Imagina que estás en la parada del bus y ves a un vecino; ¿qué dirías para iniciar una pequeña charla?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola y bienvenido a nuestra práctica, today we’ll use palabras como saludo = greeting, charla = chat, y clima = weather. Imagina que estás en la parada del bus y ves a un vecino; ¿qué dirías para iniciar una pequeña charla?"
+        },
+        {
+          "role": "user",
+          "content": "Hola cómo estás Me llamo Anthony mucho gusto Qué haces hoy"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola, Anthony, mucho gusto! Hoy estoy tomando un café en la terraza y pensando en qué hacer. (Corrección: usa signos de interrogación y la tilde en “¿cómo?” y “¿Qué haces hoy?”) ¿Te gustaría ir al parque más tarde?"
+        },
+        {
+          "role": "assistant",
+          "content": "Hey Anthony, ¿cómo estás? Hoy vamos a practicar en una **café** (coffee shop) y usar la palabra **pedido** (order). Imagínate que entras al café, ¿qué le dices al barista para hacer tu pedido?"
+        },
+        {
+          "role": "user",
+          "content": "para mi pedido a mí puedes dar un café"
+        },
+        {
+          "role": "assistant",
+          "content": "Claro, te preparo un café; dime si lo quieres en **tamaño** grande o pequeño (size).  \n¿Prefieres con leche o solo?  \n**Corrección:** se dice “¿Me puedes dar un café?” en lugar de “a mí puedes dar un café”."
+        },
+        {
+          "role": "user",
+          "content": "así una coffee negro no leche"
+        },
+        {
+          "role": "assistant",
+          "content": "Entiendo, un café negro sin leche; ¿te gustaría añadir azúcar a tu taza?  \n(Corrección: se dice “un café negro sin leche”, no “coffee negro no leche”).  \n¿Quieres que sea grande o pequeño?"
+        },
+        {
+          "role": "assistant",
+          "content": "¡Hola! Soy tu tutor de español. ¿Cómo te llamas?"
+        },
+        {
+          "role": "user",
+          "content": "Mi nombre es Anthony."
+        },
+        {
+          "role": "assistant",
+          "content": "Encantado de conocerte, Anthony, es un placer comenzar nuestra práctica de español hoy. ¿Cómo estás, or \"how are you,\" esta tarde?"
+        }
       ]
     ],
-    "updated_at": "2026-02-27T22:37:44.652167-05:00"
+    "updated_at": "2026-03-08T11:13:10.611143-04:00"
   },
   "20e5feba-3ac1-4017-9422-0f6dad617e1b:es:3": {
     "sessions": [

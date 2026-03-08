@@ -59,8 +59,9 @@ func main() {
 	// ── Auth (protected) ──────────────────────────────────────────────────────
 	r.Group(func(r chi.Router) {
 		r.Use(auth.Middleware)
-		r.Post("/api/auth/logout", authHandler.Logout)
-		r.Get("/api/auth/me",      authHandler.Me)
+		r.Post("/api/auth/logout",          authHandler.Logout)
+		r.Get("/api/auth/me",               authHandler.Me)
+		r.Patch("/api/user/preferences",    authHandler.UpdatePreferences)
 	})
 
 	// ── Meta (public) ─────────────────────────────────────────────────────────
@@ -131,6 +132,8 @@ func main() {
 
 func serveFile(path string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		w.Header().Set("Pragma", "no-cache")
 		http.ServeFile(w, r, path)
 	}
 }

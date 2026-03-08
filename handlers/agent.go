@@ -156,7 +156,7 @@ func (h *AgentHandler) GetConversationURL(w http.ResponseWriter, r *http.Request
 	systemPrompt = strings.ReplaceAll(systemPrompt, "[", "")
 	systemPrompt = strings.ReplaceAll(systemPrompt, "]", "")
 
-	voiceID := h.cfg.VoiceForLanguage(session.Language)
+	voiceID := h.cfg.VoiceForPersonality(session.Personality, session.Language)
 
 	signedURL, err := h.getSignedURL()
 	if err != nil {

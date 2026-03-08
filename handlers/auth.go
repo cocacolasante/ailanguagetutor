@@ -43,6 +43,9 @@ type userDTO struct {
 	EmailVerified      bool       `json:"email_verified"`
 	SubscriptionStatus string     `json:"subscription_status"`
 	TrialEndsAt        *time.Time `json:"trial_ends_at,omitempty"`
+	PrefLanguage       string     `json:"pref_language"`
+	PrefLevel          int        `json:"pref_level"`
+	PrefPersonality    string     `json:"pref_personality"`
 }
 
 type authResponse struct {
@@ -60,6 +63,9 @@ func toDTO(u *store.User) userDTO {
 		EmailVerified:      u.EmailVerified,
 		SubscriptionStatus: u.SubscriptionStatus,
 		TrialEndsAt:        u.TrialEndsAt,
+		PrefLanguage:       u.PrefLanguage,
+		PrefLevel:          u.PrefLevel,
+		PrefPersonality:    u.PrefPersonality,
 	}
 }
 
@@ -216,6 +222,25 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "user not found"})
 		return
 	}
+	writeJSON(w, http.StatusOK, toDTO(u))
+}
+
+func (h *AuthHandler) UpdatePreferences(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(middleware.UserIDKey).(string)
+	var req struct {
+		Language    string `json:"language"`
+		Level       int    `json:"level"`
+		Personality string `json:"personality"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request"})
+		return
+	}
+	if err := h.store.UpdatePreferences(userID, req.Language, req.Level, req.Personality); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to save preferences"})
+		return
+	}
+	u, _ := h.store.GetByID(userID)
 	writeJSON(w, http.StatusOK, toDTO(u))
 }
 
