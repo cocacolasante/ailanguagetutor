@@ -25,10 +25,11 @@ type ConversationHandler struct {
 	contextStore *store.ContextStore
 	userStore    *store.UserStore
 	historyStore *store.ConversationHistoryStore
+	profileStore *store.StudentProfileStore
 }
 
-func NewConversationHandler(cfg *config.Config, ss *store.SessionStore, cs *store.ContextStore, us *store.UserStore, hs *store.ConversationHistoryStore) *ConversationHandler {
-	return &ConversationHandler{cfg: cfg, sessionStore: ss, contextStore: cs, userStore: us, historyStore: hs}
+func NewConversationHandler(cfg *config.Config, ss *store.SessionStore, cs *store.ContextStore, us *store.UserStore, hs *store.ConversationHistoryStore, ps *store.StudentProfileStore) *ConversationHandler {
+	return &ConversationHandler{cfg: cfg, sessionStore: ss, contextStore: cs, userStore: us, historyStore: hs, profileStore: ps}
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────────
@@ -93,7 +94,10 @@ func (h *ConversationHandler) Start(w http.ResponseWriter, r *http.Request) {
 	topicName, topicDesc := TopicDetails(req.Topic)
 
 	priorMsgs := h.contextStore.Get(userID, req.Language, req.Level)
-	systemPrompt := buildSystemPrompt(req.Language, req.Level, topicName, topicDesc, req.Topic, req.Personality, len(priorMsgs) > 0)
+	profile, _ := h.profileStore.Get(r.Context(), userID, req.Language)
+	isFirst := profile == nil || profile.SessionCount == 0
+	studentCtx := buildStudentContextBlock(profile, isFirst)
+	systemPrompt := buildSystemPrompt(req.Language, req.Level, topicName, topicDesc, req.Topic, req.Personality, len(priorMsgs) > 0, studentCtx)
 	session := h.sessionStore.Create(userID, req.Language, req.Topic, req.Level, req.Personality, systemPrompt)
 
 	for _, m := range priorMsgs {
@@ -227,6 +231,9 @@ func (h *ConversationHandler) End(w http.ResponseWriter, r *http.Request) {
 	}
 	h.historyStore.Save(record)
 
+	// Update student profile asynchronously
+	go h.updateStudentProfile(session.UserID, session.Language, summaryResult, record)
+
 	// Also save session context for future conversations
 	if updated, err := h.sessionStore.Get(req.SessionID); err == nil {
 		h.contextStore.Save(session.UserID, session.Language, session.Level, updated.Messages)
@@ -264,6 +271,7 @@ type summaryResult struct {
 	Vocabulary  []string `json:"vocabulary_learned"`
 	Corrections []string `json:"grammar_corrections"`
 	Suggestions []string `json:"suggested_next_lessons"`
+	StudentName string   `json:"student_name"`
 }
 
 func (h *ConversationHandler) generateSummary(ctx context.Context, language string, level int, topicName string, msgs []store.Message, durationSecs int) summaryResult {
@@ -305,7 +313,8 @@ func (h *ConversationHandler) generateSummary(ctx context.Context, language stri
   "topics_discussed": ["main topic or theme"],
   "vocabulary_learned": ["word: meaning"],
   "grammar_corrections": ["notable correction if any"],
-  "suggested_next_lessons": ["specific next step recommendation"]
+  "suggested_next_lessons": ["specific next step recommendation"],
+  "student_name": "the student's first name if they introduced themselves, empty string otherwise"
 }
 
 Student level: %s (%d/5)
@@ -746,7 +755,7 @@ Teach through conversation, not explanation. Ask about the student's real life a
 	}
 }
 
-func buildSystemPrompt(langCode string, level int, topicName, topicDesc, topicID, personality string, hasPriorContext bool) string {
+func buildSystemPrompt(langCode string, level int, topicName, topicDesc, topicID, personality string, hasPriorContext bool, studentContext string) string {
 	lang := LanguageName(langCode)
 
 	if strings.HasPrefix(topicID, "grammar-") {
@@ -779,12 +788,12 @@ func buildSystemPrompt(langCode string, level int, topicName, topicDesc, topicID
 
 STUDENT LEVEL: %s
 
-FORMATTING — MANDATORY: Write in plain, natural prose only. No markdown whatsoever — no asterisks, no bold, no bullet points, no headers, no numbered lists. Write exactly as you would say it out loud.%s%s`,
+FORMATTING — MANDATORY: Write in plain, natural prose only. No markdown whatsoever — no asterisks, no bold, no bullet points, no headers, no numbered lists. Write exactly as you would say it out loud.%s%s%s`,
 		lang, topicName, topicDesc,
 		personalityCharacter(personality),
 		personalityTeachingRules(personality),
 		levelProfile(level),
-		contextNote, scenePreamble)
+		contextNote, scenePreamble, studentContext)
 }
 
 func buildGrammarSystemPrompt(lang string, level int, topicName, topicID string, hasPriorContext bool) string {
@@ -1140,6 +1149,92 @@ func buildImmersionGreet(topicID, lang string) string {
 		return scene
 	}
 	return fmt.Sprintf("[Begin immediately and entirely in %s. No English, no introduction — just start naturally as a native speaker would.]", lang)
+}
+
+func buildStudentContextBlock(p *store.StudentProfile, isFirstSession bool) string {
+	if p == nil || p.SessionCount == 0 {
+		if isFirstSession {
+			return "\n\nSTUDENT PROFILE: This is the student's first session. No prior history available."
+		}
+		return ""
+	}
+	var sb strings.Builder
+	sb.WriteString("\n\nSTUDENT PROFILE:")
+	if p.Name != "" {
+		sb.WriteString(fmt.Sprintf("\nThis student's name is %s. Address them by name naturally.", p.Name))
+	}
+	if len(p.RecentTopics) > 0 {
+		sb.WriteString(fmt.Sprintf("\nRecent sessions: %s", strings.Join(p.RecentTopics, ", ")))
+	}
+	if len(p.RecentVocab) > 0 {
+		sb.WriteString(fmt.Sprintf("\nVocabulary from recent sessions: %s", strings.Join(p.RecentVocab, ", ")))
+	}
+	if len(p.WeakAreas) > 0 {
+		sb.WriteString(fmt.Sprintf("\nRecurring mistakes to watch for: %s", strings.Join(p.WeakAreas, ", ")))
+	}
+	if len(p.NextSuggestions) > 0 {
+		sb.WriteString(fmt.Sprintf("\nSuggested next focus: %s", strings.Join(p.NextSuggestions, ", ")))
+	}
+	return sb.String()
+}
+
+func prependUnique(newItems, existing []string, limit int) []string {
+	seen := map[string]bool{}
+	var result []string
+	for _, item := range newItems {
+		if item != "" && !seen[item] {
+			seen[item] = true
+			result = append(result, item)
+		}
+	}
+	for _, item := range existing {
+		if item != "" && !seen[item] {
+			seen[item] = true
+			result = append(result, item)
+		}
+	}
+	if limit > 0 && len(result) > limit {
+		return result[:limit]
+	}
+	return result
+}
+
+func (h *ConversationHandler) updateStudentProfile(userID, language string, sr summaryResult, record *store.ConversationRecord) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	existing, _ := h.profileStore.Get(ctx, userID, language)
+	p := buildUpdatedProfile(existing, userID, language, sr, record)
+	if err := h.profileStore.Upsert(ctx, p); err != nil {
+		log.Printf("updateStudentProfile: %v", err)
+	}
+}
+
+func buildUpdatedProfile(existing *store.StudentProfile, userID, language string, sr summaryResult, record *store.ConversationRecord) *store.StudentProfile {
+	p := &store.StudentProfile{
+		UserID:   userID,
+		Language: language,
+	}
+	if existing != nil {
+		*p = *existing
+	}
+
+	if p.Name == "" && sr.StudentName != "" {
+		p.Name = sr.StudentName
+	}
+	p.WeakAreas = prependUnique(sr.Corrections, p.WeakAreas, 5)
+	if len(sr.Corrections) == 0 && record.TopicName != "" {
+		p.StrongAreas = prependUnique([]string{record.TopicName}, p.StrongAreas, 10)
+	}
+	if record.TopicName != "" {
+		p.RecentTopics = prependUnique([]string{record.TopicName}, p.RecentTopics, 5)
+	}
+	p.RecentVocab = prependUnique(sr.Vocabulary, p.RecentVocab, 10)
+	if len(sr.Suggestions) > 0 {
+		p.NextSuggestions = sr.Suggestions
+	}
+	p.SessionCount++
+	return p
 }
 
 func buildImmersionSystemPrompt(lang, topicName, topicID string, hasPriorContext bool) string {

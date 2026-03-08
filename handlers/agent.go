@@ -18,10 +18,11 @@ const elevenLabsAPI = "https://api.elevenlabs.io"
 type AgentHandler struct {
 	cfg          *config.Config
 	sessionStore *store.SessionStore
+	profileStore *store.StudentProfileStore
 }
 
-func NewAgentHandler(cfg *config.Config, ss *store.SessionStore) *AgentHandler {
-	return &AgentHandler{cfg: cfg, sessionStore: ss}
+func NewAgentHandler(cfg *config.Config, ss *store.SessionStore, ps *store.StudentProfileStore) *AgentHandler {
+	return &AgentHandler{cfg: cfg, sessionStore: ss, profileStore: ps}
 }
 
 // ── Setup Agent (admin, one-time) ─────────────────────────────────────────────
@@ -145,12 +146,17 @@ func (h *AgentHandler) GetConversationURL(w http.ResponseWriter, r *http.Request
 
 	topicName, topicDesc := TopicDetails(session.Topic)
 
+	profile, _ := h.profileStore.Get(r.Context(), session.UserID, session.Language)
+	isFirst := profile == nil || profile.SessionCount == 0
+	studentCtx := buildStudentContextBlock(profile, isFirst)
+	hasPriorCtx := !isFirst
+
 	// Build the session-specific system prompt.
 	// The opening utterance is handled by first_message, not the system prompt,
 	// so we don't inject a greet instruction here.
 	systemPrompt := buildSystemPrompt(
 		session.Language, session.Level, topicName, topicDesc,
-		session.Topic, session.Personality, false,
+		session.Topic, session.Personality, hasPriorCtx, studentCtx,
 	)
 	// Strip any bracket wrappers left over from the text-based prompt builders
 	systemPrompt = strings.ReplaceAll(systemPrompt, "[", "")

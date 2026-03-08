@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/ailanguagetutor/config"
+	"github.com/ailanguagetutor/database"
 	"github.com/ailanguagetutor/handlers"
 	"github.com/ailanguagetutor/middleware"
 	"github.com/ailanguagetutor/store"
@@ -16,18 +18,27 @@ import (
 func main() {
 	cfg := config.Load()
 
-	userStore    := store.NewUserStore()
+	ctx := context.Background()
+	pool, err := database.Connect(ctx, cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("database: %v", err)
+	}
+	defer pool.Close()
+	database.MigrateFromJSON(ctx, pool)
+
+	userStore    := store.NewUserStore(pool)
 	sessionStore := store.NewSessionStore()
-	contextStore := store.NewContextStore()
-	historyStore := store.NewConversationHistoryStore()
+	contextStore := store.NewContextStore(pool)
+	historyStore := store.NewConversationHistoryStore(pool)
+	profileStore := store.NewStudentProfileStore(pool)
 
 	billingHandler      := handlers.NewBillingHandler(cfg, userStore)
 	authHandler         := handlers.NewAuthHandler(cfg, userStore, billingHandler)
-	convHandler         := handlers.NewConversationHandler(cfg, sessionStore, contextStore, userStore, historyStore)
+	convHandler         := handlers.NewConversationHandler(cfg, sessionStore, contextStore, userStore, historyStore, profileStore)
 	ttsHandler          := handlers.NewTTSHandler(cfg)
 	adminHandler        := handlers.NewAdminHandler(userStore, billingHandler)
 	gamificationHandler := handlers.NewGamificationHandler(userStore, historyStore)
-	agentHandler        := handlers.NewAgentHandler(cfg, sessionStore)
+	agentHandler        := handlers.NewAgentHandler(cfg, sessionStore, profileStore)
 
 	auth := middleware.NewAuthMiddleware(cfg)
 

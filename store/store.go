@@ -1,15 +1,15 @@
 package store
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"os"
-	"sort"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -26,7 +26,6 @@ var (
 
 const AdminEmail = "anthony@csuitecode.com"
 
-// SubscriptionStatus values
 const (
 	SubTrialing  = "trialing"
 	SubActive    = "active"
@@ -117,10 +116,10 @@ type Session struct {
 // ── Gamification ──────────────────────────────────────────────────────────────
 
 type LeaderboardEntry struct {
-	Rank      int    `json:"rank"`
-	Username  string `json:"username"`
-	TotalFP   int    `json:"total_fp"`
-	Streak    int    `json:"streak"`
+	Rank     int    `json:"rank"`
+	Username string `json:"username"`
+	TotalFP  int    `json:"total_fp"`
+	Streak   int    `json:"streak"`
 }
 
 // BadgeInfo describes an achievement badge.
@@ -229,30 +228,35 @@ func checkAchievements(u *User) []string {
 	return newBadges
 }
 
+// ── JSONB helpers ─────────────────────────────────────────────────────────────
+
+func scanJSONB(data []byte, dest any) error {
+	if len(data) == 0 {
+		return nil
+	}
+	return json.Unmarshal(data, dest)
+}
+
 // ── User Store ────────────────────────────────────────────────────────────────
 
 type UserStore struct {
-	mu       sync.RWMutex
-	byEmail  map[string]*User
-	byID     map[string]*User
-	filePath string
+	pool *pgxpool.Pool
 }
 
-func NewUserStore() *UserStore {
-	us := &UserStore{
-		byEmail:  make(map[string]*User),
-		byID:     make(map[string]*User),
-		filePath: "data/users.json",
-	}
-	us.load()
-	return us
+func NewUserStore(pool *pgxpool.Pool) *UserStore {
+	return &UserStore{pool: pool}
 }
 
 func (us *UserStore) Create(email, username, password, pendingPlan string) (*User, error) {
-	us.mu.Lock()
-	defer us.mu.Unlock()
+	ctx := context.Background()
 
-	if _, exists := us.byEmail[email]; exists {
+	// Check for existing email
+	var exists bool
+	err := us.pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE email=$1)", email).Scan(&exists)
+	if err != nil {
+		return nil, err
+	}
+	if exists {
 		return nil, ErrUserExists
 	}
 
@@ -267,38 +271,54 @@ func (us *UserStore) Create(email, username, password, pendingPlan string) (*Use
 		verifyToken = uuid.New().String()
 	}
 
+	subStatus := ""
+	if isAdmin {
+		subStatus = SubFree
+	}
+
 	u := &User{
-		ID:           uuid.New().String(),
-		Email:        email,
-		Username:     username,
-		PasswordHash: string(hash),
+		ID:                 uuid.New().String(),
+		Email:              email,
+		Username:           username,
+		PasswordHash:       string(hash),
 		IsAdmin:            isAdmin,
 		Approved:           isAdmin,
 		EmailVerified:      isAdmin,
 		EmailVerifyToken:   verifyToken,
 		PendingPlan:        pendingPlan,
-		SubscriptionStatus: func() string {
-			if isAdmin {
-				return SubFree
-			}
-			return ""
-		}(),
-		CreatedAt:    time.Now(),
-		LanguageFP:   make(map[string]int),
-		LanguageLevel: make(map[string]int),
+		SubscriptionStatus: subStatus,
+		CreatedAt:          time.Now(),
+		LanguageFP:         make(map[string]int),
+		LanguageLevel:      make(map[string]int),
+		Achievements:       []string{},
 	}
-	us.byEmail[email] = u
-	us.byID[u.ID] = u
-	us.save()
+
+	langFP, _ := json.Marshal(u.LanguageFP)
+	langLevel, _ := json.Marshal(u.LanguageLevel)
+	achievements, _ := json.Marshal(u.Achievements)
+
+	_, err = us.pool.Exec(ctx, `
+INSERT INTO users (id, email, username, password_hash, is_admin, approved, created_at,
+    email_verified, email_verify_token, pending_plan,
+    stripe_customer_id, stripe_subscription_id, subscription_status,
+    streak, last_activity_date, total_fp, language_fp, language_level, achievements,
+    conversation_count, pref_language, pref_level, pref_personality)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)`,
+		u.ID, u.Email, u.Username, u.PasswordHash, u.IsAdmin, u.Approved, u.CreatedAt,
+		u.EmailVerified, u.EmailVerifyToken, u.PendingPlan,
+		"", "", u.SubscriptionStatus,
+		0, "", 0, langFP, langLevel, achievements,
+		0, "", 0, "",
+	)
+	if err != nil {
+		return nil, err
+	}
 	return u, nil
 }
 
 func (us *UserStore) Authenticate(email, password string) (*User, error) {
-	us.mu.RLock()
-	u, exists := us.byEmail[email]
-	us.mu.RUnlock()
-
-	if !exists {
+	u, err := us.GetByEmail(email)
+	if err != nil {
 		return nil, ErrInvalidCredentials
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password)); err != nil {
@@ -307,170 +327,141 @@ func (us *UserStore) Authenticate(email, password string) (*User, error) {
 	return u, nil
 }
 
-func (us *UserStore) GetByID(id string) (*User, error) {
-	us.mu.RLock()
-	defer us.mu.RUnlock()
+func (us *UserStore) GetByEmail(email string) (*User, error) {
+	ctx := context.Background()
+	row := us.pool.QueryRow(ctx, "SELECT * FROM users WHERE email=$1", email)
+	return scanUser(row)
+}
 
-	u, exists := us.byID[id]
-	if !exists {
+func (us *UserStore) GetByID(id string) (*User, error) {
+	ctx := context.Background()
+	row := us.pool.QueryRow(ctx, "SELECT * FROM users WHERE id=$1", id)
+	u, err := scanUser(row)
+	if err != nil {
 		return nil, ErrUserNotFound
 	}
 	return u, nil
-}
-
-func (us *UserStore) ListAll() []*User {
-	us.mu.RLock()
-	defer us.mu.RUnlock()
-
-	users := make([]*User, 0, len(us.byID))
-	for _, u := range us.byID {
-		users = append(users, u)
-	}
-	return users
-}
-
-func (us *UserStore) Delete(id string) {
-	us.mu.Lock()
-	defer us.mu.Unlock()
-
-	u, exists := us.byID[id]
-	if !exists {
-		return
-	}
-	delete(us.byID, id)
-	delete(us.byEmail, u.Email)
-	us.save()
-}
-
-func (us *UserStore) SetApproved(id string, approved bool) error {
-	us.mu.Lock()
-	defer us.mu.Unlock()
-
-	u, exists := us.byID[id]
-	if !exists {
-		return ErrUserNotFound
-	}
-	u.Approved = approved
-	us.save()
-	return nil
 }
 
 func (us *UserStore) GetByEmailToken(token string) (*User, error) {
 	if token == "" {
 		return nil, ErrUserNotFound
 	}
-	us.mu.RLock()
-	defer us.mu.RUnlock()
-
-	for _, u := range us.byID {
-		if u.EmailVerifyToken == token {
-			return u, nil
-		}
+	ctx := context.Background()
+	row := us.pool.QueryRow(ctx, "SELECT * FROM users WHERE email_verify_token=$1", token)
+	u, err := scanUser(row)
+	if err != nil {
+		return nil, ErrUserNotFound
 	}
-	return nil, ErrUserNotFound
-}
-
-func (us *UserStore) SetEmailVerified(id string) error {
-	us.mu.Lock()
-	defer us.mu.Unlock()
-
-	u, exists := us.byID[id]
-	if !exists {
-		return ErrUserNotFound
-	}
-	u.EmailVerified = true
-	u.EmailVerifyToken = ""
-	us.save()
-	return nil
+	return u, nil
 }
 
 func (us *UserStore) GetByStripeCustomerID(customerID string) (*User, error) {
-	us.mu.RLock()
-	defer us.mu.RUnlock()
+	ctx := context.Background()
+	row := us.pool.QueryRow(ctx, "SELECT * FROM users WHERE stripe_customer_id=$1", customerID)
+	u, err := scanUser(row)
+	if err != nil {
+		return nil, ErrUserNotFound
+	}
+	return u, nil
+}
 
-	for _, u := range us.byID {
-		if u.StripeCustomerID == customerID {
-			return u, nil
+func (us *UserStore) ListAll() []*User {
+	ctx := context.Background()
+	rows, err := us.pool.Query(ctx, "SELECT * FROM users")
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	var users []*User
+	for rows.Next() {
+		u, err := scanUser(rows)
+		if err == nil {
+			users = append(users, u)
 		}
 	}
-	return nil, ErrUserNotFound
+	return users
+}
+
+func (us *UserStore) Delete(id string) {
+	ctx := context.Background()
+	_, _ = us.pool.Exec(ctx, "DELETE FROM users WHERE id=$1", id)
+}
+
+func (us *UserStore) SetApproved(id string, approved bool) error {
+	ctx := context.Background()
+	tag, err := us.pool.Exec(ctx, "UPDATE users SET approved=$2 WHERE id=$1", id, approved)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrUserNotFound
+	}
+	return nil
+}
+
+func (us *UserStore) SetEmailVerified(id string) error {
+	ctx := context.Background()
+	_, err := us.pool.Exec(ctx, "UPDATE users SET email_verified=TRUE, email_verify_token='' WHERE id=$1", id)
+	return err
 }
 
 // UpdateSubscription is called after Stripe checkout or webhook events.
 func (us *UserStore) UpdateSubscription(userID, customerID, subscriptionID, status string, trialEndsAt *time.Time) error {
-	us.mu.Lock()
-	defer us.mu.Unlock()
-
-	u, exists := us.byID[userID]
-	if !exists {
-		return ErrUserNotFound
+	ctx := context.Background()
+	approved := false
+	emailVerified := false
+	switch status {
+	case SubTrialing, SubActive, SubFree, SubPastDue, SubCancelled:
+		approved = true
+		emailVerified = true
 	}
-	if customerID != "" {
-		u.StripeCustomerID = customerID
-	}
-	if subscriptionID != "" {
-		u.StripeSubscriptionID = subscriptionID
-	}
-	u.SubscriptionStatus = status
-	u.TrialEndsAt = trialEndsAt
-	if status != "" {
-		switch status {
-		case SubTrialing, SubActive, SubFree, SubPastDue, SubCancelled:
-			u.Approved = true
-			u.EmailVerified = true
-		default:
-			u.Approved = false
-		}
-	}
-	us.save()
-	return nil
+	_, err := us.pool.Exec(ctx, `
+UPDATE users SET
+    stripe_customer_id = CASE WHEN $2 != '' THEN $2 ELSE stripe_customer_id END,
+    stripe_subscription_id = CASE WHEN $3 != '' THEN $3 ELSE stripe_subscription_id END,
+    subscription_status = $4,
+    trial_ends_at = $5,
+    approved = $6,
+    email_verified = CASE WHEN $7 THEN TRUE ELSE email_verified END
+WHERE id = $1`,
+		userID, customerID, subscriptionID, status, trialEndsAt, approved, emailVerified,
+	)
+	return err
 }
 
 // UpdatePreferences saves the user's language/level/personality preferences.
 func (us *UserStore) UpdatePreferences(id, language string, level int, personality string) error {
-	us.mu.Lock()
-	defer us.mu.Unlock()
-	u, exists := us.byID[id]
-	if !exists {
-		return ErrUserNotFound
-	}
-	u.PrefLanguage    = language
-	u.PrefLevel       = level
-	u.PrefPersonality = personality
-	us.save()
-	return nil
+	ctx := context.Background()
+	_, err := us.pool.Exec(ctx, `
+UPDATE users SET pref_language=$2, pref_level=$3, pref_personality=$4 WHERE id=$1`,
+		id, language, level, personality,
+	)
+	return err
 }
 
 // SetSubscriptionStatus lets admins override subscription state.
 func (us *UserStore) SetSubscriptionStatus(id, status string, trialEndsAt *time.Time) error {
-	us.mu.Lock()
-	defer us.mu.Unlock()
-
-	u, exists := us.byID[id]
-	if !exists {
-		return ErrUserNotFound
-	}
-	u.SubscriptionStatus = status
-	u.TrialEndsAt = trialEndsAt
+	ctx := context.Background()
+	approved := false
 	switch status {
 	case SubTrialing, SubActive, SubFree, SubPastDue, SubCancelled:
-		u.Approved = true
-	default:
-		u.Approved = false
+		approved = true
 	}
-	us.save()
-	return nil
+	_, err := us.pool.Exec(ctx, `
+UPDATE users SET subscription_status=$2, trial_ends_at=$3, approved=$4 WHERE id=$1`,
+		id, status, trialEndsAt, approved,
+	)
+	return err
 }
 
 // UpdateActivity updates the user's streak, awards FP for a completed
 // conversation, increments conversation count, and checks for new achievements.
 // Returns the new streak, any newly earned badge IDs, and any error.
 func (us *UserStore) UpdateActivity(id, language string, fp int) (newStreak int, newBadges []string, err error) {
-	us.mu.Lock()
-	defer us.mu.Unlock()
-
-	u, exists := us.byID[id]
-	if !exists {
+	ctx := context.Background()
+	u, err := us.GetByID(id)
+	if err != nil {
 		return 0, nil, ErrUserNotFound
 	}
 
@@ -504,95 +495,74 @@ func (us *UserStore) UpdateActivity(id, language string, fp int) (newStreak int,
 	// Check achievements
 	newBadges = checkAchievements(u)
 
-	us.save()
+	langFP, _ := json.Marshal(u.LanguageFP)
+	langLevel, _ := json.Marshal(u.LanguageLevel)
+	achievements, _ := json.Marshal(u.Achievements)
+
+	_, err = us.pool.Exec(ctx, `
+UPDATE users SET streak=$2, last_activity_date=$3, total_fp=$4,
+    language_fp=$5, language_level=$6, achievements=$7, conversation_count=$8
+WHERE id=$1`,
+		id, u.Streak, u.LastActivityDate, u.TotalFP,
+		langFP, langLevel, achievements, u.ConversationCount,
+	)
+	if err != nil {
+		return 0, nil, err
+	}
 	return u.Streak, newBadges, nil
 }
 
 // GetLeaderboard returns the top N users sorted by TotalFP descending.
 func (us *UserStore) GetLeaderboard(limit int) []LeaderboardEntry {
-	us.mu.RLock()
-	defer us.mu.RUnlock()
-
+	ctx := context.Background()
+	rows, err := us.pool.Query(ctx, `
+SELECT username, total_fp, streak FROM users
+WHERE is_admin=FALSE ORDER BY total_fp DESC LIMIT $1`, limit)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
 	var entries []LeaderboardEntry
-	for _, u := range us.byID {
-		if !u.IsAdmin {
-			entries = append(entries, LeaderboardEntry{
-				Username: u.Username,
-				TotalFP:  u.TotalFP,
-				Streak:   u.Streak,
-			})
+	rank := 1
+	for rows.Next() {
+		var e LeaderboardEntry
+		if err := rows.Scan(&e.Username, &e.TotalFP, &e.Streak); err == nil {
+			e.Rank = rank
+			rank++
+			entries = append(entries, e)
 		}
-	}
-
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].TotalFP > entries[j].TotalFP
-	})
-
-	for i := range entries {
-		entries[i].Rank = i + 1
-	}
-
-	if limit > 0 && len(entries) > limit {
-		entries = entries[:limit]
 	}
 	return entries
 }
 
-func (us *UserStore) load() {
-	data, err := os.ReadFile(us.filePath)
+// scanUser reads a User from a pgx row (all columns in table order).
+func scanUser(row pgx.Row) (*User, error) {
+	var u User
+	var langFP, langLevel, achievements []byte
+	err := row.Scan(
+		&u.ID, &u.Email, &u.Username, &u.PasswordHash, &u.IsAdmin, &u.Approved, &u.CreatedAt,
+		&u.EmailVerified, &u.EmailVerifyToken, &u.PendingPlan,
+		&u.StripeCustomerID, &u.StripeSubscriptionID, &u.SubscriptionStatus, &u.TrialEndsAt,
+		&u.Streak, &u.LastActivityDate, &u.TotalFP, &langFP, &langLevel, &achievements,
+		&u.ConversationCount, &u.PrefLanguage, &u.PrefLevel, &u.PrefPersonality,
+	)
 	if err != nil {
-		return
-	}
-	var users []*User
-	if err := json.Unmarshal(data, &users); err != nil {
-		return
-	}
-	modified := false
-	for _, u := range users {
-		// Migration: ensure admin is always correct
-		if u.Email == AdminEmail {
-			if !u.IsAdmin || !u.Approved || u.SubscriptionStatus != SubFree || !u.EmailVerified {
-				u.IsAdmin = true
-				u.Approved = true
-				u.SubscriptionStatus = SubFree
-				u.EmailVerified = true
-				modified = true
-			}
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrUserNotFound
 		}
-		// Migration: auto-verify existing subscribed users
-		if !u.EmailVerified && u.SubscriptionStatus != "" && u.SubscriptionStatus != SubSuspended {
-			u.EmailVerified = true
-			modified = true
-		}
-		// Migration: ensure gamification maps are initialized
-		if u.LanguageFP == nil {
-			u.LanguageFP = make(map[string]int)
-		}
-		if u.LanguageLevel == nil {
-			u.LanguageLevel = make(map[string]int)
-		}
-		us.byEmail[u.Email] = u
-		us.byID[u.ID] = u
+		return nil, err
 	}
-	if modified {
-		us.save()
+	u.LanguageFP = make(map[string]int)
+	u.LanguageLevel = make(map[string]int)
+	_ = scanJSONB(langFP, &u.LanguageFP)
+	_ = scanJSONB(langLevel, &u.LanguageLevel)
+	if len(achievements) > 0 {
+		_ = scanJSONB(achievements, &u.Achievements)
 	}
+	return &u, nil
 }
 
-func (us *UserStore) save() {
-	_ = os.MkdirAll("data", 0755)
-	users := make([]*User, 0, len(us.byID))
-	for _, u := range us.byID {
-		users = append(users, u)
-	}
-	data, err := json.MarshalIndent(users, "", "  ")
-	if err != nil {
-		return
-	}
-	_ = os.WriteFile(us.filePath, data, 0600)
-}
-
-// ── Session Store ─────────────────────────────────────────────────────────────
+// ── Session Store (in-memory, unchanged) ──────────────────────────────────────
 
 type SessionStore struct {
 	mu       sync.RWMutex
@@ -606,7 +576,6 @@ func NewSessionStore() *SessionStore {
 func (ss *SessionStore) Create(userID, language, topic string, level int, personality, systemPrompt string) *Session {
 	ss.mu.Lock()
 	defer ss.mu.Unlock()
-
 	s := &Session{
 		ID:          uuid.New().String(),
 		UserID:      userID,
@@ -666,33 +635,19 @@ func (ss *SessionStore) GetMessages(id string) ([]Message, error) {
 // ── Context Store ─────────────────────────────────────────────────────────────
 
 const maxContextSessions = 5
-const maxContextMessages  = 30
-
-type contextEntry struct {
-	Sessions  [][]Message `json:"sessions"`
-	UpdatedAt time.Time   `json:"updated_at"`
-}
+const maxContextMessages = 30
 
 type ContextStore struct {
-	mu       sync.RWMutex
-	data     map[string]contextEntry
-	filePath string
+	pool *pgxpool.Pool
 }
 
-func NewContextStore() *ContextStore {
-	cs := &ContextStore{
-		data:     make(map[string]contextEntry),
-		filePath: "data/contexts.json",
-	}
-	cs.load()
-	return cs
-}
-
-func contextKey(userID, language string, level int) string {
-	return fmt.Sprintf("%s:%s:%d", userID, language, level)
+func NewContextStore(pool *pgxpool.Pool) *ContextStore {
+	return &ContextStore{pool: pool}
 }
 
 func (cs *ContextStore) Save(userID, language string, level int, messages []Message) {
+	ctx := context.Background()
+
 	var msgs []Message
 	for _, m := range messages {
 		if m.Role != "system" {
@@ -706,55 +661,54 @@ func (cs *ContextStore) Save(userID, language string, level int, messages []Mess
 		msgs = msgs[len(msgs)-maxContextMessages:]
 	}
 
-	cs.mu.Lock()
-	defer cs.mu.Unlock()
+	// Read existing sessions
+	var sessionsJSON []byte
+	err := cs.pool.QueryRow(ctx,
+		"SELECT sessions FROM conversation_contexts WHERE user_id=$1 AND language=$2 AND level=$3",
+		userID, language, level,
+	).Scan(&sessionsJSON)
 
-	key := contextKey(userID, language, level)
-	entry := cs.data[key]
-	entry.Sessions = append(entry.Sessions, msgs)
-	if len(entry.Sessions) > maxContextSessions {
-		entry.Sessions = entry.Sessions[len(entry.Sessions)-maxContextSessions:]
+	var sessions [][]Message
+	if err == nil && len(sessionsJSON) > 0 {
+		_ = json.Unmarshal(sessionsJSON, &sessions)
 	}
-	entry.UpdatedAt = time.Now()
-	cs.data[key] = entry
-	cs.persist()
+
+	sessions = append(sessions, msgs)
+	if len(sessions) > maxContextSessions {
+		sessions = sessions[len(sessions)-maxContextSessions:]
+	}
+
+	newSessions, _ := json.Marshal(sessions)
+	_, _ = cs.pool.Exec(ctx, `
+INSERT INTO conversation_contexts (user_id, language, level, sessions, updated_at)
+VALUES ($1, $2, $3, $4, NOW())
+ON CONFLICT (user_id, language, level) DO UPDATE SET sessions=$4, updated_at=NOW()`,
+		userID, language, level, newSessions,
+	)
 }
 
 func (cs *ContextStore) Get(userID, language string, level int) []Message {
-	cs.mu.RLock()
-	defer cs.mu.RUnlock()
-
-	entry, ok := cs.data[contextKey(userID, language, level)]
-	if !ok || len(entry.Sessions) == 0 {
+	ctx := context.Background()
+	var sessionsJSON []byte
+	err := cs.pool.QueryRow(ctx,
+		"SELECT sessions FROM conversation_contexts WHERE user_id=$1 AND language=$2 AND level=$3",
+		userID, language, level,
+	).Scan(&sessionsJSON)
+	if err != nil || len(sessionsJSON) == 0 {
+		return nil
+	}
+	var sessions [][]Message
+	if err := json.Unmarshal(sessionsJSON, &sessions); err != nil {
 		return nil
 	}
 	var all []Message
-	for _, session := range entry.Sessions {
-		all = append(all, session...)
+	for _, s := range sessions {
+		all = append(all, s...)
 	}
 	return all
 }
 
-func (cs *ContextStore) load() {
-	data, err := os.ReadFile(cs.filePath)
-	if err != nil {
-		return
-	}
-	_ = json.Unmarshal(data, &cs.data)
-}
-
-func (cs *ContextStore) persist() {
-	_ = os.MkdirAll("data", 0755)
-	data, err := json.MarshalIndent(cs.data, "", "  ")
-	if err != nil {
-		return
-	}
-	_ = os.WriteFile(cs.filePath, data, 0600)
-}
-
 // ── Conversation History Store ────────────────────────────────────────────────
-
-const maxHistoryPerUser = 10
 
 type ConversationRecord struct {
 	ID           string    `json:"id"`
@@ -778,92 +732,160 @@ type ConversationRecord struct {
 }
 
 type ConversationHistoryStore struct {
-	mu       sync.RWMutex
-	records  map[string][]*ConversationRecord // userID → records (newest first)
-	byID     map[string]*ConversationRecord
-	filePath string
+	pool *pgxpool.Pool
 }
 
-func NewConversationHistoryStore() *ConversationHistoryStore {
-	hs := &ConversationHistoryStore{
-		records:  make(map[string][]*ConversationRecord),
-		byID:     make(map[string]*ConversationRecord),
-		filePath: "data/conv_history.json",
-	}
-	hs.load()
-	return hs
+func NewConversationHistoryStore(pool *pgxpool.Pool) *ConversationHistoryStore {
+	return &ConversationHistoryStore{pool: pool}
 }
 
 func (hs *ConversationHistoryStore) Save(record *ConversationRecord) {
-	hs.mu.Lock()
-	defer hs.mu.Unlock()
+	ctx := context.Background()
+	topics, _ := json.Marshal(nilSafe(record.Topics))
+	vocab, _ := json.Marshal(nilSafe(record.Vocabulary))
+	corrections, _ := json.Marshal(nilSafe(record.Corrections))
+	suggestions, _ := json.Marshal(nilSafe(record.Suggestions))
 
-	hs.byID[record.ID] = record
-	recs := hs.records[record.UserID]
-	// Prepend so newest is first
-	recs = append([]*ConversationRecord{record}, recs...)
-	if len(recs) > maxHistoryPerUser {
-		// Remove the oldest from the byID index too
-		old := recs[maxHistoryPerUser]
-		delete(hs.byID, old.ID)
-		recs = recs[:maxHistoryPerUser]
-	}
-	hs.records[record.UserID] = recs
-	hs.persist()
+	_, _ = hs.pool.Exec(ctx, `
+INSERT INTO conversation_history (id, user_id, session_id, language, topic, topic_name, level,
+    personality, message_count, duration_secs, fp_earned, summary,
+    topics, vocabulary, corrections, suggestions, created_at, ended_at)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+ON CONFLICT (id) DO NOTHING`,
+		record.ID, record.UserID, record.SessionID, record.Language, record.Topic, record.TopicName,
+		record.Level, record.Personality, record.MessageCount, record.DurationSecs, record.FPEarned,
+		record.Summary, topics, vocab, corrections, suggestions, record.CreatedAt, record.EndedAt,
+	)
 }
 
 func (hs *ConversationHistoryStore) GetForUser(userID string) []*ConversationRecord {
-	hs.mu.RLock()
-	defer hs.mu.RUnlock()
-
-	recs := hs.records[userID]
-	if recs == nil {
+	ctx := context.Background()
+	rows, err := hs.pool.Query(ctx, `
+SELECT id, user_id, session_id, language, topic, topic_name, level, personality,
+    message_count, duration_secs, fp_earned, summary,
+    topics, vocabulary, corrections, suggestions, created_at, ended_at
+FROM conversation_history WHERE user_id=$1 ORDER BY ended_at DESC LIMIT 10`, userID)
+	if err != nil {
 		return []*ConversationRecord{}
 	}
-	return recs
+	defer rows.Close()
+	var records []*ConversationRecord
+	for rows.Next() {
+		r, err := scanRecord(rows)
+		if err == nil {
+			records = append(records, r)
+		}
+	}
+	if records == nil {
+		return []*ConversationRecord{}
+	}
+	return records
 }
 
 func (hs *ConversationHistoryStore) GetRecord(id string) (*ConversationRecord, error) {
-	hs.mu.RLock()
-	defer hs.mu.RUnlock()
-
-	r, ok := hs.byID[id]
-	if !ok {
+	ctx := context.Background()
+	row := hs.pool.QueryRow(ctx, `
+SELECT id, user_id, session_id, language, topic, topic_name, level, personality,
+    message_count, duration_secs, fp_earned, summary,
+    topics, vocabulary, corrections, suggestions, created_at, ended_at
+FROM conversation_history WHERE id=$1`, id)
+	r, err := scanRecord(row)
+	if err != nil {
 		return nil, ErrSessionNotFound
 	}
 	return r, nil
 }
 
-type historyPersist struct {
-	Records []*ConversationRecord `json:"records"`
+func scanRecord(row pgx.Row) (*ConversationRecord, error) {
+	var r ConversationRecord
+	var topics, vocab, corrections, suggestions []byte
+	err := row.Scan(
+		&r.ID, &r.UserID, &r.SessionID, &r.Language, &r.Topic, &r.TopicName, &r.Level,
+		&r.Personality, &r.MessageCount, &r.DurationSecs, &r.FPEarned, &r.Summary,
+		&topics, &vocab, &corrections, &suggestions, &r.CreatedAt, &r.EndedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	_ = scanJSONB(topics, &r.Topics)
+	_ = scanJSONB(vocab, &r.Vocabulary)
+	_ = scanJSONB(corrections, &r.Corrections)
+	_ = scanJSONB(suggestions, &r.Suggestions)
+	return &r, nil
 }
 
-func (hs *ConversationHistoryStore) load() {
-	data, err := os.ReadFile(hs.filePath)
-	if err != nil {
-		return
+func nilSafe(s []string) []string {
+	if s == nil {
+		return []string{}
 	}
-	var p historyPersist
-	if err := json.Unmarshal(data, &p); err != nil {
-		return
-	}
-	for _, r := range p.Records {
-		hs.byID[r.ID] = r
-		hs.records[r.UserID] = append(hs.records[r.UserID], r)
-	}
-	// Records were stored newest-first per user
+	return s
 }
 
-func (hs *ConversationHistoryStore) persist() {
-	_ = os.MkdirAll("data", 0755)
-	var all []*ConversationRecord
-	for _, recs := range hs.records {
-		all = append(all, recs...)
-	}
-	p := historyPersist{Records: all}
-	data, err := json.MarshalIndent(p, "", "  ")
-	if err != nil {
-		return
-	}
-	_ = os.WriteFile(hs.filePath, data, 0600)
+// ── Student Profile Store ─────────────────────────────────────────────────────
+
+type StudentProfile struct {
+	UserID          string    `json:"user_id"`
+	Language        string    `json:"language"`
+	Name            string    `json:"name"`
+	WeakAreas       []string  `json:"weak_areas"`
+	StrongAreas     []string  `json:"strong_areas"`
+	RecentTopics    []string  `json:"recent_topics"`
+	RecentVocab     []string  `json:"recent_vocab"`
+	NextSuggestions []string  `json:"next_suggestions"`
+	SessionCount    int       `json:"session_count"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
+
+type StudentProfileStore struct {
+	pool *pgxpool.Pool
+}
+
+func NewStudentProfileStore(pool *pgxpool.Pool) *StudentProfileStore {
+	return &StudentProfileStore{pool: pool}
+}
+
+func (s *StudentProfileStore) Get(ctx context.Context, userID, language string) (*StudentProfile, error) {
+	var p StudentProfile
+	var weakAreas, strongAreas, recentTopics, recentVocab, nextSuggestions []byte
+	err := s.pool.QueryRow(ctx, `
+SELECT user_id, language, name, weak_areas, strong_areas, recent_topics, recent_vocab,
+    next_suggestions, session_count, updated_at
+FROM student_profiles WHERE user_id=$1 AND language=$2`, userID, language).Scan(
+		&p.UserID, &p.Language, &p.Name,
+		&weakAreas, &strongAreas, &recentTopics, &recentVocab, &nextSuggestions,
+		&p.SessionCount, &p.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	_ = scanJSONB(weakAreas, &p.WeakAreas)
+	_ = scanJSONB(strongAreas, &p.StrongAreas)
+	_ = scanJSONB(recentTopics, &p.RecentTopics)
+	_ = scanJSONB(recentVocab, &p.RecentVocab)
+	_ = scanJSONB(nextSuggestions, &p.NextSuggestions)
+	return &p, nil
+}
+
+func (s *StudentProfileStore) Upsert(ctx context.Context, p *StudentProfile) error {
+	weakAreas, _ := json.Marshal(nilSafe(p.WeakAreas))
+	strongAreas, _ := json.Marshal(nilSafe(p.StrongAreas))
+	recentTopics, _ := json.Marshal(nilSafe(p.RecentTopics))
+	recentVocab, _ := json.Marshal(nilSafe(p.RecentVocab))
+	nextSuggestions, _ := json.Marshal(nilSafe(p.NextSuggestions))
+
+	_, err := s.pool.Exec(ctx, `
+INSERT INTO student_profiles (user_id, language, name, weak_areas, strong_areas, recent_topics,
+    recent_vocab, next_suggestions, session_count, updated_at)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW())
+ON CONFLICT (user_id, language) DO UPDATE SET
+    name=$3, weak_areas=$4, strong_areas=$5, recent_topics=$6,
+    recent_vocab=$7, next_suggestions=$8, session_count=$9, updated_at=NOW()`,
+		p.UserID, p.Language, p.Name, weakAreas, strongAreas, recentTopics,
+		recentVocab, nextSuggestions, p.SessionCount,
+	)
+	return err
+}
+

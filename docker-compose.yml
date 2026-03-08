@@ -1,0 +1,29 @@
+services:
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: linguaai
+      POSTGRES_USER: linguaai
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-linguaai}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U linguaai"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${PORT:-8080}:8080"
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://linguaai:${POSTGRES_PASSWORD:-linguaai}@db:5432/linguaai?sslmode=disable
+
+volumes:
+  postgres_data:

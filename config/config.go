@@ -34,6 +34,8 @@ type Config struct {
 	ElevenLabsVoiceExecutive  string // Business Exec  — Josh:  confident, professional male
 	ElevenLabsVoiceTravel     string // Travel Guide   — Arnold: energetic, adventurous male
 
+	DatabaseURL string
+
 	StripeSecretKey     string
 	StripeWebhookSecret string
 	StripePriceID       string
@@ -75,6 +77,8 @@ func Load() *Config {
 		ElevenLabsVoiceBartender: getEnv("ELEVENLABS_VOICE_BARTENDER", "yoZ06aMxZJJ28mfd3POQ"), // Sam
 		ElevenLabsVoiceExecutive: getEnv("ELEVENLABS_VOICE_EXECUTIVE", "TxGEqnHWrfWFTfGW9XjX"), // Josh
 		ElevenLabsVoiceTravel:    getEnv("ELEVENLABS_VOICE_TRAVEL",    "VR6AewLTigWG4xSOukaG"), // Arnold
+
+		DatabaseURL: getEnv("DATABASE_URL", "postgres://linguaai:linguaai@localhost:5432/linguaai?sslmode=disable"),
 
 		StripeSecretKey:     getEnv("STRIPE_SECRET_KEY", ""),
 		StripeWebhookSecret: getEnv("STRIPE_WEBHOOK_SECRET", ""),
