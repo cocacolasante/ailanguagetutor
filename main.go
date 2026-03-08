@@ -39,6 +39,7 @@ func main() {
 	adminHandler        := handlers.NewAdminHandler(userStore, billingHandler)
 	gamificationHandler := handlers.NewGamificationHandler(userStore, historyStore)
 	agentHandler        := handlers.NewAgentHandler(cfg, sessionStore, profileStore)
+	vocabHandler        := handlers.NewVocabHandler(cfg, userStore, profileStore)
 
 	auth := middleware.NewAuthMiddleware(cfg)
 
@@ -61,6 +62,7 @@ func main() {
 	r.Get("/admin.html",             serveFile("./static/admin.html"))
 	r.Get("/profile.html",           serveFile("./static/profile.html"))
 	r.Get("/checkout-complete.html", serveFile("./static/checkout-complete.html"))
+	r.Get("/vocab.html",             serveFile("./static/vocab.html"))
 
 	// ── Auth (public) ─────────────────────────────────────────────────────────
 	r.Post("/api/auth/register",    authHandler.Register)
@@ -106,6 +108,11 @@ func main() {
 
 		// TTS
 		r.Post("/api/tts", ttsHandler.Convert)
+
+		// Vocab builder
+		r.Post("/api/vocab/session",  vocabHandler.Session)
+		r.Post("/api/vocab/check",    vocabHandler.Check)
+		r.Post("/api/vocab/complete", vocabHandler.Complete)
 
 		// Gamification
 		r.Get("/api/user/stats",              gamificationHandler.Stats)

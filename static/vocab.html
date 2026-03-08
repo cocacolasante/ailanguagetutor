@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vocab Builder — LinguaAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=4" />
+</head>
+<body class="flashcard-page">
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a href="/dashboard.html" class="logo-link">
+        <span class="logo-icon">🌐</span>
+        <span class="logo-text">LinguaAI</span>
+      </a>
+    </div>
+    <div class="navbar-right">
+      <a href="/dashboard.html" class="btn btn-ghost btn-sm">← Dashboard</a>
+    </div>
+  </nav>
+
+  <!-- Loading state -->
+  <div class="vocab-loading" id="loadingState">
+    <div class="spinner"></div>
+    <p>Generating vocabulary list…</p>
+  </div>
+
+  <!-- Main flashcard area (hidden until loaded) -->
+  <main class="flashcard-main hidden" id="flashcardContainer">
+
+    <!-- Header: topic + language info -->
+    <div class="flashcard-header">
+      <h2 id="headerTitle">Vocab Builder</h2>
+      <p id="headerSub">Loading…</p>
+    </div>
+
+    <!-- Progress bar -->
+    <div style="width:100%;max-width:560px">
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <div class="progress-label" id="progressLabel">Word 1 of 12</div>
+    </div>
+
+    <!-- Flashcard -->
+    <div class="flashcard-scene">
+      <div class="flashcard" id="flashcard" onclick="flipCard()">
+        <div class="flashcard-front">
+          <div class="flashcard-word" id="cardWord">—</div>
+          <div class="flashcard-phonetic" id="cardPhonetic"></div>
+          <div class="flashcard-flip-hint">tap to reveal translation</div>
+        </div>
+        <div class="flashcard-back">
+          <div class="flashcard-translation-label">Translation</div>
+          <div class="flashcard-translation" id="cardTranslation">—</div>
+          <div class="flashcard-flip-hint">tap to flip back</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status message -->
+    <div class="vocab-status" id="vocabStatus"></div>
+    <div class="vocab-attempts" id="vocabAttempts"></div>
+
+    <!-- Controls -->
+    <div class="vocab-controls" id="vocabControls">
+      <button class="btn btn-ghost btn-sm" onclick="playWord()" id="playBtn">🔊 Play</button>
+      <button class="btn btn-ghost btn-sm" onclick="flipCard()" id="flipBtn">🔄 Flip</button>
+      <button class="btn btn-primary btn-sm" onclick="startListening()" id="listenBtn">🎤 Speak</button>
+    </div>
+
+    <!-- Manual fallback (shown when SpeechRecognition is unavailable) -->
+    <div class="vocab-manual-btns hidden" id="manualBtns">
+      <button class="btn btn-ghost btn-sm" onclick="playWord()">🔊 Replay</button>
+      <button class="btn btn-danger btn-sm" onclick="manualResult(false)">✗ Missed</button>
+      <button class="btn btn-primary btn-sm" onclick="manualResult(true)">✓ Got it</button>
+    </div>
+
+  </main>
+
+  <!-- Completion screen (hidden until done) -->
+  <main class="flashcard-complete hidden" id="completeScreen">
+    <div class="flashcard-complete-icon">🎉</div>
+    <h2>Session Complete!</h2>
+
+    <div class="vocab-complete-card">
+      <div class="vocab-stat-row">
+        <span class="label">Words Practiced</span>
+        <span class="value" id="statTotal">—</span>
+      </div>
+      <div class="vocab-stat-row">
+        <span class="label">Words Learned</span>
+        <span class="value" id="statLearned" style="color:#10b981">—</span>
+      </div>
+      <div class="vocab-stat-row">
+        <span class="label">FP Earned</span>
+        <span class="value" style="color:var(--accent)" id="statFP">—</span>
+      </div>
+      <div id="weakSection" class="hidden">
+        <div class="vocab-stat-row">
+          <span class="label" style="color:#f87171">Words to Review</span>
+        </div>
+        <ul class="vocab-weak-list" id="weakList"></ul>
+      </div>
+    </div>
+
+    <div class="vocab-complete-btns">
+      <button class="btn btn-ghost" onclick="practiceAgain()">Practice Again</button>
+      <button class="btn btn-primary" onclick="window.location.href='/dashboard.html'">Back to Dashboard</button>
+    </div>
+  </main>
+
+  <script src="/js/api.js?v=14"></script>
+  <script src="/js/vocab.js?v=1"></script>
+</body>
+</html>

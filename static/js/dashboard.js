@@ -200,7 +200,7 @@ const LEARNING_MODES = [
     icon: '📝',
     name: 'Grammar & Skills',
     desc: 'Vocabulary builder, sentence construction, pronunciation, listening, writing.',
-    available: false,
+    available: true,
   },
   {
     id: 'cultural',
@@ -333,8 +333,35 @@ const CONVERSATIONAL_TOPICS = [
   },
 ];
 
+const VOCAB_TOPICS = [
+  { id: 'general',      icon: '💬', name: 'General',          desc: 'Everyday words and common expressions' },
+  { id: 'food-dining',  icon: '🍽️', name: 'Food & Dining',   desc: 'Restaurant, recipes, and cuisine words' },
+  { id: 'shopping',     icon: '🛍️', name: 'Shopping',        desc: 'Clothing, stores, and prices' },
+  { id: 'family',       icon: '👨‍👩‍👧', name: 'Family Life',  desc: 'Relationships and household words' },
+  { id: 'travel',       icon: '✈️', name: 'Travel',           desc: 'Airports, hotels, and directions' },
+  { id: 'health',       icon: '🏥', name: 'Health',           desc: 'Body, symptoms, and medical terms' },
+  { id: 'work',         icon: '💼', name: 'Work & Career',    desc: 'Workplace, jobs, and professional life' },
+  { id: 'technology',   icon: '💻', name: 'Technology',       desc: 'Gadgets, software, and digital terms' },
+];
+
+const GRAMMAR_SKILLS = [
+  { id: 'vocab',  icon: '📚', name: 'Vocabulary Builder', desc: 'Flashcard mode — learn, hear, and speak new words', available: true },
+  { id: 'sentences', icon: '✏️', name: 'Sentence Construction', desc: 'Build grammatically correct sentences', available: false },
+  { id: 'pronunciation', icon: '🗣️', name: 'Pronunciation Practice', desc: 'Perfect your pronunciation with drills', available: false },
+  { id: 'listening', icon: '👂', name: 'Listening Comprehension', desc: 'Improve listening through short passages', available: false },
+  { id: 'writing', icon: '📝', name: 'Writing Coach', desc: 'Submit writing for grammar corrections', available: false },
+];
+
+// Tracks which grammar sub-step we're in: null | 'skills' | 'vocab-topics'
+let grammarSubStep = null;
+
 function renderActivitySection(modeId) {
   const container = document.getElementById('activityContainer');
+  if (modeId === 'grammar') {
+    grammarSubStep = 'skills';
+    renderGrammarSkillsPicker(container);
+    return;
+  }
   if (modeId !== 'conversational') {
     // Coming soon panel already handled in showComingSoon
     return;
@@ -353,6 +380,61 @@ function renderActivitySection(modeId) {
           </div>`).join('')}
       </div>
     </div>`).join('');
+}
+
+function renderGrammarSkillsPicker(container) {
+  container.innerHTML = `
+    <div class="topic-category">
+      <div class="topic-category-label">Choose a Skill</div>
+      <div class="topic-grid">
+        ${GRAMMAR_SKILLS.map(s => `
+          <div class="topic-card${s.available ? '' : ' mode-card-coming-soon'}"
+               onclick="${s.available ? `selectGrammarSkill('${s.id}')` : `showComingSoon('${escapeAttr(s.name)}')`}">
+            <span class="topic-icon">${s.icon}</span>
+            <div class="topic-info">
+              <div class="topic-name">${s.name}${s.available ? '' : ' <span class="coming-soon-badge">Soon</span>'}</div>
+              <div class="topic-desc">${s.desc}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function selectGrammarSkill(skillId) {
+  if (skillId === 'vocab') {
+    grammarSubStep = 'vocab-topics';
+    const container = document.getElementById('activityContainer');
+    container.innerHTML = `
+      <div class="topic-category">
+        <div class="topic-category-label">Choose a Topic</div>
+        <div class="topic-grid">
+          ${VOCAB_TOPICS.map(t => `
+            <div class="topic-card" id="vocab-topic-${t.id}"
+                 onclick="selectVocabTopic('${t.id}', '${escapeAttr(t.name)}')">
+              <span class="topic-icon">${t.icon}</span>
+              <div class="topic-info">
+                <div class="topic-name">${t.name}</div>
+                <div class="topic-desc">${t.desc}</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }
+}
+
+function selectVocabTopic(id, name) {
+  const u = currentUser;
+  if (!u?.pref_language || !u?.pref_level) {
+    alert('Please set your language and level in your profile first.');
+    return;
+  }
+  const vocabParams = new URLSearchParams({
+    language:  u.pref_language,
+    level:     u.pref_level,
+    topic:     id,
+    topicName: name,
+  });
+  window.location.href = '/vocab.html?' + vocabParams.toString();
 }
 
 function selectTopic(id, name) {
