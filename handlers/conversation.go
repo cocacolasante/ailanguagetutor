@@ -306,25 +306,24 @@ func (h *ConversationHandler) generateSummary(ctx context.Context, language stri
 	durationStr := fmt.Sprintf("%d min %d sec", durationSecs/60, durationSecs%60)
 	langName := LanguageName(language)
 
-	prompt := fmt.Sprintf(`You are a language learning analytics assistant. Analyze this %s conversation session and return a JSON summary. Return ONLY valid JSON with no markdown or extra text.
+	prompt := fmt.Sprintf(`You are a language learning analytics assistant. Analyze the %s conversation transcript below and return a JSON object. Return ONLY valid JSON — no markdown, no code fences, no extra text.
 
-{
-  "summary": "2-3 sentence overview of what the student practiced",
-  "topics_discussed": ["main topic or theme"],
-  "vocabulary_learned": ["word: meaning"],
-  "grammar_corrections": ["notable correction if any"],
-  "suggested_next_lessons": ["specific next step recommendation"],
-  "student_name": "the student's first name if they introduced themselves, empty string otherwise"
-}
+RULES — you MUST follow these exactly:
+- "summary": Write 2-3 complete sentences describing what the student actually practiced. Always include the topic and at least one specific thing they did or said.
+- "topics_discussed": List 2-4 specific topics or themes that came up. Never leave this empty — at minimum list the session topic.
+- "vocabulary_learned": List every %s word or phrase that appeared in the conversation (format: "word: English meaning"). If fewer than 3 appear, infer 2-3 relevant words for this topic and level that the student likely encountered.
+- "grammar_corrections": List any grammar mistakes the student made with a brief correction. If no mistakes, write one grammar tip relevant to their level and the topic (e.g. "Tip: Use estar for temporary states like feelings and locations").
+- "suggested_next_lessons": Always provide exactly 3 specific, actionable next steps tailored to this student's level and what they practiced today.
+- "student_name": The student's first name if they introduced themselves in the conversation, otherwise empty string.
 
 Student level: %s (%d/5)
 Topic: %s
 Duration: %s
 Messages exchanged: %d
 
-Conversation transcript:
+Transcript:
 %s`,
-		langName, levelName, level, topicName, durationStr, len(msgs), transcript.String(),
+		langName, langName, levelName, level, topicName, durationStr, len(msgs), transcript.String(),
 	)
 
 	payload := ionosPayload{
@@ -333,7 +332,7 @@ Conversation transcript:
 			{Role: "user", Content: prompt},
 		},
 		Stream:      false,
-		MaxTokens:   512,
+		MaxTokens:   1024,
 		Temperature: 0.3,
 	}
 	body, err := json.Marshal(payload)

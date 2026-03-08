@@ -786,8 +786,7 @@ async function endConversation() {
     });
 
     if (!data) return;
-
-    // Redirect to summary page
+    sessionStorage.setItem('summary_record_' + data.record_id, JSON.stringify(data));
     window.location.href = `/summary.html?record=${data.record_id}`;
   } catch (err) {
     console.error('Failed to end conversation:', err);
