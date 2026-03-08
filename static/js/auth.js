@@ -195,6 +195,51 @@ registerForm.addEventListener('submit', async (e) => {
   }
 });
 
+/* ── Forgot password ─────────────────────────────────────────────────────────── */
+function showForgotPanel(e) {
+  if (e) e.preventDefault();
+  document.getElementById('panel-login').style.display    = 'none';
+  document.getElementById('panel-register').style.display = 'none';
+  document.getElementById('panel-forgot').style.display   = '';
+  document.querySelector('.auth-tabs').style.display = 'none';
+  hideAlert();
+}
+
+function showLoginFromForgot(e) {
+  if (e) e.preventDefault();
+  document.getElementById('panel-forgot').style.display = 'none';
+  document.querySelector('.auth-tabs').style.display = '';
+  switchTab('login');
+}
+
+const forgotForm = document.getElementById('forgotForm');
+const forgotBtn  = document.getElementById('forgotBtn');
+if (forgotBtn) forgotBtn.dataset.label = forgotBtn.querySelector('span').textContent;
+
+forgotForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideAlert();
+
+  const email = document.getElementById('forgotEmail').value.trim();
+  if (!email) { showAlert('Please enter your email address.'); return; }
+
+  setLoading(forgotBtn, true);
+  try {
+    const res  = await fetch('/api/auth/forgot-password', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ email }),
+    });
+    const data = await res.json();
+    showAlert(data.message || 'Reset link sent.', 'success');
+    forgotForm.reset();
+  } catch (err) {
+    showAlert(err.message || 'Something went wrong. Please try again.');
+  } finally {
+    setLoading(forgotBtn, false);
+  }
+});
+
 function showEmailSentPanel(email) {
   document.getElementById('panel-login').style.display    = 'none';
   document.getElementById('panel-register').style.display = 'none';

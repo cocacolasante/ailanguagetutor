@@ -102,6 +102,15 @@ CREATE TABLE IF NOT EXISTS student_profiles (
     PRIMARY KEY (user_id, language)
 );
 `)
+	if err != nil {
+		return err
+	}
+
+	// Add password reset columns to existing tables (idempotent)
+	_, err = pool.Exec(ctx, `
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token TEXT DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_expires_at TIMESTAMPTZ;
+`)
 	return err
 }
 

@@ -60,6 +60,28 @@
           <button type="submit" class="btn btn-primary btn-lg w-full" id="loginBtn">
             <span>Sign In</span>
           </button>
+          <p style="text-align:center;margin:12px 0 0;">
+            <a href="#" id="forgotPasswordLink" style="color:var(--text-3);font-size:0.85rem;text-decoration:none;" onclick="showForgotPanel(event)">Forgot your password?</a>
+          </p>
+        </form>
+      </div>
+
+      <!-- Forgot password panel -->
+      <div id="panel-forgot" role="tabpanel" style="display:none">
+        <form class="auth-form" id="forgotForm" novalidate>
+          <p style="color:var(--text-2);margin:0 0 20px;line-height:1.6;font-size:0.95rem;">
+            Enter your email and we'll send you a link to reset your password.
+          </p>
+          <div class="form-group">
+            <label for="forgotEmail">Email</label>
+            <input type="email" id="forgotEmail" placeholder="you@example.com" autocomplete="email" required />
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg w-full" id="forgotBtn">
+            <span>Send Reset Link</span>
+          </button>
+          <p style="text-align:center;margin:12px 0 0;">
+            <a href="#" style="color:var(--text-3);font-size:0.85rem;text-decoration:none;" onclick="showLoginFromForgot(event)">Back to sign in</a>
+          </p>
         </form>
       </div>
 

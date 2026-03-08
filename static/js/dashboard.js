@@ -493,10 +493,10 @@ async function startConversationWithParams(language, level, personality, topicId
 }
 
 /* ── Auth logout ────────────────────────────────────────────────────────────── */
-async function logout() {
-  try { await API.post('/api/auth/logout', {}); } catch {}
-  localStorage.removeItem('auth_token');
-  window.location.href = '/';
+function logout() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  window.location.replace('/');
 }
 
 /* ── Helpers ────────────────────────────────────────────────────────────────── */

@@ -10,6 +10,8 @@ import (
 	"github.com/ailanguagetutor/middleware"
 	"github.com/ailanguagetutor/store"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthHandler struct {
@@ -242,6 +244,72 @@ func (h *AuthHandler) UpdatePreferences(w http.ResponseWriter, r *http.Request) 
 	}
 	u, _ := h.store.GetByID(userID)
 	writeJSON(w, http.StatusOK, toDTO(u))
+}
+
+func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Email string `json:"email"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Email == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "email is required"})
+		return
+	}
+
+	// Always respond with success to avoid exposing whether the email exists
+	u, err := h.store.GetByEmail(req.Email)
+	if err == nil {
+		token := uuid.New().String()
+		expiry := time.Now().Add(time.Hour)
+		if err := h.store.SetPasswordResetToken(u.Email, token, expiry); err != nil {
+			log.Printf("forgot-password: set token error: %v", err)
+		} else {
+			resetURL := h.cfg.AppBaseURL + "/reset-password.html?token=" + token
+			if err := sendPasswordResetEmail(h.cfg, u.Email, u.Username, resetURL); err != nil {
+				log.Printf("forgot-password: email send error for %s: %v", u.Email, err)
+			}
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{
+		"message": "If that email is registered, you'll receive a reset link shortly.",
+	})
+}
+
+func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Token    string `json:"token"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request"})
+		return
+	}
+	if req.Token == "" || len(req.Password) < 8 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "token and password (min 8 chars) are required"})
+		return
+	}
+
+	u, err := h.store.GetByPasswordResetToken(req.Token)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid or expired reset link."})
+		return
+	}
+	if u.PasswordResetExpiry == nil || time.Now().After(*u.PasswordResetExpiry) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "This reset link has expired. Please request a new one."})
+		return
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update password"})
+		return
+	}
+	if err := h.store.ResetPassword(u.ID, string(hash)); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to update password"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Password updated. You can now sign in."})
 }
 
 func (h *AuthHandler) generateToken(userID string) (string, error) {

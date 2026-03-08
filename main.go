@@ -48,7 +48,7 @@ func main() {
 	r.Use(chimw.Logger)
 
 	// ── Static files ──────────────────────────────────────────────────────────
-	fs := http.FileServer(http.Dir("./static"))
+	fs := http.StripPrefix("", noCacheFS(http.Dir("./static")))
 	r.Handle("/css/*",   fs)
 	r.Handle("/js/*",    fs)
 	r.Handle("/fonts/*", fs)
@@ -62,12 +62,15 @@ func main() {
 	r.Get("/admin.html",             serveFile("./static/admin.html"))
 	r.Get("/profile.html",           serveFile("./static/profile.html"))
 	r.Get("/checkout-complete.html", serveFile("./static/checkout-complete.html"))
+	r.Get("/reset-password.html",    serveFile("./static/reset-password.html"))
 	r.Get("/vocab.html",             serveFile("./static/vocab.html"))
 
 	// ── Auth (public) ─────────────────────────────────────────────────────────
-	r.Post("/api/auth/register",    authHandler.Register)
-	r.Post("/api/auth/login",       authHandler.Login)
-	r.Get("/api/auth/verify-email", authHandler.VerifyEmail)
+	r.Post("/api/auth/register",        authHandler.Register)
+	r.Post("/api/auth/login",           authHandler.Login)
+	r.Get("/api/auth/verify-email",     authHandler.VerifyEmail)
+	r.Post("/api/auth/forgot-password", authHandler.ForgotPassword)
+	r.Post("/api/auth/reset-password",  authHandler.ResetPassword)
 
 	// ── Auth (protected) ──────────────────────────────────────────────────────
 	r.Group(func(r chi.Router) {
@@ -146,6 +149,16 @@ func main() {
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
+}
+
+// noCacheFS wraps a file system handler to prevent browser caching of static assets.
+func noCacheFS(root http.FileSystem) http.Handler {
+	fs := http.FileServer(root)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		w.Header().Set("Pragma", "no-cache")
+		fs.ServeHTTP(w, r)
+	})
 }
 
 func serveFile(path string) http.HandlerFunc {

@@ -66,6 +66,10 @@ type User struct {
 	PrefLanguage    string `json:"pref_language,omitempty"`
 	PrefLevel       int    `json:"pref_level,omitempty"`
 	PrefPersonality string `json:"pref_personality,omitempty"`
+
+	// Password reset
+	PasswordResetToken  string     `json:"password_reset_token,omitempty"`
+	PasswordResetExpiry *time.Time `json:"password_reset_expires_at,omitempty"`
 }
 
 // HasFullAccess returns true when the user can use all levels.
@@ -512,6 +516,46 @@ WHERE id=$1`,
 	return u.Streak, newBadges, nil
 }
 
+// SetPasswordResetToken stores a reset token and expiry for the given email.
+func (us *UserStore) SetPasswordResetToken(email, token string, expiry time.Time) error {
+	ctx := context.Background()
+	tag, err := us.pool.Exec(ctx,
+		"UPDATE users SET password_reset_token=$2, password_reset_expires_at=$3 WHERE email=$1",
+		email, token, expiry,
+	)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrUserNotFound
+	}
+	return nil
+}
+
+// GetByPasswordResetToken looks up a user by their reset token.
+func (us *UserStore) GetByPasswordResetToken(token string) (*User, error) {
+	if token == "" {
+		return nil, ErrUserNotFound
+	}
+	ctx := context.Background()
+	row := us.pool.QueryRow(ctx, "SELECT * FROM users WHERE password_reset_token=$1", token)
+	u, err := scanUser(row)
+	if err != nil {
+		return nil, ErrUserNotFound
+	}
+	return u, nil
+}
+
+// ResetPassword updates the user's password hash and clears the reset token.
+func (us *UserStore) ResetPassword(id, newPasswordHash string) error {
+	ctx := context.Background()
+	_, err := us.pool.Exec(ctx,
+		"UPDATE users SET password_hash=$2, password_reset_token='', password_reset_expires_at=NULL WHERE id=$1",
+		id, newPasswordHash,
+	)
+	return err
+}
+
 // GetLeaderboard returns the top N users sorted by TotalFP descending.
 func (us *UserStore) GetLeaderboard(limit int) []LeaderboardEntry {
 	ctx := context.Background()
@@ -545,6 +589,7 @@ func scanUser(row pgx.Row) (*User, error) {
 		&u.StripeCustomerID, &u.StripeSubscriptionID, &u.SubscriptionStatus, &u.TrialEndsAt,
 		&u.Streak, &u.LastActivityDate, &u.TotalFP, &langFP, &langLevel, &achievements,
 		&u.ConversationCount, &u.PrefLanguage, &u.PrefLevel, &u.PrefPersonality,
+		&u.PasswordResetToken, &u.PasswordResetExpiry,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
