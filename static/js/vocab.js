@@ -12,9 +12,10 @@ let words      = [];     // VocabWord[]
 let currentIdx = 0;
 let attempts   = 0;      // 1-3 for current word
 let results    = [];     // {word, correct, attempts}[]
-let isFlipped  = false;
-let isListening = false;
-let recognition = null;
+let isFlipped    = false;
+let isListening  = false;
+let isPlayingAudio = false;
+let recognition  = null;
 let hasSpeechAPI = false;
 
 /* ── Language BCP-47 map ─────────────────────────────────────────────────────── */
@@ -98,32 +99,36 @@ function updateProgress() {
 }
 
 /* ── TTS playback ───────────────────────────────────────────────────────────── */
+function setAudioPlaying(playing) {
+  isPlayingAudio = playing;
+  const listenBtn = document.getElementById('listenBtn');
+  if (listenBtn) listenBtn.disabled = playing;
+}
+
 async function playWord() {
   const word = words[currentIdx];
   if (!word) return;
   const btn = document.getElementById('playBtn');
   if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+  setAudioPlaying(true);
   try {
     const res = await API.binary('/api/tts', { text: word.word, language });
     if (!res.ok) throw new Error('TTS failed');
     const blob = await res.blob();
     const url  = URL.createObjectURL(blob);
     const audio = new Audio(url);
-    audio.onended = () => {
+    const done = () => {
       URL.revokeObjectURL(url);
       if (btn) { btn.disabled = false; btn.textContent = '🔊 Play'; }
+      setAudioPlaying(false);
     };
-    audio.onerror = () => {
-      URL.revokeObjectURL(url);
-      if (btn) { btn.disabled = false; btn.textContent = '🔊 Play'; }
-    };
+    audio.onended = done;
+    audio.onerror = done;
     // play() rejects (not hangs) when autoplay is blocked — button resets so user can tap
-    await audio.play().catch(() => {
-      URL.revokeObjectURL(url);
-      if (btn) { btn.disabled = false; btn.textContent = '🔊 Play'; }
-    });
+    await audio.play().catch(done);
   } catch {
     if (btn) { btn.disabled = false; btn.textContent = '🔊 Play'; }
+    setAudioPlaying(false);
   }
 }
 
@@ -151,6 +156,11 @@ function startListening() {
     stopListening();
     return;
   }
+  if (isPlayingAudio) {
+    setStatus('Wait for audio to finish…');
+    setTimeout(clearStatus, 1500);
+    return;
+  }
   // Always create a fresh instance — reusing the same object fails on mobile
   recognition = createRecognition();
   if (!recognition) return;
@@ -169,6 +179,7 @@ function stopListening() {
   isListening = false;
   const btn = document.getElementById('listenBtn');
   if (btn) { btn.textContent = '🎤 Speak'; btn.classList.remove('listening'); }
+  clearStatus();
   try { recognition.stop(); } catch {}
 }
 
@@ -177,6 +188,7 @@ async function checkPronunciation(spoken) {
   const word = words[currentIdx];
   attempts++;
   updateAttemptsLabel();
+  setStatus('Checking…');
 
   try {
     const result = await API.post('/api/vocab/check', { word: word.word, language, spoken });
