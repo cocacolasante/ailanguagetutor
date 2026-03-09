@@ -23,17 +23,49 @@ let ttsInFlight    = false;
 let recognition    = null;
 let hasSpeechAPI   = false;
 
-// iOS audio: HTMLAudioElement only (no AudioContext).
-// AudioContext.close() does NOT synchronously deactivate the iOS AVAudioSession,
-// causing recognition.start() to silently fail. HTMLAudioElement with explicit
-// delays is simpler and more reliable for the Playback→Record transition.
+/* ── Web Audio context (mirrors conversation.js) ────────────────────────────── */
+// A single AudioContext lives for the page lifetime and is never closed.
+// This keeps iOS in a shared PlayAndRecord audio session so the mic remains
+// accessible immediately after playback — no session transition needed.
+// HTMLAudioElement must NOT be used for TTS on iOS: it puts the session into
+// exclusive Playback mode, which blocks webkitSpeechRecognition for minutes.
+let audioCtx     = null;
+let currentSource = null;
+
+function getAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return audioCtx;
+}
+
+// Call synchronously inside every user-gesture handler before any await.
+// Resumes the context and plays a silent sample — fully unlocks iOS audio.
+function unlockAudio() {
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  const buf = ctx.createBuffer(1, 1, 22050);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.connect(ctx.destination);
+  src.start(0);
+}
+
+function stopCurrentAudio() {
+  if (currentSource) {
+    currentSource._stopped = true;
+    try { currentSource.stop(); } catch (_) {}
+    currentSource = null;
+  }
+}
 
 /* ── BFCache guard ──────────────────────────────────────────────────────────── */
-// iOS Safari restores pages from BFCache on back/forward navigation.
-// Reset all state on BFCache restore to avoid stale flags.
 window.addEventListener('pageshow', (e) => {
   if (e.persisted) {
     console.log('[vocab] BFCache restore — resetting state');
+    // audioCtx reference may be stale after BFCache; null it so getAudioCtx recreates.
+    audioCtx       = null;
+    currentSource  = null;
     ttsInFlight    = false;
     isPlayingAudio = false;
     isListening    = false;
@@ -77,7 +109,7 @@ async function loadSession() {
     renderCard(words[0]);
     updateProgress();
 
-    // Desktop: auto-play. iOS: skip (always blocked without prior user gesture).
+    // Desktop: auto-play. iOS: skip (blocked without prior user gesture).
     if (!isIOS) setTimeout(() => playWord(false), 600);
   } catch (err) {
     showError('Failed to load vocabulary. ' + (err.message || ''));
@@ -110,22 +142,18 @@ function updateProgress() {
 }
 
 /* ── TTS playback ───────────────────────────────────────────────────────────── */
-// fromGesture=true when called from a button tap (required for iOS audio.play()).
-// iOS-specific notes:
-//   - We use HTMLAudioElement only (no AudioContext) — AudioContext.close() does NOT
-//     synchronously release the AVAudioSession, so recognition.start() called after it
-//     still silently fails.
-//   - If recording was active when Play is tapped, we stop it first then wait 500ms
-//     to let iOS exit the Record audio session before we start playback.
-//   - After playback ends on iOS, we wait 800ms with a hint message before enabling
-//     the mic — iOS needs this time to fully release the Playback session so that
-//     webkitSpeechRecognition can acquire it.
-//   - A 12s safety timeout ensures releaseMic always fires if onended never triggers.
+// fromGesture=true when called from a button tap.
+// unlockAudio() MUST be called synchronously (before any await) to unlock iOS audio.
+// We use AudioContext (Web Audio API) for all playback — this keeps iOS in a shared
+// PlayAndRecord session so the mic is immediately available after audio ends.
 async function playWord(fromGesture = false) {
   if (ttsInFlight) {
     console.log('[vocab] playWord: skipped — already in flight');
     return;
   }
+
+  // Unlock iOS audio synchronously while we're still inside the gesture handler.
+  if (fromGesture) unlockAudio();
 
   const wasListening = isListening;
   if (isListening) {
@@ -151,53 +179,55 @@ async function playWord(fromGesture = false) {
     console.log('[vocab] playWord: mic enabled');
   };
 
-  // If we stopped an active recording, give iOS time to exit Record mode before
-  // fetching/playing audio (otherwise audio.play() silently fails).
+  // If we just stopped a recording, give iOS a moment to exit Record mode
+  // before the TTS fetch begins (prevents playback silently failing).
   if (isIOS && wasListening) {
-    console.log('[vocab] playWord: waiting 500ms for iOS to exit Record session');
-    await new Promise(r => setTimeout(r, 500));
+    console.log('[vocab] playWord: waiting 400ms for iOS to exit Record session');
+    await new Promise(r => setTimeout(r, 400));
   }
 
   console.log('[vocab] playWord: fetching TTS for', word.word, '| fromGesture:', fromGesture);
   try {
     const res = await API.binary('/api/tts', { text: word.word, language });
     if (!res.ok) throw new Error('TTS failed');
-    const blob = await res.blob();
-    const url  = URL.createObjectURL(blob);
-    const audio = new Audio(url);
 
-    // Safety timeout: if onended never fires (e.g. iOS kills the element),
-    // release the mic after 12s so the user isn't permanently stuck.
+    const ctx = getAudioCtx();
+    if (ctx.state === 'suspended') await ctx.resume();
+
+    const arrayBuf    = await res.arrayBuffer();
+    const audioBuffer = await ctx.decodeAudioData(arrayBuf);
+
+    stopCurrentAudio(); // cancel any previously playing audio
+
+    const source = ctx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(ctx.destination);
+    currentSource = source;
+
+    // Safety: if onended never fires, release after 15s.
     const safetyTimer = setTimeout(() => {
       console.log('[vocab] playWord: safety timeout — releasing mic');
-      URL.revokeObjectURL(url);
+      currentSource = null;
       clearStatus();
       enable();
-    }, 12000);
+    }, 15000);
 
-    const done = (playedOk) => {
+    source.onended = () => {
       clearTimeout(safetyTimer);
-      URL.revokeObjectURL(url);
-      if (isIOS && playedOk) {
-        // Give iOS time to release the Playback session before mic can start.
+      if (currentSource === source) currentSource = null;
+      console.log('[vocab] playWord: audio ended');
+      // With AudioContext the iOS session stays in PlayAndRecord, so a short
+      // 500ms pause is enough for iOS to fully settle before recognition starts.
+      if (isIOS) {
         setStatus('Tap Speak when ready…');
-        setTimeout(() => { clearStatus(); enable(); }, 800);
+        setTimeout(() => { clearStatus(); enable(); }, 500);
       } else {
-        clearStatus();
         enable();
       }
     };
 
-    audio.onended = () => { console.log('[vocab] playWord: onended'); done(true); };
-    audio.onerror = (e) => { console.log('[vocab] playWord: onerror', e); done(false); };
-
-    console.log('[vocab] playWord: calling audio.play()');
-    await audio.play().catch((e) => {
-      console.log('[vocab] playWord: audio.play() rejected:', e);
-      clearTimeout(safetyTimer);
-      URL.revokeObjectURL(url);
-      enable();
-    });
+    console.log('[vocab] playWord: starting AudioContext playback');
+    source.start(0);
   } catch (err) {
     console.log('[vocab] playWord: error:', err);
     enable();
@@ -259,6 +289,9 @@ function startListening() {
     setTimeout(clearStatus, 1500);
     return;
   }
+
+  // Unlock audio synchronously — keeps iOS AudioContext running in PlayAndRecord mode.
+  unlockAudio();
 
   recognition = createRecognition();
   if (!recognition) return;
@@ -338,6 +371,7 @@ function nextWord() {
 
 /* ── Complete session ───────────────────────────────────────────────────────── */
 async function completeSession() {
+  stopCurrentAudio();
   document.getElementById('flashcardContainer').classList.add('hidden');
   try {
     const data = await API.post('/api/vocab/complete', {
