@@ -110,6 +110,9 @@ function userRow(u) {
     if (status !== 'trialing')  btns.push(`<button class="btn btn-sm btn-secondary" onclick="setSub('${u.id}','trialing')">Set Trial</button>`);
     if (status === 'suspended') btns.push(`<button class="btn btn-sm btn-success"   onclick="setSub('${u.id}','active')">Restore</button>`);
     else                        btns.push(`<button class="btn btn-sm btn-danger"    onclick="setSub('${u.id}','suspended')">Revoke</button>`);
+    if (currentUser.email === 'anthony@csuitecode.com' && !u.is_admin) {
+      btns.push(`<button class="btn btn-sm btn-secondary" style="background:var(--accent-purple,#7c3aed);border-color:var(--accent-purple,#7c3aed);" onclick="confirmPromote('${u.id}',\`${u.email}\`,\`${u.username}\`)">Make Admin</button>`);
+    }
     btns.push(`<button class="btn btn-sm btn-danger" style="opacity:0.7" onclick="confirmDelete('${u.id}',\`${u.email}\`,\`${u.username}\`)">Delete</button>`);
     actions = btns.join('');
   }
@@ -215,6 +218,39 @@ async function inviteUser() {
   }
 }
 
+/* ── Promote to Admin ────────────────────────────────────────────────────────── */
+let _pendingPromoteId = null;
+
+function confirmPromote(id, email, username) {
+  _pendingPromoteId = id;
+  document.getElementById('promoteModalBody').innerHTML =
+    `This will give <strong style="color:var(--text-1)">${username}</strong> (${email}) full admin access to the Fluentica AI admin panel. This cannot be undone easily.`;
+  const modal = document.getElementById('promoteModal');
+  modal.style.display = 'flex';
+  document.getElementById('promoteConfirmBtn').onclick = executePromote;
+}
+
+function closePromoteModal() {
+  _pendingPromoteId = null;
+  document.getElementById('promoteModal').style.display = 'none';
+}
+
+async function executePromote() {
+  if (!_pendingPromoteId) return;
+  const id = _pendingPromoteId;
+  closePromoteModal();
+
+  try {
+    await API.post('/api/admin/users/' + id + '/promote', {});
+    const u = users.find(u => u.id === id);
+    if (u) u.is_admin = true;
+    renderStats();
+    renderUsers();
+  } catch (err) {
+    alert('Promote failed: ' + err.message);
+  }
+}
+
 /* ── Delete user ─────────────────────────────────────────────────────────────── */
 let _pendingDeleteId = null;
 
@@ -247,9 +283,12 @@ async function executeDelete() {
   }
 }
 
-// Close modal on backdrop click
+// Close modals on backdrop click
 document.getElementById('deleteModal')?.addEventListener('click', function(e) {
   if (e.target === this) closeDeleteModal();
+});
+document.getElementById('promoteModal')?.addEventListener('click', function(e) {
+  if (e.target === this) closePromoteModal();
 });
 
 /* ── Boot ────────────────────────────────────────────────────────────────────── */

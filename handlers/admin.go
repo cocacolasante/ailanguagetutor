@@ -248,6 +248,35 @@ func (h *AdminHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, resp)
 }
 
+// POST /api/admin/users/{id}/promote
+// Only callable by anthony@csuitecode.com — promotes a user to admin.
+func (h *AdminHandler) PromoteToAdmin(w http.ResponseWriter, r *http.Request) {
+	if !h.requireAdmin(w, r) {
+		return
+	}
+
+	callerID := r.Context().Value(middleware.UserIDKey).(string)
+	caller, err := h.userStore.GetByID(callerID)
+	if err != nil || caller.Email != "anthony@csuitecode.com" {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "only anthony@csuitecode.com can promote users to admin"})
+		return
+	}
+
+	targetID := chi.URLParam(r, "id")
+	if targetID == callerID {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "you are already an admin"})
+		return
+	}
+
+	if err := h.userStore.SetIsAdmin(targetID, true); err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "user not found"})
+		return
+	}
+
+	log.Printf("admin: user %s promoted to admin by %s (%s)", targetID, callerID, caller.Email)
+	writeJSON(w, http.StatusOK, map[string]string{"promoted": targetID})
+}
+
 // DELETE /api/admin/users/{id}
 // Cancels any Stripe subscription, then deletes all user data.
 func (h *AdminHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {

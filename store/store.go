@@ -430,6 +430,18 @@ func (us *UserStore) SetApproved(id string, approved bool) error {
 	return nil
 }
 
+func (us *UserStore) SetIsAdmin(id string, isAdmin bool) error {
+	ctx := context.Background()
+	tag, err := us.pool.Exec(ctx, "UPDATE users SET is_admin=$2 WHERE id=$1", id, isAdmin)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrUserNotFound
+	}
+	return nil
+}
+
 func (us *UserStore) SetEmailVerified(id string) error {
 	ctx := context.Background()
 	_, err := us.pool.Exec(ctx, "UPDATE users SET email_verified=TRUE, email_verify_token='' WHERE id=$1", id)

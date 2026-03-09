@@ -78,6 +78,18 @@
     </section>
   </main>
 
+  <!-- Promote to Admin confirmation modal -->
+  <div id="promoteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;">
+    <div class="card" style="max-width:420px;width:90%;padding:32px;">
+      <h3 style="margin:0 0 8px;color:#7c3aed;">Promote to Admin</h3>
+      <p id="promoteModalBody" style="margin:0 0 24px;color:var(--text-2);line-height:1.6;"></p>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-ghost btn-sm" onclick="closePromoteModal()">Cancel</button>
+        <button class="btn btn-sm" id="promoteConfirmBtn" style="background:#7c3aed;color:#fff;border-color:#7c3aed;">Yes, Make Admin</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Delete confirmation modal -->
   <div id="deleteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;">
     <div class="card" style="max-width:420px;width:90%;padding:32px;">

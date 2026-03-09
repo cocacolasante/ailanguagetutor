@@ -181,6 +181,7 @@ func main() {
 		r.Patch("/api/admin/users/{id}/approval",     adminHandler.SetApproval)
 		r.Patch("/api/admin/users/{id}/subscription", adminHandler.SetSubscription)
 		r.Post("/api/admin/invite-user",              adminHandler.InviteUser)
+		r.Post("/api/admin/users/{id}/promote",       adminHandler.PromoteToAdmin)
 		r.Delete("/api/admin/users/{id}",             adminHandler.DeleteUser)
 		// One-time setup: creates the ElevenLabs Conversational AI agent
 		r.Post("/api/admin/setup-agent", agentHandler.SetupAgent)
