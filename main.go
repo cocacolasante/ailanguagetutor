@@ -36,7 +36,7 @@ func main() {
 	authHandler         := handlers.NewAuthHandler(cfg, userStore, billingHandler)
 	convHandler         := handlers.NewConversationHandler(cfg, sessionStore, contextStore, userStore, historyStore, profileStore)
 	ttsHandler          := handlers.NewTTSHandler(cfg)
-	adminHandler        := handlers.NewAdminHandler(cfg, userStore, billingHandler)
+	adminHandler        := handlers.NewAdminHandler(cfg, userStore, billingHandler, historyStore)
 	gamificationHandler := handlers.NewGamificationHandler(userStore, historyStore, profileStore)
 	agentHandler        := handlers.NewAgentHandler(cfg, sessionStore, profileStore)
 	vocabPool           := store.NewItemPool("data/vocab_pool.json")
@@ -165,6 +165,7 @@ func main() {
 		r.Patch("/api/admin/users/{id}/approval",     adminHandler.SetApproval)
 		r.Patch("/api/admin/users/{id}/subscription", adminHandler.SetSubscription)
 		r.Post("/api/admin/invite-user",              adminHandler.InviteUser)
+		r.Delete("/api/admin/users/{id}",             adminHandler.DeleteUser)
 		// One-time setup: creates the ElevenLabs Conversational AI agent
 		r.Post("/api/admin/setup-agent", agentHandler.SetupAgent)
 	})

@@ -15,13 +15,14 @@ import (
 )
 
 type AdminHandler struct {
-	cfg       *config.Config
-	userStore *store.UserStore
-	billing   *BillingHandler
+	cfg          *config.Config
+	userStore    *store.UserStore
+	historyStore *store.ConversationHistoryStore
+	billing      *BillingHandler
 }
 
-func NewAdminHandler(cfg *config.Config, us *store.UserStore, bh *BillingHandler) *AdminHandler {
-	return &AdminHandler{cfg: cfg, userStore: us, billing: bh}
+func NewAdminHandler(cfg *config.Config, us *store.UserStore, bh *BillingHandler, hs *store.ConversationHistoryStore) *AdminHandler {
+	return &AdminHandler{cfg: cfg, userStore: us, billing: bh, historyStore: hs}
 }
 
 // requireAdmin checks the caller is the admin user; returns false and writes 403 if not.
@@ -245,4 +246,37 @@ func (h *AdminHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusCreated, resp)
+}
+
+// DELETE /api/admin/users/{id}
+// Cancels any Stripe subscription, then deletes all user data.
+func (h *AdminHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	if !h.requireAdmin(w, r) {
+		return
+	}
+
+	targetID := chi.URLParam(r, "id")
+	callerID := r.Context().Value(middleware.UserIDKey).(string)
+	if targetID == callerID {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "cannot delete your own account"})
+		return
+	}
+
+	u, err := h.userStore.GetByID(targetID)
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "user not found"})
+		return
+	}
+
+	// Cancel Stripe subscription if one exists (ignore errors — proceed with deletion regardless).
+	if cancelErr := h.billing.cancelStripeOnly(u); cancelErr != nil {
+		log.Printf("admin delete: stripe cancel error for user %s: %v", targetID, cancelErr)
+	}
+
+	// Delete conversation history, then the user row.
+	h.historyStore.DeleteForUser(targetID)
+	h.userStore.Delete(targetID)
+
+	log.Printf("admin: user %s (%s) deleted by admin %s", targetID, u.Email, callerID)
+	writeJSON(w, http.StatusOK, map[string]string{"deleted": targetID})
 }

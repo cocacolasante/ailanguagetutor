@@ -834,6 +834,11 @@ FROM conversation_history WHERE user_id=$1 ORDER BY ended_at DESC LIMIT 10`, use
 	return records
 }
 
+func (hs *ConversationHistoryStore) DeleteForUser(userID string) {
+	ctx := context.Background()
+	_, _ = hs.pool.Exec(ctx, "DELETE FROM conversation_history WHERE user_id=$1", userID)
+}
+
 func (hs *ConversationHistoryStore) GetRecord(id string) (*ConversationRecord, error) {
 	ctx := context.Background()
 	row := hs.pool.QueryRow(ctx, `

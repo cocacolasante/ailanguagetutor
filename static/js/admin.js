@@ -110,6 +110,7 @@ function userRow(u) {
     if (status !== 'trialing')  btns.push(`<button class="btn btn-sm btn-secondary" onclick="setSub('${u.id}','trialing')">Set Trial</button>`);
     if (status === 'suspended') btns.push(`<button class="btn btn-sm btn-success"   onclick="setSub('${u.id}','active')">Restore</button>`);
     else                        btns.push(`<button class="btn btn-sm btn-danger"    onclick="setSub('${u.id}','suspended')">Revoke</button>`);
+    btns.push(`<button class="btn btn-sm btn-danger" style="opacity:0.7" onclick="confirmDelete('${u.id}',\`${u.email}\`,\`${u.username}\`)">Delete</button>`);
     actions = btns.join('');
   }
 
@@ -213,6 +214,43 @@ async function inviteUser() {
     btn.disabled = false;
   }
 }
+
+/* ── Delete user ─────────────────────────────────────────────────────────────── */
+let _pendingDeleteId = null;
+
+function confirmDelete(id, email, username) {
+  _pendingDeleteId = id;
+  document.getElementById('deleteModalBody').innerHTML =
+    `This will permanently delete <strong style="color:var(--text-1)">${username}</strong> (${email}), cancel any active subscription, and remove all conversation data. This cannot be undone.`;
+  const modal = document.getElementById('deleteModal');
+  modal.style.display = 'flex';
+  document.getElementById('deleteConfirmBtn').onclick = executeDelete;
+}
+
+function closeDeleteModal() {
+  _pendingDeleteId = null;
+  document.getElementById('deleteModal').style.display = 'none';
+}
+
+async function executeDelete() {
+  if (!_pendingDeleteId) return;
+  const id = _pendingDeleteId;
+  closeDeleteModal();
+
+  try {
+    await API.delete('/api/admin/users/' + id);
+    users = users.filter(u => u.id !== id);
+    renderStats();
+    renderUsers();
+  } catch (err) {
+    alert('Delete failed: ' + err.message);
+  }
+}
+
+// Close modal on backdrop click
+document.getElementById('deleteModal')?.addEventListener('click', function(e) {
+  if (e.target === this) closeDeleteModal();
+});
 
 /* ── Boot ────────────────────────────────────────────────────────────────────── */
 loadUsers();
