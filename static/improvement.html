@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Improve on Mistakes — LinguaAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=4" />
+</head>
+<body class="flashcard-page">
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a href="/dashboard.html" class="logo-link">
+        <span class="logo-icon">🌐</span>
+        <span class="logo-text">LinguaAI</span>
+      </a>
+    </div>
+    <div class="navbar-right">
+      <a href="/dashboard.html" class="btn btn-ghost btn-sm">← Dashboard</a>
+    </div>
+  </nav>
+
+  <!-- Loading state -->
+  <div class="vocab-loading" id="loadingState">
+    <div class="spinner"></div>
+    <p>Loading your weak areas…</p>
+  </div>
+
+  <!-- No mistakes state -->
+  <main class="flashcard-main hidden" id="noMistakesState">
+    <div class="flashcard-header">
+      <h2>🎉 No Mistakes Yet!</h2>
+      <p>Complete some Vocab Builder or Sentence Builder sessions to build up your improvement list.</p>
+    </div>
+    <div style="text-align:center;margin-top:2rem;">
+      <a href="/dashboard.html" class="btn btn-primary btn-lg">← Back to Dashboard</a>
+    </div>
+  </main>
+
+  <!-- Main improvement page -->
+  <main class="flashcard-main hidden" id="improvementMain">
+
+    <div class="flashcard-header">
+      <h2>🔁 Improve on Prior Mistakes</h2>
+      <p id="improvementSub">Review your weak areas in a focused session</p>
+    </div>
+
+    <!-- Weak vocab section -->
+    <section id="weakVocabSection" class="hidden" style="margin-bottom:2rem;">
+      <div class="summary-card">
+        <h3 class="summary-section-title">📝 Words to Practice</h3>
+        <div id="weakVocabList"></div>
+      </div>
+    </section>
+
+    <!-- Weak grammar section -->
+    <section id="weakGrammarSection" class="hidden" style="margin-bottom:2rem;">
+      <div class="summary-card">
+        <h3 class="summary-section-title">✏️ Grammar to Practice</h3>
+        <div id="weakGrammarList"></div>
+      </div>
+    </section>
+
+    <!-- Session type picker -->
+    <div class="summary-card">
+      <h3 class="summary-section-title">Choose a Session Type</h3>
+      <div class="topic-grid" style="margin-top:1rem;">
+
+        <div class="topic-card" id="btnVocabImprove">
+          <span class="topic-icon">📚</span>
+          <div class="topic-info">
+            <div class="topic-name">Vocab Builder</div>
+            <div class="topic-desc">Flashcards generated from your weak words</div>
+          </div>
+        </div>
+
+        <div class="topic-card" id="btnSentenceImprove">
+          <span class="topic-icon">✏️</span>
+          <div class="topic-info">
+            <div class="topic-name">Sentence Builder</div>
+            <div class="topic-desc">Translation exercises targeting your grammar gaps</div>
+          </div>
+        </div>
+
+        <div class="topic-card" id="btnConvImprove">
+          <span class="topic-icon">💬</span>
+          <div class="topic-info">
+            <div class="topic-name">General Conversation</div>
+            <div class="topic-desc">Free conversation — your profile already guides the AI</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <script src="/js/api.js?v=14"></script>
+  <script src="/js/improvement.js"></script>
+</body>
+</html>

@@ -37,7 +37,7 @@ func main() {
 	convHandler         := handlers.NewConversationHandler(cfg, sessionStore, contextStore, userStore, historyStore, profileStore)
 	ttsHandler          := handlers.NewTTSHandler(cfg)
 	adminHandler        := handlers.NewAdminHandler(userStore, billingHandler)
-	gamificationHandler := handlers.NewGamificationHandler(userStore, historyStore)
+	gamificationHandler := handlers.NewGamificationHandler(userStore, historyStore, profileStore)
 	agentHandler        := handlers.NewAgentHandler(cfg, sessionStore, profileStore)
 	vocabPool           := store.NewItemPool("data/vocab_pool.json")
 	vocabPool.Load()
@@ -47,9 +47,9 @@ func main() {
 	listeningPool.Load()
 	writingPool         := store.NewItemPool("data/writing_pool.json")
 	writingPool.Load()
-	vocabHandler        := handlers.NewVocabHandler(cfg, userStore, profileStore, vocabPool)
-	sentenceHandler     := handlers.NewSentenceHandler(cfg, userStore, profileStore, sentencePool)
-	listeningHandler    := handlers.NewListeningHandler(cfg, userStore, profileStore, listeningPool, vocabPool, sentencePool)
+	vocabHandler        := handlers.NewVocabHandler(cfg, userStore, profileStore, historyStore, vocabPool)
+	sentenceHandler     := handlers.NewSentenceHandler(cfg, userStore, profileStore, historyStore, sentencePool)
+	listeningHandler    := handlers.NewListeningHandler(cfg, userStore, profileStore, historyStore, listeningPool, vocabPool, sentencePool)
 	writingHandler      := handlers.NewWritingHandler(cfg, userStore, profileStore, historyStore, sessionStore, writingPool)
 
 	auth := middleware.NewAuthMiddleware(cfg)
@@ -78,6 +78,7 @@ func main() {
 	r.Get("/sentences.html",         serveFile("./static/sentences.html"))
 	r.Get("/listening.html",         serveFile("./static/listening.html"))
 	r.Get("/writing.html",           serveFile("./static/writing.html"))
+	r.Get("/improvement.html",       serveFile("./static/improvement.html"))
 
 	// ── Auth (public) ─────────────────────────────────────────────────────────
 	r.Post("/api/auth/register",        authHandler.Register)
@@ -147,6 +148,7 @@ func main() {
 
 		// Gamification
 		r.Get("/api/user/stats",              gamificationHandler.Stats)
+		r.Get("/api/user/mistakes",           gamificationHandler.GetMistakes)
 		r.Get("/api/conversation/records",    gamificationHandler.Records)
 		r.Get("/api/conversation/records/{id}", gamificationHandler.GetRecord)
 		r.Get("/api/badges",                  gamificationHandler.Badges)

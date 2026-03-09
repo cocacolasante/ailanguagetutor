@@ -88,6 +88,18 @@ async function loadSummary() {
   renderSummary(record);
 }
 
+function correctionsTitle(personality) {
+  if (personality === 'vocab-builder') return '📝 Words to Practice';
+  if (personality === 'listening')     return '🎧 Comprehension to Review';
+  return '✏️ Grammar Corrections';
+}
+
+function correctionsEmpty(personality) {
+  if (personality === 'vocab-builder') return 'No weak words — great job!';
+  if (personality === 'listening')     return 'All questions answered correctly!';
+  return 'No major corrections — great job!';
+}
+
 function renderSummary(r) {
   const lang     = LANG_META[r.language] || { flag: '🌐', name: r.language };
   const levelName = LEVEL_NAMES[r.level] || 'Intermediate';
@@ -154,8 +166,8 @@ function renderSummary(r) {
         ${renderList(r.vocabulary_learned, 'Keep practicing to build vocabulary!')}
       </div>
       <div class="summary-card">
-        <h3 class="summary-section-title">✏️ Grammar Corrections</h3>
-        ${renderList(r.grammar_corrections, 'No major corrections — great job!')}
+        <h3 class="summary-section-title">${correctionsTitle(r.personality)}</h3>
+        ${renderList(r.grammar_corrections, correctionsEmpty(r.personality))}
       </div>
       <div class="summary-card">
         <h3 class="summary-section-title">🎯 Suggested Next Steps</h3>

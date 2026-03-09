@@ -14,17 +14,19 @@ import (
 	"github.com/ailanguagetutor/config"
 	"github.com/ailanguagetutor/middleware"
 	"github.com/ailanguagetutor/store"
+	"github.com/google/uuid"
 )
 
 type SentenceHandler struct {
 	cfg          *config.Config
 	userStore    *store.UserStore
 	profileStore *store.StudentProfileStore
+	historyStore *store.ConversationHistoryStore
 	pool         *store.ItemPool
 }
 
-func NewSentenceHandler(cfg *config.Config, us *store.UserStore, ps *store.StudentProfileStore, pool *store.ItemPool) *SentenceHandler {
-	return &SentenceHandler{cfg: cfg, userStore: us, profileStore: ps, pool: pool}
+func NewSentenceHandler(cfg *config.Config, us *store.UserStore, ps *store.StudentProfileStore, hs *store.ConversationHistoryStore, pool *store.ItemPool) *SentenceHandler {
+	return &SentenceHandler{cfg: cfg, userStore: us, profileStore: ps, historyStore: hs, pool: pool}
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -37,9 +39,10 @@ type Sentence struct {
 }
 
 type sentenceSessionRequest struct {
-	Language string `json:"language"`
-	Level    int    `json:"level"`
-	Topic    string `json:"topic"`
+	Language     string `json:"language"`
+	Level        int    `json:"level"`
+	Topic        string `json:"topic"`
+	MistakesMode bool   `json:"mistakes_mode"`
 }
 
 type sentenceSessionResponse struct {
@@ -74,9 +77,10 @@ type sentenceCompleteRequest struct {
 }
 
 type sentenceCompleteResponse struct {
-	FPEarned      int      `json:"fp_earned"`
-	WeakGrammar   []string `json:"weak_grammar"`
-	CorrectCount  int      `json:"correct_count"`
+	FPEarned     int      `json:"fp_earned"`
+	WeakGrammar  []string `json:"weak_grammar"`
+	CorrectCount int      `json:"correct_count"`
+	RecordID     string   `json:"record_id"`
 }
 
 // ── Session ───────────────────────────────────────────────────────────────────
@@ -103,6 +107,65 @@ func (h *SentenceHandler) Session(w http.ResponseWriter, r *http.Request) {
 	spec := levelSpec[req.Level]
 
 	profile, _ := h.profileStore.Get(r.Context(), userID, req.Language)
+
+	// Mistakes mode: generate sentences exclusively from weak grammar patterns
+	if req.MistakesMode {
+		weakGrammar := []string{}
+		if profile != nil {
+			weakGrammar = profile.WeakGrammar
+		}
+		if len(weakGrammar) == 0 {
+			writeJSON(w, http.StatusOK, map[string]any{
+				"sentences": []Sentence{},
+				"message":   "No grammar mistakes on record yet. Complete some sentence sessions first!",
+			})
+			return
+		}
+		limit := weakGrammar
+		if len(limit) > 10 {
+			limit = limit[:10]
+		}
+		b, _ := json.Marshal(limit)
+		prompt := fmt.Sprintf(`You are a language teacher creating translation exercises targeting specific grammar weaknesses.
+Language: %s, Level: %s
+The student previously struggled with these grammar patterns: %s
+
+Generate exactly 10 English sentences for translation into %s that specifically target and practise EACH of these grammar patterns.
+Return ONLY valid JSON — no markdown, no code fences, no explanation:
+{"sentences":[{"id":"...","english":"...","target":"...","grammar_tip":"..."},...]}
+Rules:
+- "id": copy the English sentence verbatim
+- "english": the English sentence the student will translate
+- "target": the correct %s translation
+- "grammar_tip": one concise note about the grammar pattern being practised (reference the weak area explicitly)
+- Exactly 10 items`,
+			langName, spec, string(b), langName, langName)
+
+		result, err := h.callAI(r.Context(), prompt, 1200, 0.7)
+		if err != nil {
+			log.Printf("sentences/session mistakes AI error: %v", err)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "AI service error"})
+			return
+		}
+		result = strings.TrimSpace(result)
+		if idx := strings.Index(result, "{"); idx > 0 {
+			result = result[idx:]
+		}
+		if idx := strings.LastIndex(result, "}"); idx >= 0 && idx < len(result)-1 {
+			result = result[:idx+1]
+		}
+		var parsed struct {
+			Sentences []Sentence `json:"sentences"`
+		}
+		if err := json.Unmarshal([]byte(result), &parsed); err != nil {
+			log.Printf("sentences/session mistakes JSON parse error: %v\nraw: %s", err, result)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to parse AI response"})
+			return
+		}
+		store.Shuffle(parsed.Sentences)
+		writeJSON(w, http.StatusOK, sentenceSessionResponse{Sentences: parsed.Sentences})
+		return
+	}
 
 	// Cache-first: serve from pool if the user hasn't exhausted this key
 	key := h.pool.Key(req.Language, req.Level, req.Topic)
@@ -155,6 +218,16 @@ func (h *SentenceHandler) Session(w http.ResponseWriter, r *http.Request) {
 		excludeClause = fmt.Sprintf("\ndo NOT use these already-seen sentences: %s", string(b))
 	}
 
+	var reinforceClause string
+	if profile != nil && len(profile.WeakAreas) > 0 {
+		weak := profile.WeakAreas
+		if len(weak) > 8 {
+			weak = weak[:8]
+		}
+		b, _ := json.Marshal(weak)
+		reinforceClause = fmt.Sprintf("\n- TARGET these previously weak grammar patterns in some exercises: %s", string(b))
+	}
+
 	prompt := fmt.Sprintf(`You are a language teacher creating translation exercises.
 Language: %s, Topic: %s, Level: %s
 Generate exactly 10 English sentences for translation into %s.
@@ -166,9 +239,9 @@ Rules:
 - "target": the correct %s translation
 - "grammar_tip": one concise grammar note about the key structure used (e.g. "uses subjunctive mood")
 - vary structures: include statements, questions, conditionals, and imperatives
-- match complexity to the level: %s%s
+- match complexity to the level: %s%s%s
 - Exactly 10 items`,
-		langName, topicName, spec, langName, langName, spec, excludeClause)
+		langName, topicName, spec, langName, langName, spec, excludeClause, reinforceClause)
 
 	result, err := h.callAI(r.Context(), prompt, 1200, 0.8)
 	if err != nil {
@@ -261,6 +334,8 @@ func (h *SentenceHandler) Complete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	topicName, _ := TopicDetails(req.Topic)
+
 	var correctCount int
 	var weakGrammar []string
 	var learnedIDs []string
@@ -292,6 +367,7 @@ func (h *SentenceHandler) Complete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	profile.WeakAreas       = prependUnique(weakGrammar, profile.WeakAreas, 20)
+	profile.WeakGrammar     = prependUnique(weakGrammar, profile.WeakGrammar, 20)
 	profile.RecentSentences = prependUnique(learnedIDs, profile.RecentSentences, 20)
 	profile.RecentTopics    = prependUnique([]string{req.TopicName}, profile.RecentTopics, 10)
 	profile.SessionCount++
@@ -307,10 +383,48 @@ func (h *SentenceHandler) Complete(w http.ResponseWriter, r *http.Request) {
 		log.Printf("sentences/complete Upsert error: %v", err)
 	}
 
+	total := len(req.Results)
+	summary := fmt.Sprintf("Completed Sentence Builder on %s: %d/%d sentences correct.", topicName, correctCount, total)
+	var suggestions []string
+	if len(weakGrammar) > 0 {
+		suggestions = []string{
+			"Practice these grammar patterns in a conversation session",
+			fmt.Sprintf("Focus on: %s", strings.Join(weakGrammar[:min(2, len(weakGrammar))], "; ")),
+			"Repeat this topic to reinforce the grammar structures you missed",
+		}
+	} else {
+		suggestions = []string{
+			"Try a harder level to challenge your grammar skills",
+			"Practice these sentence structures in a full conversation",
+			"Explore a new topic to build more grammar variety",
+		}
+	}
+
+	recordID := uuid.New().String()
+	record := &store.ConversationRecord{
+		ID:           recordID,
+		UserID:       userID,
+		Language:     req.Language,
+		Topic:        req.Topic,
+		TopicName:    topicName,
+		Level:        req.Level,
+		Personality:  "sentence-builder",
+		MessageCount: total,
+		FPEarned:     fp,
+		Summary:      summary,
+		Topics:       []string{topicName},
+		Corrections:  weakGrammar,
+		Suggestions:  suggestions,
+		CreatedAt:    time.Now(),
+		EndedAt:      time.Now(),
+	}
+	h.historyStore.Save(record)
+
 	writeJSON(w, http.StatusOK, sentenceCompleteResponse{
 		FPEarned:     fp,
 		WeakGrammar:  weakGrammar,
 		CorrectCount: correctCount,
+		RecordID:     recordID,
 	})
 }
 

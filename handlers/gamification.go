@@ -11,10 +11,11 @@ import (
 type GamificationHandler struct {
 	userStore    *store.UserStore
 	historyStore *store.ConversationHistoryStore
+	profileStore *store.StudentProfileStore
 }
 
-func NewGamificationHandler(us *store.UserStore, hs *store.ConversationHistoryStore) *GamificationHandler {
-	return &GamificationHandler{userStore: us, historyStore: hs}
+func NewGamificationHandler(us *store.UserStore, hs *store.ConversationHistoryStore, ps *store.StudentProfileStore) *GamificationHandler {
+	return &GamificationHandler{userStore: us, historyStore: hs, profileStore: ps}
 }
 
 // Stats returns the current user's gamification stats and recent conversations.
@@ -103,5 +104,42 @@ func (h *GamificationHandler) GetRecord(w http.ResponseWriter, r *http.Request) 
 func (h *GamificationHandler) Badges(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"badges": store.AllBadges,
+	})
+}
+
+// GetMistakes returns the user's weak_vocab and weak_grammar for a given language.
+func (h *GamificationHandler) GetMistakes(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(middleware.UserIDKey).(string)
+	language := r.URL.Query().Get("language")
+	if language == "" || !IsValidLanguage(language) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "valid language param required"})
+		return
+	}
+
+	profile, err := h.profileStore.Get(r.Context(), userID, language)
+	if err != nil || profile == nil {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"language":    language,
+			"weak_vocab":  []string{},
+			"weak_grammar": []string{},
+			"has_mistakes": false,
+		})
+		return
+	}
+
+	weakVocab := profile.WeakVocab
+	if weakVocab == nil {
+		weakVocab = []string{}
+	}
+	weakGrammar := profile.WeakGrammar
+	if weakGrammar == nil {
+		weakGrammar = []string{}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"language":     language,
+		"weak_vocab":   weakVocab,
+		"weak_grammar": weakGrammar,
+		"has_mistakes": len(weakVocab) > 0 || len(weakGrammar) > 0,
 	})
 }

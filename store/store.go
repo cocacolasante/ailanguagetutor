@@ -886,7 +886,10 @@ type StudentProfile struct {
 	SentenceListIdx  map[string]int `json:"sentence_list_idx"`  // pool key → next list index
 	ListeningListIdx map[string]int `json:"listening_list_idx"` // pool key → next list index
 	WritingListIdx   map[string]int `json:"writing_list_idx"`   // pool key → next list index
-	UpdatedAt        time.Time      `json:"updated_at"`
+	// Mistake tracking (separate from mixed WeakAreas)
+	WeakVocab   []string `json:"weak_vocab"`   // words missed in vocab sessions
+	WeakGrammar []string `json:"weak_grammar"` // grammar tips from sentence/listening sessions
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type StudentProfileStore struct {
@@ -901,15 +904,18 @@ func (s *StudentProfileStore) Get(ctx context.Context, userID, language string) 
 	var p StudentProfile
 	var weakAreas, strongAreas, recentTopics, recentVocab, recentSentences, nextSuggestions []byte
 	var vocabIdx, sentenceIdx, listeningIdx, writingIdx []byte
+	var weakVocab, weakGrammar []byte
 	err := s.pool.QueryRow(ctx, `
 SELECT user_id, language, name, weak_areas, strong_areas, recent_topics, recent_vocab,
     recent_sentences, next_suggestions, session_count, updated_at,
-    vocab_list_idx, sentence_list_idx, listening_list_idx, writing_list_idx
+    vocab_list_idx, sentence_list_idx, listening_list_idx, writing_list_idx,
+    weak_vocab, weak_grammar
 FROM student_profiles WHERE user_id=$1 AND language=$2`, userID, language).Scan(
 		&p.UserID, &p.Language, &p.Name,
 		&weakAreas, &strongAreas, &recentTopics, &recentVocab, &recentSentences, &nextSuggestions,
 		&p.SessionCount, &p.UpdatedAt,
 		&vocabIdx, &sentenceIdx, &listeningIdx, &writingIdx,
+		&weakVocab, &weakGrammar,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -931,6 +937,8 @@ FROM student_profiles WHERE user_id=$1 AND language=$2`, userID, language).Scan(
 	_ = scanJSONB(sentenceIdx, &p.SentenceListIdx)
 	_ = scanJSONB(listeningIdx, &p.ListeningListIdx)
 	_ = scanJSONB(writingIdx, &p.WritingListIdx)
+	_ = scanJSONB(weakVocab, &p.WeakVocab)
+	_ = scanJSONB(weakGrammar, &p.WeakGrammar)
 	return &p, nil
 }
 
@@ -945,18 +953,23 @@ func (s *StudentProfileStore) Upsert(ctx context.Context, p *StudentProfile) err
 	sentenceListIdx, _ := json.Marshal(nilSafeMap(p.SentenceListIdx))
 	listeningListIdx, _ := json.Marshal(nilSafeMap(p.ListeningListIdx))
 	writingListIdx, _ := json.Marshal(nilSafeMap(p.WritingListIdx))
+	weakVocab, _ := json.Marshal(nilSafe(p.WeakVocab))
+	weakGrammar, _ := json.Marshal(nilSafe(p.WeakGrammar))
 
 	_, err := s.pool.Exec(ctx, `
 INSERT INTO student_profiles (user_id, language, name, weak_areas, strong_areas, recent_topics,
-    recent_vocab, recent_sentences, next_suggestions, session_count, vocab_list_idx, sentence_list_idx, listening_list_idx, writing_list_idx, updated_at)
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,NOW())
+    recent_vocab, recent_sentences, next_suggestions, session_count, vocab_list_idx, sentence_list_idx,
+    listening_list_idx, writing_list_idx, weak_vocab, weak_grammar, updated_at)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,NOW())
 ON CONFLICT (user_id, language) DO UPDATE SET
     name=$3, weak_areas=$4, strong_areas=$5, recent_topics=$6,
     recent_vocab=$7, recent_sentences=$8, next_suggestions=$9, session_count=$10,
-    vocab_list_idx=$11, sentence_list_idx=$12, listening_list_idx=$13, writing_list_idx=$14, updated_at=NOW()`,
+    vocab_list_idx=$11, sentence_list_idx=$12, listening_list_idx=$13, writing_list_idx=$14,
+    weak_vocab=$15, weak_grammar=$16, updated_at=NOW()`,
 		p.UserID, p.Language, p.Name, weakAreas, strongAreas, recentTopics,
 		recentVocab, recentSentences, nextSuggestions, p.SessionCount,
 		vocabListIdx, sentenceListIdx, listeningListIdx, writingListIdx,
+		weakVocab, weakGrammar,
 	)
 	return err
 }

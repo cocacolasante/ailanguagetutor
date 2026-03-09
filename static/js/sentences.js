@@ -1,11 +1,12 @@
 requireAuth();
 
 /* ── URL params ─────────────────────────────────────────────────────────────── */
-const params    = new URLSearchParams(window.location.search);
-const language  = params.get('language') || 'it';
-const level     = parseInt(params.get('level') || '1', 10);
-const topic     = params.get('topic')     || 'general';
-const topicName = params.get('topicName') || 'General';
+const params       = new URLSearchParams(window.location.search);
+const language     = params.get('language')     || 'it';
+const level        = parseInt(params.get('level') || '1', 10);
+const topic        = params.get('topic')         || 'general';
+const topicName    = params.get('topicName')     || 'General';
+const mistakesMode = params.get('mistakes_mode') === 'true';
 
 /* ── State ──────────────────────────────────────────────────────────────────── */
 let sentences   = [];    // Sentence[]
@@ -51,16 +52,21 @@ const LANG_FLAGS = { it: '🇮🇹', es: '🇪🇸', pt: '🇧🇷' };
 /* ── Load session ───────────────────────────────────────────────────────────── */
 async function loadSession() {
   try {
-    const data = await API.post('/api/sentences/session', { language, level, topic });
+    const sessionBody = { language, level, topic };
+    if (mistakesMode) sessionBody.mistakes_mode = true;
+    const data = await API.post('/api/sentences/session', sessionBody);
     sentences = data.sentences || [];
     if (!sentences.length) {
-      showError('No sentences returned. Please try again.');
+      const msg = data.message || 'No sentences returned. Please try again.';
+      showError(msg);
       return;
     }
 
     const langFlag = LANG_FLAGS[language] || '🌐';
     const langName = LANG_NAMES[language] || language;
-    document.getElementById('headerTitle').textContent = `${topicName} — Sentence Builder`;
+    document.getElementById('headerTitle').textContent = mistakesMode
+      ? 'Targeting Grammar Gaps'
+      : `${topicName} — Sentence Builder`;
     document.getElementById('headerSub').textContent   =
       `${langFlag} ${langName} · Level ${level} · ${sentences.length} sentences`;
     document.getElementById('translateLabel').textContent =

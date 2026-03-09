@@ -14,17 +14,19 @@ import (
 	"github.com/ailanguagetutor/config"
 	"github.com/ailanguagetutor/middleware"
 	"github.com/ailanguagetutor/store"
+	"github.com/google/uuid"
 )
 
 type VocabHandler struct {
 	cfg          *config.Config
 	userStore    *store.UserStore
 	profileStore *store.StudentProfileStore
+	historyStore *store.ConversationHistoryStore
 	pool         *store.ItemPool
 }
 
-func NewVocabHandler(cfg *config.Config, us *store.UserStore, ps *store.StudentProfileStore, pool *store.ItemPool) *VocabHandler {
-	return &VocabHandler{cfg: cfg, userStore: us, profileStore: ps, pool: pool}
+func NewVocabHandler(cfg *config.Config, us *store.UserStore, ps *store.StudentProfileStore, hs *store.ConversationHistoryStore, pool *store.ItemPool) *VocabHandler {
+	return &VocabHandler{cfg: cfg, userStore: us, profileStore: ps, historyStore: hs, pool: pool}
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -36,9 +38,10 @@ type VocabWord struct {
 }
 
 type vocabSessionRequest struct {
-	Language string `json:"language"`
-	Level    int    `json:"level"`
-	Topic    string `json:"topic"`
+	Language     string `json:"language"`
+	Level        int    `json:"level"`
+	Topic        string `json:"topic"`
+	MistakesMode bool   `json:"mistakes_mode"`
 }
 
 type vocabSessionResponse struct {
@@ -71,9 +74,10 @@ type vocabCompleteRequest struct {
 }
 
 type vocabCompleteResponse struct {
-	FPEarned    int      `json:"fp_earned"`
-	WeakWords   []string `json:"weak_words"`
-	LearnedCount int     `json:"learned_count"`
+	FPEarned     int      `json:"fp_earned"`
+	WeakWords    []string `json:"weak_words"`
+	LearnedCount int      `json:"learned_count"`
+	RecordID     string   `json:"record_id"`
 }
 
 // ── Session ───────────────────────────────────────────────────────────────────
@@ -109,6 +113,67 @@ func (h *VocabHandler) Session(w http.ResponseWriter, r *http.Request) {
 	spec := levelSpec[req.Level]
 
 	profile, _ := h.profileStore.Get(r.Context(), userID, req.Language)
+
+	// Mistakes mode: generate flashcards exclusively from weak vocab
+	if req.MistakesMode {
+		weakVocab := []string{}
+		if profile != nil {
+			weakVocab = profile.WeakVocab
+		}
+		if len(weakVocab) == 0 {
+			writeJSON(w, http.StatusOK, map[string]any{
+				"words":   []VocabWord{},
+				"message": "No weak words on record yet. Complete some vocab sessions first!",
+			})
+			return
+		}
+		limit := weakVocab
+		if len(limit) > 15 {
+			limit = limit[:15]
+		}
+		prompt := fmt.Sprintf(`You are a language teacher generating flashcard vocabulary for a student who needs to review specific words.
+
+Language: %s
+Level: %s
+
+The student previously struggled with these specific words: %s
+
+Generate flashcards ONLY for these specific words the student struggled with. Include ALL of them (up to 15).
+
+Return ONLY valid JSON — no markdown, no code fences, no explanation:
+{"words":[{"word":"...","translation":"...","phonetic":"..."},...]}
+
+Rules:
+- "word": the exact %s word from the list above
+- "translation": concise English translation
+- "phonetic": English-syllable pronunciation guide with stressed syllable in CAPS`,
+			langName, spec, strings.Join(limit, ", "), langName)
+
+		result, err := h.callAI(r.Context(), prompt, 900, 0.3)
+		if err != nil {
+			log.Printf("vocab/session mistakes AI error: %v", err)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "AI service error"})
+			return
+		}
+		result = strings.TrimSpace(result)
+		if idx := strings.Index(result, "{"); idx > 0 {
+			result = result[idx:]
+		}
+		if idx := strings.LastIndex(result, "}"); idx >= 0 && idx < len(result)-1 {
+			result = result[:idx+1]
+		}
+		var parsed struct {
+			Words []VocabWord `json:"words"`
+		}
+		if err := json.Unmarshal([]byte(result), &parsed); err != nil {
+			log.Printf("vocab/session mistakes JSON parse error: %v\nraw: %s", err, result)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to parse AI response"})
+			return
+		}
+		store.Shuffle(parsed.Words)
+		writeJSON(w, http.StatusOK, vocabSessionResponse{Words: parsed.Words})
+		return
+	}
 
 	// Cache-first: serve from pool if the user hasn't exhausted this key
 	key := h.pool.Key(req.Language, req.Level, req.Topic)
@@ -161,6 +226,15 @@ func (h *VocabHandler) Session(w http.ResponseWriter, r *http.Request) {
 		excludeClause = fmt.Sprintf("\n- Do NOT use any of these already-learned words: %s", string(seenJSON))
 	}
 
+	var reinforceClause string
+	if profile != nil && len(profile.WeakAreas) > 0 {
+		weak := profile.WeakAreas
+		if len(weak) > 10 {
+			weak = weak[:10]
+		}
+		reinforceClause = fmt.Sprintf("\n- REINFORCE these previously weak words by including 2–3 of them in the list: %s", strings.Join(weak, ", "))
+	}
+
 	prompt := fmt.Sprintf(`You are a language teacher generating flashcard vocabulary for a student.
 
 Language: %s
@@ -178,9 +252,9 @@ Rules:
 - "phonetic": English-syllable pronunciation guide with stressed syllable in CAPS (e.g. "MEH-sah" for mesa, "KWAHN-doh" for cuando)
 - Order from easiest to hardest within the level
 - Prioritise words the student will actually encounter and use
-- Every session must use DIFFERENT words — avoid repetition%s
+- Every session must use DIFFERENT words — avoid repetition%s%s
 - Exactly 12 items`,
-		langName, topicName, spec, langName, langName, excludeClause)
+		langName, topicName, spec, langName, langName, excludeClause, reinforceClause)
 
 	result, err := h.callAI(r.Context(), prompt, 900, 0.8)
 	if err != nil {
@@ -225,15 +299,29 @@ func (h *VocabHandler) Check(w http.ResponseWriter, r *http.Request) {
 	}
 
 	langName := LanguageName(req.Language)
-	prompt := fmt.Sprintf(`The student was trying to pronounce "%s" in %s. The speech recognition heard: "%s". Was their pronunciation approximately correct? Consider phonetic similarity, not exact spelling. Reply with ONLY valid JSON: {"correct": true/false, "feedback": "one sentence tip if wrong, empty string if correct"}`,
-		req.Word, langName, req.Spoken)
+	// Strip orthographic punctuation (¿, ¡, etc.) — speech recognition never produces these.
+	cleanWord := strings.TrimSpace(stripOrthographic(req.Word))
+	cleanSpoken := strings.TrimSpace(stripOrthographic(req.Spoken))
+	prompt := fmt.Sprintf(`A language student was asked to pronounce the %s word "%s".
+Speech recognition captured: "%s".
+
+Note: orthographic markers like ¿ and ¡ are not spoken aloud and will not appear in speech recognition output — ignore their absence.
+
+Answer true ONLY if "%s" is clearly the student's attempt to say "%s" — it must be the same word, possibly with a minor accent or pronunciation variance. Answer false if the student said a different word entirely, said nothing meaningful, or produced something unrelated to "%s".
+
+Reply with ONLY valid JSON: {"correct": true/false, "feedback": "one short pronunciation tip if wrong, empty string if correct"}`,
+		langName, cleanWord, cleanSpoken, cleanSpoken, cleanWord, cleanWord)
 
 	result, err := h.callAI(r.Context(), prompt, 100, 0.1)
 	if err != nil {
-		// Fallback: simple string comparison
-		spoken := strings.ToLower(strings.TrimSpace(req.Spoken))
-		word := strings.ToLower(strings.TrimSpace(req.Word))
-		correct := strings.Contains(spoken, word) || editDistance(spoken, word) <= 2
+		// Fallback: edit distance only (on cleaned strings)
+		spoken := strings.ToLower(cleanSpoken)
+		word := strings.ToLower(cleanWord)
+		threshold := 1
+		if len([]rune(word)) > 10 {
+			threshold = 2
+		}
+		correct := editDistance(spoken, word) <= threshold
 		writeJSON(w, http.StatusOK, vocabCheckResponse{Correct: correct, Feedback: ""})
 		return
 	}
@@ -248,10 +336,14 @@ func (h *VocabHandler) Check(w http.ResponseWriter, r *http.Request) {
 
 	var parsed vocabCheckResponse
 	if err := json.Unmarshal([]byte(result), &parsed); err != nil {
-		// Fallback
-		spoken := strings.ToLower(strings.TrimSpace(req.Spoken))
-		word := strings.ToLower(strings.TrimSpace(req.Word))
-		correct := strings.Contains(spoken, word) || editDistance(spoken, word) <= 2
+		// Fallback: edit distance only (on cleaned strings)
+		spoken := strings.ToLower(cleanSpoken)
+		word := strings.ToLower(cleanWord)
+		threshold := 1
+		if len([]rune(word)) > 10 {
+			threshold = 2
+		}
+		correct := editDistance(spoken, word) <= threshold
 		writeJSON(w, http.StatusOK, vocabCheckResponse{Correct: correct, Feedback: ""})
 		return
 	}
@@ -269,6 +361,8 @@ func (h *VocabHandler) Complete(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request"})
 		return
 	}
+
+	topicName, _ := TopicDetails(req.Topic)
 
 	var weakWords []string
 	var learnedWords []string
@@ -301,6 +395,7 @@ func (h *VocabHandler) Complete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	profile.WeakAreas    = prependUnique(weakWords, profile.WeakAreas, 20)
+	profile.WeakVocab    = prependUnique(weakWords, profile.WeakVocab, 30)
 	profile.RecentVocab  = prependUnique(learnedWords, profile.RecentVocab, 30)
 	profile.RecentTopics = prependUnique([]string{req.TopicName}, profile.RecentTopics, 10)
 	profile.SessionCount++
@@ -316,10 +411,51 @@ func (h *VocabHandler) Complete(w http.ResponseWriter, r *http.Request) {
 		log.Printf("vocab/complete Upsert error: %v", err)
 	}
 
+	// Build summary text
+	total := len(req.Results)
+	summary := fmt.Sprintf("Completed Vocabulary Builder on %s: %d/%d words learned.", topicName, len(learnedWords), total)
+	corrections := weakWords
+	var suggestions []string
+	if len(weakWords) > 0 {
+		suggestions = []string{
+			fmt.Sprintf("Review these weak words in context: %s", strings.Join(weakWords[:min(3, len(weakWords))], ", ")),
+			"Try a conversation session to use today's vocabulary naturally",
+			"Repeat this topic to reinforce the words you missed",
+		}
+	} else {
+		suggestions = []string{
+			"Try the next level to challenge yourself",
+			"Practice these words in a conversation session",
+			"Explore a new topic to expand your vocabulary",
+		}
+	}
+
+	recordID := uuid.New().String()
+	record := &store.ConversationRecord{
+		ID:           recordID,
+		UserID:       userID,
+		Language:     req.Language,
+		Topic:        req.Topic,
+		TopicName:    topicName,
+		Level:        req.Level,
+		Personality:  "vocab-builder",
+		MessageCount: total,
+		FPEarned:     fp,
+		Summary:      summary,
+		Topics:       []string{topicName},
+		Vocabulary:   learnedWords,
+		Corrections:  corrections,
+		Suggestions:  suggestions,
+		CreatedAt:    time.Now(),
+		EndedAt:      time.Now(),
+	}
+	h.historyStore.Save(record)
+
 	writeJSON(w, http.StatusOK, vocabCompleteResponse{
-		FPEarned:    fp,
-		WeakWords:   weakWords,
+		FPEarned:     fp,
+		WeakWords:    weakWords,
 		LearnedCount: len(learnedWords),
+		RecordID:     recordID,
 	})
 }
 
@@ -395,6 +531,18 @@ func (h *VocabHandler) callAI(ctx context.Context, prompt string, maxTokens int,
 }
 
 // ── Edit distance (Levenshtein) fallback ──────────────────────────────────────
+
+// stripOrthographic removes punctuation that speech recognition never produces
+// (¿, ¡, ?, !, ., ,) so comparisons are not thrown off by Spanish inverted marks.
+func stripOrthographic(s string) string {
+	return strings.Map(func(r rune) rune {
+		switch r {
+		case '¿', '¡', '?', '!', '.', ',', ';', ':', '"', '\'':
+			return -1
+		}
+		return r
+	}, s)
+}
 
 func editDistance(a, b string) int {
 	ra, rb := []rune(a), []rune(b)

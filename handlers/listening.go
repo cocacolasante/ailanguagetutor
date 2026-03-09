@@ -14,6 +14,7 @@ import (
 	"github.com/ailanguagetutor/config"
 	"github.com/ailanguagetutor/middleware"
 	"github.com/ailanguagetutor/store"
+	"github.com/google/uuid"
 )
 
 // ── Handler ────────────────────────────────────────────────────────────────────
@@ -22,6 +23,7 @@ type ListeningHandler struct {
 	cfg          *config.Config
 	userStore    *store.UserStore
 	profileStore *store.StudentProfileStore
+	historyStore *store.ConversationHistoryStore
 	pool         *store.ItemPool
 	vocabPool    *store.ItemPool
 	sentencePool *store.ItemPool
@@ -31,6 +33,7 @@ func NewListeningHandler(
 	cfg *config.Config,
 	us *store.UserStore,
 	ps *store.StudentProfileStore,
+	hs *store.ConversationHistoryStore,
 	pool *store.ItemPool,
 	vocabPool *store.ItemPool,
 	sentencePool *store.ItemPool,
@@ -39,6 +42,7 @@ func NewListeningHandler(
 		cfg:          cfg,
 		userStore:    us,
 		profileStore: ps,
+		historyStore: hs,
 		pool:         pool,
 		vocabPool:    vocabPool,
 		sentencePool: sentencePool,
@@ -83,18 +87,20 @@ type listeningResult struct {
 }
 
 type listeningCompleteRequest struct {
-	Language    string            `json:"language"`
-	Level       int               `json:"level"`
-	Topic       string            `json:"topic"`
-	TopicName   string            `json:"topic_name"`
-	Personality string            `json:"personality"`
-	Results     []listeningResult `json:"results"`
+	Language       string            `json:"language"`
+	Level          int               `json:"level"`
+	Topic          string            `json:"topic"`
+	TopicName      string            `json:"topic_name"`
+	Personality    string            `json:"personality"`
+	Results        []listeningResult `json:"results"`
+	WrongQuestions []string          `json:"wrong_questions"`
 }
 
 type listeningCompleteResponse struct {
-	FPEarned     int `json:"fp_earned"`
-	CorrectCount int `json:"correct_count"`
-	TotalCount   int `json:"total_count"`
+	FPEarned     int    `json:"fp_earned"`
+	CorrectCount int    `json:"correct_count"`
+	TotalCount   int    `json:"total_count"`
+	RecordID     string `json:"record_id"`
 }
 
 // ── Speed + segment count tables ──────────────────────────────────────────────
@@ -186,7 +192,11 @@ func (h *ListeningHandler) Session(w http.ResponseWriter, r *http.Request) {
 		reinforceWords = reinforceWords[:20]
 	}
 
-	story, err := h.generateStory(r.Context(), req.Language, req.Level, req.Topic, req.Personality, reinforceWords)
+	var weakAreas []string
+	if profile != nil {
+		weakAreas = profile.WeakAreas
+	}
+	story, err := h.generateStory(r.Context(), req.Language, req.Level, req.Topic, req.Personality, reinforceWords, weakAreas)
 	if err != nil {
 		log.Printf("listening/session AI error: %v", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "AI service error"})
@@ -239,6 +249,7 @@ func (h *ListeningHandler) Complete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	profile.RecentTopics = prependUnique([]string{req.TopicName}, profile.RecentTopics, 10)
+	profile.WeakGrammar  = prependUnique(req.WrongQuestions, profile.WeakGrammar, 20)
 	profile.SessionCount++
 
 	key := fmt.Sprintf("%s:%d:%s:%s", req.Language, req.Level, req.Topic, req.Personality)
@@ -251,16 +262,54 @@ func (h *ListeningHandler) Complete(w http.ResponseWriter, r *http.Request) {
 		log.Printf("listening/complete Upsert error: %v", err)
 	}
 
+	topicName, _ := TopicDetails(req.Topic)
+	summary := fmt.Sprintf("Completed Listening Comprehension on %s: %d/%d questions answered correctly.", topicName, correctCount, totalCount)
+	var suggestions []string
+	if len(req.WrongQuestions) > 0 {
+		suggestions = []string{
+			"Review the segments where you got questions wrong",
+			"Try the Writing Coach on this topic to reinforce understanding",
+			"Re-listen to the story with extra attention to details",
+		}
+	} else {
+		suggestions = []string{
+			"Try a harder level to challenge your listening skills",
+			"Explore a new topic to build listening breadth",
+			"Practice speaking about this topic in a conversation session",
+		}
+	}
+
+	recordID := uuid.New().String()
+	record := &store.ConversationRecord{
+		ID:           recordID,
+		UserID:       userID,
+		Language:     req.Language,
+		Topic:        req.Topic,
+		TopicName:    topicName,
+		Level:        req.Level,
+		Personality:  "listening",
+		MessageCount: totalCount,
+		FPEarned:     fp,
+		Summary:      summary,
+		Topics:       []string{topicName},
+		Corrections:  req.WrongQuestions,
+		Suggestions:  suggestions,
+		CreatedAt:    time.Now(),
+		EndedAt:      time.Now(),
+	}
+	h.historyStore.Save(record)
+
 	writeJSON(w, http.StatusOK, listeningCompleteResponse{
 		FPEarned:     fp,
 		CorrectCount: correctCount,
 		TotalCount:   totalCount,
+		RecordID:     recordID,
 	})
 }
 
 // ── AI story generation ────────────────────────────────────────────────────────
 
-func (h *ListeningHandler) generateStory(ctx context.Context, language string, level int, topic string, personality string, reinforceWords []string) (*Story, error) {
+func (h *ListeningHandler) generateStory(ctx context.Context, language string, level int, topic string, personality string, reinforceWords []string, weakAreas []string) (*Story, error) {
 	langName := LanguageName(language)
 	topicName, _ := TopicDetails(topic)
 	n := segmentCountForLevel(level)
@@ -283,12 +332,21 @@ func (h *ListeningHandler) generateStory(ctx context.Context, language string, l
 		reinforceClause = fmt.Sprintf("\nVocabulary to weave in naturally (use as many as appropriate): %s", strings.Join(reinforceWords, ", "))
 	}
 
+	var weakClause string
+	if len(weakAreas) > 0 {
+		weak := weakAreas
+		if len(weak) > 6 {
+			weak = weak[:6]
+		}
+		weakClause = fmt.Sprintf("\nWeak areas to reinforce: weave in vocabulary or structures around: %s", strings.Join(weak, ", "))
+	}
+
 	prompt := fmt.Sprintf(`You are a language tutor creating a listening comprehension story.
 Language: %s
 Topic: %s
 Level: %s
 Narrator personality: %s — %s
-Cultural context: %s%s
+Cultural context: %s%s%s
 
 Write a short, engaging, FAMILY-FRIENDLY story in %s that:
 - Is culturally authentic and relevant to the context above
@@ -323,7 +381,7 @@ For true_false: omit options, answer is "true" or "false"
 Exactly %d segments. Family-friendly only.`,
 		langName, topicName, spec,
 		personality, personalityDesc,
-		cultural, reinforceClause,
+		cultural, reinforceClause, weakClause,
 		langName, n, n,
 	)
 

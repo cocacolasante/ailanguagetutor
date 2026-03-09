@@ -210,11 +210,11 @@ const LEARNING_MODES = [
     available: false,
   },
   {
-    id: 'immersion',
-    icon: '🔵',
-    name: 'Immersion Mode',
-    desc: 'The entire session is conducted only in your target language.',
-    available: false,
+    id: 'improvement',
+    icon: '🔁',
+    name: 'Improve on Prior Mistakes',
+    desc: 'Revisit your weak words and grammar patterns in a focused session.',
+    available: true,
   },
 ];
 
@@ -371,6 +371,16 @@ function renderActivitySection(modeId) {
   if (modeId === 'grammar') {
     grammarSubStep = 'skills';
     renderGrammarSkillsPicker(container);
+    return;
+  }
+  if (modeId === 'improvement') {
+    const u = currentUser;
+    if (!u?.pref_language || !u?.pref_level) {
+      alert('Please set your language and level in your profile first.');
+      return;
+    }
+    const p = new URLSearchParams({ language: u.pref_language, level: u.pref_level });
+    window.location.href = '/improvement.html?' + p.toString();
     return;
   }
   if (modeId !== 'conversational') {

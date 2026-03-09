@@ -1,11 +1,12 @@
 requireAuth();
 
 /* ── URL params ─────────────────────────────────────────────────────────────── */
-const params    = new URLSearchParams(window.location.search);
-const language  = params.get('language') || 'it';
-const level     = parseInt(params.get('level') || '1', 10);
-const topic     = params.get('topic')     || 'general';
-const topicName = params.get('topicName') || 'General';
+const params      = new URLSearchParams(window.location.search);
+const language    = params.get('language')     || 'it';
+const level       = parseInt(params.get('level') || '1', 10);
+const topic       = params.get('topic')         || 'general';
+const topicName   = params.get('topicName')     || 'General';
+const mistakesMode = params.get('mistakes_mode') === 'true';
 
 /* ── Platform detection ─────────────────────────────────────────────────────── */
 const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
@@ -94,12 +95,20 @@ const LANG_NAMES = { it: 'Italian', es: 'Spanish', pt: 'Portuguese' };
 /* ── Load session ───────────────────────────────────────────────────────────── */
 async function loadSession() {
   try {
-    const data = await API.post('/api/vocab/session', { language, level, topic });
+    const sessionBody = { language, level, topic };
+    if (mistakesMode) sessionBody.mistakes_mode = true;
+    const data = await API.post('/api/vocab/session', sessionBody);
     words = data.words || [];
-    if (!words.length) { showError('No words returned. Please try again.'); return; }
+    if (!words.length) {
+      const msg = data.message || 'No words returned. Please try again.';
+      showError(msg);
+      return;
+    }
 
     const langFlag = { it: '🇮🇹', es: '🇪🇸', pt: '🇧🇷' }[language] || '🌐';
-    document.getElementById('headerTitle').textContent = `${topicName} — Vocab Builder`;
+    document.getElementById('headerTitle').textContent = mistakesMode
+      ? 'Improving Weak Words'
+      : `${topicName} — Vocab Builder`;
     document.getElementById('headerSub').textContent =
       `${langFlag} ${LANG_NAMES[language] || language} · Level ${level} · ${words.length} words`;
 

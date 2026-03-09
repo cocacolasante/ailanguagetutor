@@ -152,6 +152,15 @@ ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS writing_list_idx JSONB DEF
 	_, err = pool.Exec(ctx, `
 ALTER TABLE conversation_history ADD COLUMN IF NOT EXISTS misspellings JSONB DEFAULT '[]';
 `)
+	if err != nil {
+		return err
+	}
+
+	// Mistake tracking: separate weak vocab and weak grammar (idempotent)
+	_, err = pool.Exec(ctx, `
+ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS weak_vocab   JSONB DEFAULT '[]';
+ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS weak_grammar JSONB DEFAULT '[]';
+`)
 	return err
 }
 
