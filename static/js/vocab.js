@@ -24,22 +24,8 @@ const LANG_NAMES = { it: 'Italian', es: 'Spanish', pt: 'Portuguese' };
 /* ── Boot ───────────────────────────────────────────────────────────────────── */
 (async function init() {
   // Detect SpeechRecognition support
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (SpeechRecognition) {
+  if (window.SpeechRecognition || window.webkitSpeechRecognition) {
     hasSpeechAPI = true;
-    recognition = new SpeechRecognition();
-    recognition.continuous    = false;
-    recognition.interimResults = false;
-    recognition.lang           = LANG_BCP47[language] || 'it-IT';
-    recognition.onresult = (e) => {
-      const transcript = e.results[0][0].transcript;
-      stopListening();
-      checkPronunciation(transcript);
-    };
-    recognition.onerror = () => stopListening();
-    recognition.onend   = () => {
-      if (isListening) stopListening();
-    };
   } else {
     // Show manual fallback controls
     document.getElementById('listenBtn').classList.add('hidden');
@@ -142,12 +128,32 @@ async function playWord() {
 }
 
 /* ── Speech recognition ─────────────────────────────────────────────────────── */
+function createRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) return null;
+  const r = new SpeechRecognition();
+  r.continuous      = false;
+  r.interimResults  = false;
+  r.lang            = LANG_BCP47[language] || 'it-IT';
+  r.onresult = (e) => {
+    const transcript = e.results[0][0].transcript;
+    stopListening();
+    checkPronunciation(transcript);
+  };
+  r.onerror = () => stopListening();
+  r.onend   = () => { if (isListening) stopListening(); };
+  return r;
+}
+
 function startListening() {
-  if (!hasSpeechAPI || !recognition) return;
+  if (!hasSpeechAPI) return;
   if (isListening) {
     stopListening();
     return;
   }
+  // Always create a fresh instance — reusing the same object fails on mobile
+  recognition = createRecognition();
+  if (!recognition) return;
   isListening = true;
   const btn = document.getElementById('listenBtn');
   if (btn) { btn.textContent = '⏹ Stop'; btn.classList.add('listening'); }
