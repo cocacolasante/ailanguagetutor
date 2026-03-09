@@ -113,15 +113,18 @@ function updateProgress() {
 // after onended fires — recognition.start() during that window fails silently.
 // We keep isPlayingAudio=true for that window so startListening() waits.
 function releaseAudioSession() {
+  console.log('[vocab] releaseAudioSession: waiting 700ms before enabling mic');
   setTimeout(() => {
     isPlayingAudio = false;
     ttsInFlight    = false;
     const listenBtn = document.getElementById('listenBtn');
     if (listenBtn) listenBtn.disabled = false;
+    console.log('[vocab] releaseAudioSession: mic now enabled (isPlayingAudio=false)');
   }, 700);
 }
 
 function releaseAudioSessionImmediate() {
+  console.log('[vocab] releaseAudioSessionImmediate: mic enabled immediately (no audio played)');
   isPlayingAudio = false;
   ttsInFlight    = false;
   const listenBtn = document.getElementById('listenBtn');
@@ -129,10 +132,14 @@ function releaseAudioSessionImmediate() {
 }
 
 async function playWord() {
-  if (ttsInFlight) return;           // prevent concurrent calls
+  if (ttsInFlight) {
+    console.log('[vocab] playWord: skipped — ttsInFlight already true');
+    return;
+  }
   const word = words[currentIdx];
   if (!word) return;
 
+  console.log('[vocab] playWord: starting fetch for word:', word.word);
   ttsInFlight    = true;
   isPlayingAudio = true;             // block mic immediately
   const btn      = document.getElementById('playBtn');
@@ -148,12 +155,14 @@ async function playWord() {
     const audio = new Audio(url);
 
     const onPlaybackDone = () => {
+      console.log('[vocab] playWord: audio ended/errored — calling releaseAudioSession');
       URL.revokeObjectURL(url);
       if (btn) { btn.disabled = false; btn.textContent = '🔊 Play'; }
       releaseAudioSession();         // keep isPlayingAudio=true for 700ms
     };
     const onPlayBlocked = () => {
       // play() was rejected (autoplay policy) — no audio session was acquired
+      console.log('[vocab] playWord: audio.play() blocked by autoplay policy');
       URL.revokeObjectURL(url);
       if (btn) { btn.disabled = false; btn.textContent = '🔊 Play'; }
       releaseAudioSessionImmediate();
@@ -161,9 +170,11 @@ async function playWord() {
 
     audio.onended = onPlaybackDone;
     audio.onerror = onPlaybackDone;
+    console.log('[vocab] playWord: calling audio.play()');
     await audio.play().catch(onPlayBlocked);
-  } catch {
+  } catch (err) {
     // fetch/blob error — no audio played
+    console.log('[vocab] playWord: fetch/blob error:', err);
     if (btn) { btn.disabled = false; btn.textContent = '🔊 Play'; }
     releaseAudioSessionImmediate();
   }
@@ -179,21 +190,33 @@ function createRecognition() {
   r.lang            = LANG_BCP47[language] || 'it-IT';
   r.onresult = (e) => {
     const transcript = e.results[0][0].transcript;
+    console.log('[vocab] recognition.onresult: transcript =', transcript);
     stopListening();
     checkPronunciation(transcript);
   };
-  r.onerror = () => stopListening();
-  r.onend   = () => { if (isListening) stopListening(); };
+  r.onerror = (e) => {
+    console.log('[vocab] recognition.onerror: error =', e.error, '| message =', e.message);
+    stopListening();
+  };
+  r.onstart = () => console.log('[vocab] recognition.onstart: mic is active');
+  r.onend   = () => {
+    console.log('[vocab] recognition.onend: isListening =', isListening);
+    if (isListening) stopListening();
+  };
+  r.onspeechstart = () => console.log('[vocab] recognition.onspeechstart: speech detected');
+  r.onspeechend   = () => console.log('[vocab] recognition.onspeechend: speech ended');
   return r;
 }
 
 function startListening() {
+  console.log('[vocab] startListening called: isListening =', isListening, '| isPlayingAudio =', isPlayingAudio);
   if (!hasSpeechAPI) return;
   if (isListening) {
     stopListening();
     return;
   }
   if (isPlayingAudio) {
+    console.log('[vocab] startListening: blocked — audio session still active');
     setStatus('Wait for audio to finish…');
     setTimeout(clearStatus, 1500);
     return;
@@ -206,13 +229,16 @@ function startListening() {
   if (btn) { btn.textContent = '⏹ Stop'; btn.classList.add('listening'); }
   setStatus('Listening…');
   try {
+    console.log('[vocab] calling recognition.start()');
     recognition.start();
-  } catch {
+  } catch (err) {
+    console.log('[vocab] recognition.start() threw:', err);
     stopListening();
   }
 }
 
 function stopListening() {
+  console.log('[vocab] stopListening called');
   isListening = false;
   const btn = document.getElementById('listenBtn');
   if (btn) { btn.textContent = '🎤 Speak'; btn.classList.remove('listening'); }
