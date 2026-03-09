@@ -100,6 +100,7 @@ function renderSummary(r) {
     bartender:          '🍺 Bartender',
     'business-executive': '💼 Business Executive',
     'travel-guide':     '🗺️ Travel Guide',
+    'writing-coach':    '✍️ Writing Coach',
   };
   const personalityLabel = r.personality ? PERSONALITY_NAMES[r.personality] || r.personality : null;
 
@@ -160,18 +161,24 @@ function renderSummary(r) {
         <h3 class="summary-section-title">🎯 Suggested Next Steps</h3>
         ${renderList(r.suggested_next_lessons, 'Keep practicing regularly!')}
       </div>
+      ${(r.misspellings && r.misspellings.length > 0) ? `
+      <div class="summary-card">
+        <h3 class="summary-section-title">🔤 Spelling to Review</h3>
+        ${renderList(r.misspellings, '')}
+      </div>` : ''}
     </div>
 
     <!-- Actions -->
     <div class="summary-actions">
       <a href="/dashboard.html" class="btn btn-secondary btn-lg">← Return to Dashboard</a>
-      <a
-        href="/conversation.html?${buildRestartParams(r)}"
-        class="btn btn-primary btn-lg"
-        onclick="return startNewSession(event, '${r.language}', ${r.level}, '${r.topic}', '${r.personality || ''}')"
-      >
-        Practice Again →
-      </a>
+      ${r.personality === 'writing-coach'
+        ? `<a href="/writing.html?${buildRestartParams(r)}" class="btn btn-primary btn-lg">Practice Again →</a>`
+        : `<a
+             href="/conversation.html?${buildRestartParams(r)}"
+             class="btn btn-primary btn-lg"
+             onclick="return startNewSession(event, '${r.language}', ${r.level}, '${r.topic}', '${r.personality || ''}')"
+           >Practice Again →</a>`
+      }
     </div>
   `;
 }

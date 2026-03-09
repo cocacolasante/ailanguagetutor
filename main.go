@@ -45,9 +45,12 @@ func main() {
 	sentencePool.Load()
 	listeningPool       := store.NewItemPool("data/listening_pool.json")
 	listeningPool.Load()
+	writingPool         := store.NewItemPool("data/writing_pool.json")
+	writingPool.Load()
 	vocabHandler        := handlers.NewVocabHandler(cfg, userStore, profileStore, vocabPool)
 	sentenceHandler     := handlers.NewSentenceHandler(cfg, userStore, profileStore, sentencePool)
 	listeningHandler    := handlers.NewListeningHandler(cfg, userStore, profileStore, listeningPool, vocabPool, sentencePool)
+	writingHandler      := handlers.NewWritingHandler(cfg, userStore, profileStore, historyStore, sessionStore, writingPool)
 
 	auth := middleware.NewAuthMiddleware(cfg)
 
@@ -74,6 +77,7 @@ func main() {
 	r.Get("/vocab.html",             serveFile("./static/vocab.html"))
 	r.Get("/sentences.html",         serveFile("./static/sentences.html"))
 	r.Get("/listening.html",         serveFile("./static/listening.html"))
+	r.Get("/writing.html",           serveFile("./static/writing.html"))
 
 	// ── Auth (public) ─────────────────────────────────────────────────────────
 	r.Post("/api/auth/register",        authHandler.Register)
@@ -135,6 +139,11 @@ func main() {
 		// Listening comprehension
 		r.Post("/api/listening/session",  listeningHandler.Session)
 		r.Post("/api/listening/complete", listeningHandler.Complete)
+
+		// Writing coach
+		r.Post("/api/writing/session",  writingHandler.Session)
+		r.Post("/api/writing/message",  writingHandler.Message)
+		r.Post("/api/writing/complete", writingHandler.Complete)
 
 		// Gamification
 		r.Get("/api/user/stats",              gamificationHandler.Stats)

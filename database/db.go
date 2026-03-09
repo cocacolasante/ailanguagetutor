@@ -136,6 +136,22 @@ ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS sentence_list_idx JSONB DE
 	_, err = pool.Exec(ctx, `
 ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS listening_list_idx JSONB DEFAULT '{}';
 `)
+	if err != nil {
+		return err
+	}
+
+	// Writing Coach: cache index on student profiles (idempotent)
+	_, err = pool.Exec(ctx, `
+ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS writing_list_idx JSONB DEFAULT '{}';
+`)
+	if err != nil {
+		return err
+	}
+
+	// Writing Coach: misspellings on conversation_history (idempotent)
+	_, err = pool.Exec(ctx, `
+ALTER TABLE conversation_history ADD COLUMN IF NOT EXISTS misspellings JSONB DEFAULT '[]';
+`)
 	return err
 }
 

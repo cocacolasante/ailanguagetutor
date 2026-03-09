@@ -772,6 +772,7 @@ type ConversationRecord struct {
 	Vocabulary   []string  `json:"vocabulary_learned,omitempty"`
 	Corrections  []string  `json:"grammar_corrections,omitempty"`
 	Suggestions  []string  `json:"suggested_next_lessons,omitempty"`
+	Misspellings []string  `json:"misspellings,omitempty"`
 	CreatedAt    time.Time `json:"created_at"`
 	EndedAt      time.Time `json:"ended_at"`
 }
@@ -790,16 +791,17 @@ func (hs *ConversationHistoryStore) Save(record *ConversationRecord) {
 	vocab, _ := json.Marshal(nilSafe(record.Vocabulary))
 	corrections, _ := json.Marshal(nilSafe(record.Corrections))
 	suggestions, _ := json.Marshal(nilSafe(record.Suggestions))
+	misspellings, _ := json.Marshal(nilSafe(record.Misspellings))
 
 	_, _ = hs.pool.Exec(ctx, `
 INSERT INTO conversation_history (id, user_id, session_id, language, topic, topic_name, level,
     personality, message_count, duration_secs, fp_earned, summary,
-    topics, vocabulary, corrections, suggestions, created_at, ended_at)
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+    topics, vocabulary, corrections, suggestions, created_at, ended_at, misspellings)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
 ON CONFLICT (id) DO NOTHING`,
 		record.ID, record.UserID, record.SessionID, record.Language, record.Topic, record.TopicName,
 		record.Level, record.Personality, record.MessageCount, record.DurationSecs, record.FPEarned,
-		record.Summary, topics, vocab, corrections, suggestions, record.CreatedAt, record.EndedAt,
+		record.Summary, topics, vocab, corrections, suggestions, record.CreatedAt, record.EndedAt, misspellings,
 	)
 }
 
@@ -808,7 +810,7 @@ func (hs *ConversationHistoryStore) GetForUser(userID string) []*ConversationRec
 	rows, err := hs.pool.Query(ctx, `
 SELECT id, user_id, session_id, language, topic, topic_name, level, personality,
     message_count, duration_secs, fp_earned, summary,
-    topics, vocabulary, corrections, suggestions, created_at, ended_at
+    topics, vocabulary, corrections, suggestions, created_at, ended_at, misspellings
 FROM conversation_history WHERE user_id=$1 ORDER BY ended_at DESC LIMIT 10`, userID)
 	if err != nil {
 		return []*ConversationRecord{}
@@ -832,7 +834,7 @@ func (hs *ConversationHistoryStore) GetRecord(id string) (*ConversationRecord, e
 	row := hs.pool.QueryRow(ctx, `
 SELECT id, user_id, session_id, language, topic, topic_name, level, personality,
     message_count, duration_secs, fp_earned, summary,
-    topics, vocabulary, corrections, suggestions, created_at, ended_at
+    topics, vocabulary, corrections, suggestions, created_at, ended_at, misspellings
 FROM conversation_history WHERE id=$1`, id)
 	r, err := scanRecord(row)
 	if err != nil {
@@ -843,11 +845,11 @@ FROM conversation_history WHERE id=$1`, id)
 
 func scanRecord(row pgx.Row) (*ConversationRecord, error) {
 	var r ConversationRecord
-	var topics, vocab, corrections, suggestions []byte
+	var topics, vocab, corrections, suggestions, misspellings []byte
 	err := row.Scan(
 		&r.ID, &r.UserID, &r.SessionID, &r.Language, &r.Topic, &r.TopicName, &r.Level,
 		&r.Personality, &r.MessageCount, &r.DurationSecs, &r.FPEarned, &r.Summary,
-		&topics, &vocab, &corrections, &suggestions, &r.CreatedAt, &r.EndedAt,
+		&topics, &vocab, &corrections, &suggestions, &r.CreatedAt, &r.EndedAt, &misspellings,
 	)
 	if err != nil {
 		return nil, err
@@ -856,6 +858,7 @@ func scanRecord(row pgx.Row) (*ConversationRecord, error) {
 	_ = scanJSONB(vocab, &r.Vocabulary)
 	_ = scanJSONB(corrections, &r.Corrections)
 	_ = scanJSONB(suggestions, &r.Suggestions)
+	_ = scanJSONB(misspellings, &r.Misspellings)
 	return &r, nil
 }
 
@@ -882,6 +885,7 @@ type StudentProfile struct {
 	VocabListIdx     map[string]int `json:"vocab_list_idx"`     // pool key → next list index
 	SentenceListIdx  map[string]int `json:"sentence_list_idx"`  // pool key → next list index
 	ListeningListIdx map[string]int `json:"listening_list_idx"` // pool key → next list index
+	WritingListIdx   map[string]int `json:"writing_list_idx"`   // pool key → next list index
 	UpdatedAt        time.Time      `json:"updated_at"`
 }
 
@@ -896,16 +900,16 @@ func NewStudentProfileStore(pool *pgxpool.Pool) *StudentProfileStore {
 func (s *StudentProfileStore) Get(ctx context.Context, userID, language string) (*StudentProfile, error) {
 	var p StudentProfile
 	var weakAreas, strongAreas, recentTopics, recentVocab, recentSentences, nextSuggestions []byte
-	var vocabIdx, sentenceIdx, listeningIdx []byte
+	var vocabIdx, sentenceIdx, listeningIdx, writingIdx []byte
 	err := s.pool.QueryRow(ctx, `
 SELECT user_id, language, name, weak_areas, strong_areas, recent_topics, recent_vocab,
     recent_sentences, next_suggestions, session_count, updated_at,
-    vocab_list_idx, sentence_list_idx, listening_list_idx
+    vocab_list_idx, sentence_list_idx, listening_list_idx, writing_list_idx
 FROM student_profiles WHERE user_id=$1 AND language=$2`, userID, language).Scan(
 		&p.UserID, &p.Language, &p.Name,
 		&weakAreas, &strongAreas, &recentTopics, &recentVocab, &recentSentences, &nextSuggestions,
 		&p.SessionCount, &p.UpdatedAt,
-		&vocabIdx, &sentenceIdx, &listeningIdx,
+		&vocabIdx, &sentenceIdx, &listeningIdx, &writingIdx,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -922,9 +926,11 @@ FROM student_profiles WHERE user_id=$1 AND language=$2`, userID, language).Scan(
 	p.VocabListIdx = make(map[string]int)
 	p.SentenceListIdx = make(map[string]int)
 	p.ListeningListIdx = make(map[string]int)
+	p.WritingListIdx = make(map[string]int)
 	_ = scanJSONB(vocabIdx, &p.VocabListIdx)
 	_ = scanJSONB(sentenceIdx, &p.SentenceListIdx)
 	_ = scanJSONB(listeningIdx, &p.ListeningListIdx)
+	_ = scanJSONB(writingIdx, &p.WritingListIdx)
 	return &p, nil
 }
 
@@ -938,18 +944,19 @@ func (s *StudentProfileStore) Upsert(ctx context.Context, p *StudentProfile) err
 	vocabListIdx, _ := json.Marshal(nilSafeMap(p.VocabListIdx))
 	sentenceListIdx, _ := json.Marshal(nilSafeMap(p.SentenceListIdx))
 	listeningListIdx, _ := json.Marshal(nilSafeMap(p.ListeningListIdx))
+	writingListIdx, _ := json.Marshal(nilSafeMap(p.WritingListIdx))
 
 	_, err := s.pool.Exec(ctx, `
 INSERT INTO student_profiles (user_id, language, name, weak_areas, strong_areas, recent_topics,
-    recent_vocab, recent_sentences, next_suggestions, session_count, vocab_list_idx, sentence_list_idx, listening_list_idx, updated_at)
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NOW())
+    recent_vocab, recent_sentences, next_suggestions, session_count, vocab_list_idx, sentence_list_idx, listening_list_idx, writing_list_idx, updated_at)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,NOW())
 ON CONFLICT (user_id, language) DO UPDATE SET
     name=$3, weak_areas=$4, strong_areas=$5, recent_topics=$6,
     recent_vocab=$7, recent_sentences=$8, next_suggestions=$9, session_count=$10,
-    vocab_list_idx=$11, sentence_list_idx=$12, listening_list_idx=$13, updated_at=NOW()`,
+    vocab_list_idx=$11, sentence_list_idx=$12, listening_list_idx=$13, writing_list_idx=$14, updated_at=NOW()`,
 		p.UserID, p.Language, p.Name, weakAreas, strongAreas, recentTopics,
 		recentVocab, recentSentences, nextSuggestions, p.SessionCount,
-		vocabListIdx, sentenceListIdx, listeningListIdx,
+		vocabListIdx, sentenceListIdx, listeningListIdx, writingListIdx,
 	)
 	return err
 }

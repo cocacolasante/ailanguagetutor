@@ -360,7 +360,7 @@ const GRAMMAR_SKILLS = [
   { id: 'sentences', icon: '✏️', name: 'Sentence Builder', desc: 'Translate English sentences and get grammar feedback', available: true },
   { id: 'listening', icon: '🎧', name: 'Listening Comprehension', desc: 'Read and listen to a story, then answer comprehension questions', available: true },
   { id: 'pronunciation', icon: '🗣️', name: 'Pronunciation Practice', desc: 'Perfect your pronunciation with drills', available: false },
-  { id: 'writing', icon: '📝', name: 'Writing Coach', desc: 'Submit writing for grammar corrections', available: false },
+  { id: 'writing', icon: '✍️', name: 'Writing Coach', desc: 'Practice writing via iMessage-style text exchange with real-time spelling feedback', available: true },
 ];
 
 // Tracks which grammar sub-step we're in: null | 'skills' | 'vocab-topics'
@@ -464,6 +464,23 @@ function selectGrammarSkill(skillId) {
             </div>`).join('')}
         </div>
       </div>`;
+  } else if (skillId === 'writing') {
+    grammarSubStep = 'writing-topics';
+    container.innerHTML = `
+      <div class="topic-category">
+        <div class="topic-category-label">Choose a Topic</div>
+        <div class="topic-grid">
+          ${VOCAB_TOPICS.map(t => `
+            <div class="topic-card" id="writing-topic-${t.id}"
+                 onclick="selectWritingTopic('${t.id}', '${escapeAttr(t.name)}')">
+              <span class="topic-icon">${t.icon}</span>
+              <div class="topic-info">
+                <div class="topic-name">${t.name}</div>
+                <div class="topic-desc">${t.desc}</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`;
   }
 }
 
@@ -511,6 +528,21 @@ function selectListeningTopic(id, name) {
     personality: u.pref_personality || 'professor',
   });
   window.location.href = '/listening.html?' + p.toString();
+}
+
+function selectWritingTopic(id, name) {
+  const u = currentUser;
+  if (!u?.pref_language || !u?.pref_level) {
+    alert('Please set your language and level in your profile first.');
+    return;
+  }
+  const p = new URLSearchParams({
+    language:  u.pref_language,
+    level:     u.pref_level,
+    topic:     id,
+    topicName: name,
+  });
+  window.location.href = '/writing.html?' + p.toString();
 }
 
 function selectTopic(id, name) {
