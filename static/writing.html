@@ -19,7 +19,10 @@
      */
     #appShell {
       position: fixed;
-      inset: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 100vh; /* overridden by JS via visualViewport on iOS */
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -367,6 +370,30 @@
 
   </div><!-- /#appShell -->
 
+  <script>
+    // Visual Viewport API: syncs #appShell to the *visible* area of the screen.
+    // On iOS Safari, position:fixed uses the layout viewport which doesn't shrink
+    // when the keyboard opens — visualViewport.height gives us the real visible height.
+    // This produces the iMessage-style behaviour: keyboard pushes the input bar up,
+    // message thread shrinks and scrolls to keep the latest message in view.
+    (function () {
+      var shell  = document.getElementById('appShell');
+      var vv     = window.visualViewport;
+      if (!vv) return; // older browsers fall back to the CSS 100vh
+
+      function sync() {
+        shell.style.top    = vv.offsetTop  + 'px';
+        shell.style.height = vv.height     + 'px';
+        // Keep newest message visible when keyboard slides up
+        var thread = document.getElementById('messagesContainer');
+        if (thread) thread.scrollTop = thread.scrollHeight;
+      }
+
+      vv.addEventListener('resize', sync);
+      vv.addEventListener('scroll', sync);
+      sync();
+    }());
+  </script>
   <script src="/js/api.js?v=14"></script>
   <script src="/js/writing.js?v=2"></script>
 </body>
