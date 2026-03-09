@@ -344,11 +344,22 @@ const VOCAB_TOPICS = [
   { id: 'technology',   icon: '💻', name: 'Technology',       desc: 'Gadgets, software, and digital terms' },
 ];
 
+const SENTENCE_TOPICS = [
+  { id: 'general',      icon: '💬', name: 'General',          desc: 'Everyday sentences and expressions' },
+  { id: 'food-dining',  icon: '🍽️', name: 'Food & Dining',   desc: 'Ordering, recipes, and restaurant talk' },
+  { id: 'shopping',     icon: '🛍️', name: 'Shopping',        desc: 'Prices, descriptions, and requests' },
+  { id: 'family',       icon: '👨‍👩‍👧', name: 'Family Life',  desc: 'Relationships and daily routines' },
+  { id: 'travel',       icon: '✈️', name: 'Travel',           desc: 'Directions, bookings, and sightseeing' },
+  { id: 'health',       icon: '🏥', name: 'Health',           desc: 'Symptoms, appointments, and advice' },
+  { id: 'work',         icon: '💼', name: 'Work & Career',    desc: 'Meetings, emails, and workplace talk' },
+  { id: 'technology',   icon: '💻', name: 'Technology',       desc: 'Devices, apps, and online life' },
+];
+
 const GRAMMAR_SKILLS = [
   { id: 'vocab',  icon: '📚', name: 'Vocabulary Builder', desc: 'Flashcard mode — learn, hear, and speak new words', available: true },
-  { id: 'sentences', icon: '✏️', name: 'Sentence Construction', desc: 'Build grammatically correct sentences', available: false },
+  { id: 'sentences', icon: '✏️', name: 'Sentence Builder', desc: 'Translate English sentences and get grammar feedback', available: true },
+  { id: 'listening', icon: '🎧', name: 'Listening Comprehension', desc: 'Read and listen to a story, then answer comprehension questions', available: true },
   { id: 'pronunciation', icon: '🗣️', name: 'Pronunciation Practice', desc: 'Perfect your pronunciation with drills', available: false },
-  { id: 'listening', icon: '👂', name: 'Listening Comprehension', desc: 'Improve listening through short passages', available: false },
   { id: 'writing', icon: '📝', name: 'Writing Coach', desc: 'Submit writing for grammar corrections', available: false },
 ];
 
@@ -401,9 +412,9 @@ function renderGrammarSkillsPicker(container) {
 }
 
 function selectGrammarSkill(skillId) {
+  const container = document.getElementById('activityContainer');
   if (skillId === 'vocab') {
     grammarSubStep = 'vocab-topics';
-    const container = document.getElementById('activityContainer');
     container.innerHTML = `
       <div class="topic-category">
         <div class="topic-category-label">Choose a Topic</div>
@@ -411,6 +422,40 @@ function selectGrammarSkill(skillId) {
           ${VOCAB_TOPICS.map(t => `
             <div class="topic-card" id="vocab-topic-${t.id}"
                  onclick="selectVocabTopic('${t.id}', '${escapeAttr(t.name)}')">
+              <span class="topic-icon">${t.icon}</span>
+              <div class="topic-info">
+                <div class="topic-name">${t.name}</div>
+                <div class="topic-desc">${t.desc}</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  } else if (skillId === 'sentences') {
+    grammarSubStep = 'sentence-topics';
+    container.innerHTML = `
+      <div class="topic-category">
+        <div class="topic-category-label">Choose a Topic</div>
+        <div class="topic-grid">
+          ${SENTENCE_TOPICS.map(t => `
+            <div class="topic-card" id="sentence-topic-${t.id}"
+                 onclick="selectSentenceTopic('${t.id}', '${escapeAttr(t.name)}')">
+              <span class="topic-icon">${t.icon}</span>
+              <div class="topic-info">
+                <div class="topic-name">${t.name}</div>
+                <div class="topic-desc">${t.desc}</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  } else if (skillId === 'listening') {
+    grammarSubStep = 'listening-topics';
+    container.innerHTML = `
+      <div class="topic-category">
+        <div class="topic-category-label">Choose a Topic</div>
+        <div class="topic-grid">
+          ${VOCAB_TOPICS.map(t => `
+            <div class="topic-card" id="listening-topic-${t.id}"
+                 onclick="selectListeningTopic('${t.id}', '${escapeAttr(t.name)}')">
               <span class="topic-icon">${t.icon}</span>
               <div class="topic-info">
                 <div class="topic-name">${t.name}</div>
@@ -435,6 +480,37 @@ function selectVocabTopic(id, name) {
     topicName: name,
   });
   window.location.href = '/vocab.html?' + vocabParams.toString();
+}
+
+function selectSentenceTopic(id, name) {
+  const u = currentUser;
+  if (!u?.pref_language || !u?.pref_level) {
+    alert('Please set your language and level in your profile first.');
+    return;
+  }
+  const p = new URLSearchParams({
+    language:  u.pref_language,
+    level:     u.pref_level,
+    topic:     id,
+    topicName: name,
+  });
+  window.location.href = '/sentences.html?' + p.toString();
+}
+
+function selectListeningTopic(id, name) {
+  const u = currentUser;
+  if (!u?.pref_language || !u?.pref_level) {
+    alert('Please set your language and level in your profile first.');
+    return;
+  }
+  const p = new URLSearchParams({
+    language:    u.pref_language,
+    level:       u.pref_level,
+    topic:       id,
+    topicName:   name,
+    personality: u.pref_personality || 'professor',
+  });
+  window.location.href = '/listening.html?' + p.toString();
 }
 
 function selectTopic(id, name) {

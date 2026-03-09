@@ -869,16 +869,20 @@ func nilSafe(s []string) []string {
 // ── Student Profile Store ─────────────────────────────────────────────────────
 
 type StudentProfile struct {
-	UserID          string    `json:"user_id"`
-	Language        string    `json:"language"`
-	Name            string    `json:"name"`
-	WeakAreas       []string  `json:"weak_areas"`
-	StrongAreas     []string  `json:"strong_areas"`
-	RecentTopics    []string  `json:"recent_topics"`
-	RecentVocab     []string  `json:"recent_vocab"`
-	NextSuggestions []string  `json:"next_suggestions"`
-	SessionCount    int       `json:"session_count"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	UserID           string         `json:"user_id"`
+	Language         string         `json:"language"`
+	Name             string         `json:"name"`
+	WeakAreas        []string       `json:"weak_areas"`
+	StrongAreas      []string       `json:"strong_areas"`
+	RecentTopics     []string       `json:"recent_topics"`
+	RecentVocab      []string       `json:"recent_vocab"`
+	RecentSentences  []string       `json:"recent_sentences"`
+	NextSuggestions  []string       `json:"next_suggestions"`
+	SessionCount     int            `json:"session_count"`
+	VocabListIdx     map[string]int `json:"vocab_list_idx"`     // pool key → next list index
+	SentenceListIdx  map[string]int `json:"sentence_list_idx"`  // pool key → next list index
+	ListeningListIdx map[string]int `json:"listening_list_idx"` // pool key → next list index
+	UpdatedAt        time.Time      `json:"updated_at"`
 }
 
 type StudentProfileStore struct {
@@ -891,14 +895,17 @@ func NewStudentProfileStore(pool *pgxpool.Pool) *StudentProfileStore {
 
 func (s *StudentProfileStore) Get(ctx context.Context, userID, language string) (*StudentProfile, error) {
 	var p StudentProfile
-	var weakAreas, strongAreas, recentTopics, recentVocab, nextSuggestions []byte
+	var weakAreas, strongAreas, recentTopics, recentVocab, recentSentences, nextSuggestions []byte
+	var vocabIdx, sentenceIdx, listeningIdx []byte
 	err := s.pool.QueryRow(ctx, `
 SELECT user_id, language, name, weak_areas, strong_areas, recent_topics, recent_vocab,
-    next_suggestions, session_count, updated_at
+    recent_sentences, next_suggestions, session_count, updated_at,
+    vocab_list_idx, sentence_list_idx, listening_list_idx
 FROM student_profiles WHERE user_id=$1 AND language=$2`, userID, language).Scan(
 		&p.UserID, &p.Language, &p.Name,
-		&weakAreas, &strongAreas, &recentTopics, &recentVocab, &nextSuggestions,
+		&weakAreas, &strongAreas, &recentTopics, &recentVocab, &recentSentences, &nextSuggestions,
 		&p.SessionCount, &p.UpdatedAt,
+		&vocabIdx, &sentenceIdx, &listeningIdx,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -910,7 +917,14 @@ FROM student_profiles WHERE user_id=$1 AND language=$2`, userID, language).Scan(
 	_ = scanJSONB(strongAreas, &p.StrongAreas)
 	_ = scanJSONB(recentTopics, &p.RecentTopics)
 	_ = scanJSONB(recentVocab, &p.RecentVocab)
+	_ = scanJSONB(recentSentences, &p.RecentSentences)
 	_ = scanJSONB(nextSuggestions, &p.NextSuggestions)
+	p.VocabListIdx = make(map[string]int)
+	p.SentenceListIdx = make(map[string]int)
+	p.ListeningListIdx = make(map[string]int)
+	_ = scanJSONB(vocabIdx, &p.VocabListIdx)
+	_ = scanJSONB(sentenceIdx, &p.SentenceListIdx)
+	_ = scanJSONB(listeningIdx, &p.ListeningListIdx)
 	return &p, nil
 }
 
@@ -919,18 +933,32 @@ func (s *StudentProfileStore) Upsert(ctx context.Context, p *StudentProfile) err
 	strongAreas, _ := json.Marshal(nilSafe(p.StrongAreas))
 	recentTopics, _ := json.Marshal(nilSafe(p.RecentTopics))
 	recentVocab, _ := json.Marshal(nilSafe(p.RecentVocab))
+	recentSentences, _ := json.Marshal(nilSafe(p.RecentSentences))
 	nextSuggestions, _ := json.Marshal(nilSafe(p.NextSuggestions))
+	vocabListIdx, _ := json.Marshal(nilSafeMap(p.VocabListIdx))
+	sentenceListIdx, _ := json.Marshal(nilSafeMap(p.SentenceListIdx))
+	listeningListIdx, _ := json.Marshal(nilSafeMap(p.ListeningListIdx))
 
 	_, err := s.pool.Exec(ctx, `
 INSERT INTO student_profiles (user_id, language, name, weak_areas, strong_areas, recent_topics,
-    recent_vocab, next_suggestions, session_count, updated_at)
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW())
+    recent_vocab, recent_sentences, next_suggestions, session_count, vocab_list_idx, sentence_list_idx, listening_list_idx, updated_at)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NOW())
 ON CONFLICT (user_id, language) DO UPDATE SET
     name=$3, weak_areas=$4, strong_areas=$5, recent_topics=$6,
-    recent_vocab=$7, next_suggestions=$8, session_count=$9, updated_at=NOW()`,
+    recent_vocab=$7, recent_sentences=$8, next_suggestions=$9, session_count=$10,
+    vocab_list_idx=$11, sentence_list_idx=$12, listening_list_idx=$13, updated_at=NOW()`,
 		p.UserID, p.Language, p.Name, weakAreas, strongAreas, recentTopics,
-		recentVocab, nextSuggestions, p.SessionCount,
+		recentVocab, recentSentences, nextSuggestions, p.SessionCount,
+		vocabListIdx, sentenceListIdx, listeningListIdx,
 	)
 	return err
+}
+
+// nilSafeMap returns an empty map if m is nil.
+func nilSafeMap(m map[string]int) map[string]int {
+	if m == nil {
+		return map[string]int{}
+	}
+	return m
 }
 

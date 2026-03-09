@@ -10,9 +10,10 @@ type Config struct {
 
 	JWTSecret string
 
-	IONOSAPIKey  string
-	IONOSBaseURL string
-	IONOSModel   string
+	IONOSAPIKey      string
+	IONOSBaseURL     string
+	IONOSModel       string
+	IONOSFastModel   string // lightweight model for vocab/sentence JSON generation
 
 	ElevenLabsAPIKey  string
 	ElevenLabsAgentID string
@@ -53,9 +54,10 @@ func Load() *Config {
 		Port:      getEnv("PORT", "8080"),
 		JWTSecret: getEnvRequired("JWT_SECRET"),
 
-		IONOSAPIKey:  getEnvRequired("IONOS_API_KEY"),
-		IONOSBaseURL: getEnv("IONOS_BASE_URL", "https://openai.inference.de-txl.ionos.com/v1"),
-		IONOSModel:   getEnv("IONOS_MODEL", "mistral-small-24b"),
+		IONOSAPIKey:    getEnvRequired("IONOS_API_KEY"),
+		IONOSBaseURL:   getEnv("IONOS_BASE_URL", "https://openai.inference.de-txl.ionos.com/v1"),
+		IONOSModel:     getEnv("IONOS_MODEL", "mistral-small-24b"),
+		IONOSFastModel: getEnv("IONOS_FAST_MODEL", "meta-llama/Meta-Llama-3.1-8B-Instruct"),
 
 		ElevenLabsAPIKey:  getEnvRequired("ELEVENLABS_API_KEY"),
 		ElevenLabsAgentID: getEnv("ELEVENLABS_AGENT_ID", ""),

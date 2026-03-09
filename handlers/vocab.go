@@ -20,10 +20,11 @@ type VocabHandler struct {
 	cfg          *config.Config
 	userStore    *store.UserStore
 	profileStore *store.StudentProfileStore
+	pool         *store.ItemPool
 }
 
-func NewVocabHandler(cfg *config.Config, us *store.UserStore, ps *store.StudentProfileStore) *VocabHandler {
-	return &VocabHandler{cfg: cfg, userStore: us, profileStore: ps}
+func NewVocabHandler(cfg *config.Config, us *store.UserStore, ps *store.StudentProfileStore, pool *store.ItemPool) *VocabHandler {
+	return &VocabHandler{cfg: cfg, userStore: us, profileStore: ps, pool: pool}
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -63,6 +64,7 @@ type wordResult struct {
 
 type vocabCompleteRequest struct {
 	Language  string       `json:"language"`
+	Level     int          `json:"level"`
 	Topic     string       `json:"topic"`
 	TopicName string       `json:"topic_name"`
 	Results   []wordResult `json:"results"`
@@ -106,16 +108,56 @@ func (h *VocabHandler) Session(w http.ResponseWriter, r *http.Request) {
 	topicName, _ := TopicDetails(req.Topic)
 	spec := levelSpec[req.Level]
 
-	// Load already-seen vocab to exclude from this session
 	profile, _ := h.profileStore.Get(r.Context(), userID, req.Language)
-	var excludeClause string
+
+	// Cache-first: serve from pool if the user hasn't exhausted this key
+	key := h.pool.Key(req.Language, req.Level, req.Topic)
+	userIdx := 0
+	if profile != nil && profile.VocabListIdx != nil {
+		userIdx = profile.VocabListIdx[key]
+	}
+
+	if userIdx < h.pool.Len(key) {
+		raw, _ := h.pool.Get(key, userIdx)
+		var words []VocabWord
+		if err := json.Unmarshal(raw, &words); err == nil {
+			store.Shuffle(words)
+			writeJSON(w, http.StatusOK, vocabSessionResponse{Words: words})
+			return
+		}
+	}
+
+	// Cache miss: build exclusion list from all cached pool lists + profile history
+	var excludeWords []string
+	for _, raw := range h.pool.AllRaw(key) {
+		var list []VocabWord
+		if err := json.Unmarshal(raw, &list); err == nil {
+			for _, w := range list {
+				excludeWords = append(excludeWords, w.Word)
+			}
+		}
+	}
 	if profile != nil && len(profile.RecentVocab) > 0 {
-		// Cap at 60 to keep prompt size reasonable
 		seen := profile.RecentVocab
 		if len(seen) > 60 {
 			seen = seen[:60]
 		}
-		seenJSON, _ := json.Marshal(seen)
+		excludeWords = append(excludeWords, seen...)
+	}
+	// Deduplicate
+	seen := map[string]bool{}
+	deduped := excludeWords[:0]
+	for _, w := range excludeWords {
+		if !seen[w] {
+			seen[w] = true
+			deduped = append(deduped, w)
+		}
+	}
+	excludeWords = deduped
+
+	var excludeClause string
+	if len(excludeWords) > 0 {
+		seenJSON, _ := json.Marshal(excludeWords)
 		excludeClause = fmt.Sprintf("\n- Do NOT use any of these already-learned words: %s", string(seenJSON))
 	}
 
@@ -165,6 +207,11 @@ Rules:
 		return
 	}
 
+	// Cache the new list, then shuffle before returning
+	if raw, err := json.Marshal(parsed.Words); err == nil {
+		h.pool.Append(key, raw)
+	}
+	store.Shuffle(parsed.Words)
 	writeJSON(w, http.StatusOK, vocabSessionResponse{Words: parsed.Words})
 }
 
@@ -258,6 +305,13 @@ func (h *VocabHandler) Complete(w http.ResponseWriter, r *http.Request) {
 	profile.RecentTopics = prependUnique([]string{req.TopicName}, profile.RecentTopics, 10)
 	profile.SessionCount++
 
+	// Advance the user's list index for this pool key
+	key := h.pool.Key(req.Language, req.Level, req.Topic)
+	if profile.VocabListIdx == nil {
+		profile.VocabListIdx = make(map[string]int)
+	}
+	profile.VocabListIdx[key]++
+
 	if err := h.profileStore.Upsert(ctx, profile); err != nil {
 		log.Printf("vocab/complete Upsert error: %v", err)
 	}
@@ -282,14 +336,15 @@ type ionosVocabPayload struct {
 type ionosVocabResponse struct {
 	Choices []struct {
 		Message struct {
-			Content string `json:"content"`
+			Content          string `json:"content"`
+			ReasoningContent string `json:"reasoning_content"`
 		} `json:"message"`
 	} `json:"choices"`
 }
 
 func (h *VocabHandler) callAI(ctx context.Context, prompt string, maxTokens int, temperature float64) (string, error) {
 	payload := ionosVocabPayload{
-		Model: h.cfg.IONOSModel,
+		Model: h.cfg.IONOSFastModel,
 		Messages: []store.Message{
 			{Role: "user", Content: prompt},
 		},
@@ -310,7 +365,7 @@ func (h *VocabHandler) callAI(ctx context.Context, prompt string, maxTokens int,
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+h.cfg.IONOSAPIKey)
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := &http.Client{Timeout: 90 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
@@ -332,7 +387,11 @@ func (h *VocabHandler) callAI(ctx context.Context, prompt string, maxTokens int,
 	if len(parsed.Choices) == 0 {
 		return "", fmt.Errorf("no choices in AI response")
 	}
-	return parsed.Choices[0].Message.Content, nil
+	content := parsed.Choices[0].Message.Content
+	if content == "" {
+		content = parsed.Choices[0].Message.ReasoningContent
+	}
+	return content, nil
 }
 
 // ── Edit distance (Levenshtein) fallback ──────────────────────────────────────

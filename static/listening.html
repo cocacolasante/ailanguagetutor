@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Listening Comprehension — LinguaAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=4" />
+</head>
+<body class="flashcard-page">
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a href="/dashboard.html" class="logo-link">
+        <span class="logo-icon">🌐</span>
+        <span class="logo-text">LinguaAI</span>
+      </a>
+    </div>
+    <div class="navbar-right">
+      <a href="/dashboard.html" class="btn btn-ghost btn-sm">← Dashboard</a>
+    </div>
+  </nav>
+
+  <!-- Loading state -->
+  <div class="vocab-loading" id="loadingState">
+    <div class="spinner"></div>
+    <p>Preparing your story… (~8 sec)</p>
+  </div>
+
+  <!-- Main story container (hidden until loaded) -->
+  <main class="flashcard-main hidden" id="storyContainer">
+
+    <!-- Header -->
+    <div class="flashcard-header">
+      <h2 id="storyTitle">Listening Comprehension</h2>
+      <p id="headerSub">Loading…</p>
+    </div>
+
+    <!-- Progress -->
+    <div style="width:100%;max-width:600px">
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <div class="progress-label" id="progressLabel">Segment 1 of …</div>
+    </div>
+
+    <!-- Segment text card -->
+    <div class="sentence-card" style="max-width:600px;width:100%">
+      <div class="sentence-card-label">Read &amp; Listen</div>
+      <div class="sentence-english" id="segmentText" style="font-size:1.05rem;line-height:1.7">—</div>
+    </div>
+
+    <!-- TTS controls -->
+    <div style="display:flex;gap:12px;align-items:center;margin-top:4px">
+      <button class="btn btn-ghost" id="playBtn" onclick="playSegment()">🔊 Play</button>
+      <button class="btn btn-ghost btn-sm" id="skipBtn" onclick="showQuestion()" style="opacity:0.7">Skip Audio →</button>
+    </div>
+
+    <!-- Question card (hidden until audio ends or skipped) -->
+    <div class="sentence-feedback hidden" id="questionCard" style="max-width:600px;width:100%;margin-top:16px">
+      <div class="sentence-feedback-status" id="questionText" style="font-size:1rem;font-weight:500;color:var(--text-primary)"></div>
+      <div id="answerBtns" style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:14px"></div>
+    </div>
+
+    <!-- Feedback zone (hidden until answered) -->
+    <div class="sentence-feedback hidden" id="feedbackZone" style="max-width:600px;width:100%;margin-top:12px">
+      <div class="sentence-feedback-status" id="feedbackStatus"></div>
+      <div class="sentence-feedback-text" id="explanationText"></div>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:14px">
+        <button class="btn btn-primary hidden" id="nextBtn" onclick="nextSegment()">Next Segment →</button>
+        <button class="btn btn-primary hidden" id="resultsBtn" onclick="showResults()">See Results</button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Results screen -->
+  <main class="flashcard-complete hidden" id="resultsScreen">
+    <div class="flashcard-complete-icon">🎧</div>
+    <h2>Story Complete!</h2>
+
+    <div class="vocab-complete-card">
+      <div class="vocab-stat-row">
+        <span class="label">Score</span>
+        <span class="value" id="statScore">—</span>
+      </div>
+      <div class="vocab-stat-row">
+        <span class="label">FP Earned</span>
+        <span class="value" style="color:var(--accent)" id="statFP">—</span>
+      </div>
+    </div>
+
+    <div class="vocab-complete-btns">
+      <button class="btn btn-ghost" onclick="listenAgain()">Listen Again</button>
+      <button class="btn btn-primary" onclick="window.location.href='/dashboard.html'">Back to Dashboard</button>
+    </div>
+  </main>
+
+  <script src="/js/api.js?v=14"></script>
+  <script src="/js/listening.js?v=1"></script>
+</body>
+</html>

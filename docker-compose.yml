@@ -24,6 +24,9 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgres://linguaai:${POSTGRES_PASSWORD:-linguaai}@db:5432/linguaai?sslmode=disable
+    volumes:
+      - pool_data:/app/data
 
 volumes:
   postgres_data:
+  pool_data:

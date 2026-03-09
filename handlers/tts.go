@@ -26,14 +26,17 @@ func NewTTSHandler(cfg *config.Config) *TTSHandler {
 }
 
 type ttsRequest struct {
-	Text     string `json:"text"`
-	Language string `json:"language"`
+	Text        string  `json:"text"`
+	Language    string  `json:"language"`
+	Personality string  `json:"personality"` // optional; empty = language-default voice
+	Speed       float64 `json:"speed"`       // optional; 0 = default (treated as 1.0)
 }
 
 type elevenLabsBody struct {
 	Text          string        `json:"text"`
 	ModelID       string        `json:"model_id"`
 	VoiceSettings voiceSettings `json:"voice_settings"`
+	Speed         float64       `json:"speed,omitempty"`
 }
 
 type voiceSettings struct {
@@ -57,7 +60,11 @@ func (h *TTSHandler) Convert(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	voiceID := h.voiceFor(req.Language)
+	voiceID := h.cfg.VoiceForPersonality(req.Personality, req.Language)
+	speed := req.Speed
+	if speed == 0 {
+		speed = 1.0
+	}
 	elBody := elevenLabsBody{
 		Text:    req.Text,
 		ModelID: h.cfg.ElevenLabsModel,
@@ -67,6 +74,7 @@ func (h *TTSHandler) Convert(w http.ResponseWriter, r *http.Request) {
 			Style:           0.0,
 			UseSpeakerBoost: true,
 		},
+		Speed: speed,
 	}
 
 	bodyBytes, err := json.Marshal(elBody)

@@ -10,5 +10,6 @@ RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /app
 COPY --from=builder /linguaai .
 COPY --from=builder /app/static ./static
+RUN mkdir -p /app/data
 EXPOSE 8080
 CMD ["/app/linguaai"]

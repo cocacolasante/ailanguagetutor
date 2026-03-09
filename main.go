@@ -39,7 +39,15 @@ func main() {
 	adminHandler        := handlers.NewAdminHandler(userStore, billingHandler)
 	gamificationHandler := handlers.NewGamificationHandler(userStore, historyStore)
 	agentHandler        := handlers.NewAgentHandler(cfg, sessionStore, profileStore)
-	vocabHandler        := handlers.NewVocabHandler(cfg, userStore, profileStore)
+	vocabPool           := store.NewItemPool("data/vocab_pool.json")
+	vocabPool.Load()
+	sentencePool        := store.NewItemPool("data/sentence_pool.json")
+	sentencePool.Load()
+	listeningPool       := store.NewItemPool("data/listening_pool.json")
+	listeningPool.Load()
+	vocabHandler        := handlers.NewVocabHandler(cfg, userStore, profileStore, vocabPool)
+	sentenceHandler     := handlers.NewSentenceHandler(cfg, userStore, profileStore, sentencePool)
+	listeningHandler    := handlers.NewListeningHandler(cfg, userStore, profileStore, listeningPool, vocabPool, sentencePool)
 
 	auth := middleware.NewAuthMiddleware(cfg)
 
@@ -64,6 +72,8 @@ func main() {
 	r.Get("/checkout-complete.html", serveFile("./static/checkout-complete.html"))
 	r.Get("/reset-password.html",    serveFile("./static/reset-password.html"))
 	r.Get("/vocab.html",             serveFile("./static/vocab.html"))
+	r.Get("/sentences.html",         serveFile("./static/sentences.html"))
+	r.Get("/listening.html",         serveFile("./static/listening.html"))
 
 	// ── Auth (public) ─────────────────────────────────────────────────────────
 	r.Post("/api/auth/register",        authHandler.Register)
@@ -116,6 +126,15 @@ func main() {
 		r.Post("/api/vocab/session",  vocabHandler.Session)
 		r.Post("/api/vocab/check",    vocabHandler.Check)
 		r.Post("/api/vocab/complete", vocabHandler.Complete)
+
+		// Sentence builder
+		r.Post("/api/sentences/session",  sentenceHandler.Session)
+		r.Post("/api/sentences/check",    sentenceHandler.Check)
+		r.Post("/api/sentences/complete", sentenceHandler.Complete)
+
+		// Listening comprehension
+		r.Post("/api/listening/session",  listeningHandler.Session)
+		r.Post("/api/listening/complete", listeningHandler.Complete)
 
 		// Gamification
 		r.Get("/api/user/stats",              gamificationHandler.Stats)

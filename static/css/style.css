@@ -2685,3 +2685,89 @@ input::placeholder { color: var(--text-3); }
   background: rgba(99,102,241,0.25);
   border-color: var(--accent);
 }
+
+/* ── Sentence Builder ─────────────────────────────────────────────────────────── */
+.sentence-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 32px;
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: center;
+}
+.sentence-card-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.sentence-english {
+  font-size: 1.55rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text-1);
+}
+.sentence-input-area {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 560px;
+}
+.sentence-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: 1rem;
+  resize: vertical;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.sentence-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.sentence-input-controls {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.sentence-feedback {
+  width: 100%;
+  max-width: 560px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+}
+.sentence-feedback-status {
+  font-weight: 700;
+  font-size: 1rem;
+}
+.sentence-feedback-status.correct   { color: #10b981; }
+.sentence-feedback-status.incorrect { color: #f87171; }
+.sentence-feedback-status.feedback  { color: #fbbf24; }
+.sentence-feedback-text {
+  font-size: 0.9rem;
+  color: var(--text-2);
+}
+.sentence-corrected {
+  font-size: 0.95rem;
+  color: #10b981;
+  font-style: italic;
+  margin-top: 4px;
+}

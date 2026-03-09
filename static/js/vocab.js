@@ -239,6 +239,7 @@ async function completeSession() {
   try {
     const data = await API.post('/api/vocab/complete', {
       language,
+      level,
       topic,
       topic_name: topicName,
       results,

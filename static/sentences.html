@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sentence Builder — LinguaAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=4" />
+</head>
+<body class="flashcard-page">
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a href="/dashboard.html" class="logo-link">
+        <span class="logo-icon">🌐</span>
+        <span class="logo-text">LinguaAI</span>
+      </a>
+    </div>
+    <div class="navbar-right">
+      <a href="/dashboard.html" class="btn btn-ghost btn-sm">← Dashboard</a>
+    </div>
+  </nav>
+
+  <!-- Loading state -->
+  <div class="vocab-loading" id="loadingState">
+    <div class="spinner"></div>
+    <p>Generating sentences… (~7 sec)</p>
+  </div>
+
+  <!-- Main area (hidden until loaded) -->
+  <main class="flashcard-main hidden" id="sentenceContainer">
+
+    <!-- Header -->
+    <div class="flashcard-header">
+      <h2 id="headerTitle">Sentence Builder</h2>
+      <p id="headerSub">Loading…</p>
+    </div>
+
+    <!-- Progress bar -->
+    <div style="width:100%;max-width:560px">
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <div class="progress-label" id="progressLabel">Sentence 1 of 10</div>
+    </div>
+
+    <!-- English sentence card -->
+    <div class="sentence-card">
+      <div class="sentence-card-label" id="translateLabel">Translate into Italian</div>
+      <div class="sentence-english" id="sentenceEnglish">—</div>
+    </div>
+
+    <!-- Input area -->
+    <div class="sentence-input-area">
+      <textarea
+        class="sentence-textarea"
+        id="answerInput"
+        placeholder="Type your translation here…"
+        rows="3"
+        onkeydown="handleTextareaKey(event)"
+      ></textarea>
+      <div class="sentence-input-controls">
+        <button class="btn btn-ghost" id="speakBtn" onclick="startListening()">🎤 Speak</button>
+        <button class="btn btn-primary" id="submitBtn" onclick="submitAnswer()">Check Translation</button>
+      </div>
+    </div>
+
+    <!-- Feedback zone -->
+    <div class="sentence-feedback hidden" id="feedbackZone">
+      <div class="sentence-feedback-status" id="feedbackStatus"></div>
+      <div class="sentence-feedback-text" id="feedbackText"></div>
+      <div class="sentence-corrected hidden" id="correctedForm"></div>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+        <button class="btn btn-ghost hidden" id="retryBtn" onclick="retryAnswer()">Try Again</button>
+        <button class="btn btn-primary hidden" id="nextBtn" onclick="nextSentence()">Next →</button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Completion screen -->
+  <main class="flashcard-complete hidden" id="completeScreen">
+    <div class="flashcard-complete-icon">🎉</div>
+    <h2>Session Complete!</h2>
+
+    <div class="vocab-complete-card">
+      <div class="vocab-stat-row">
+        <span class="label">Sentences Practiced</span>
+        <span class="value" id="statTotal">—</span>
+      </div>
+      <div class="vocab-stat-row">
+        <span class="label">Correct Translations</span>
+        <span class="value" id="statCorrect" style="color:#10b981">—</span>
+      </div>
+      <div class="vocab-stat-row">
+        <span class="label">FP Earned</span>
+        <span class="value" style="color:var(--accent)" id="statFP">—</span>
+      </div>
+      <div id="weakSection" class="hidden">
+        <div class="vocab-stat-row" style="margin-top:8px">
+          <span class="label" style="color:#f87171">Grammar to Review</span>
+        </div>
+        <ul class="vocab-weak-list" id="weakList"></ul>
+      </div>
+    </div>
+
+    <div class="vocab-complete-btns">
+      <button class="btn btn-ghost" onclick="practiceAgain()">Practice Again</button>
+      <button class="btn btn-primary" onclick="window.location.href='/dashboard.html'">Back to Dashboard</button>
+    </div>
+  </main>
+
+  <script src="/js/api.js?v=14"></script>
+  <script src="/js/sentences.js?v=1"></script>
+</body>
+</html>

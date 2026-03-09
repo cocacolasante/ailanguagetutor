@@ -111,6 +111,31 @@ CREATE TABLE IF NOT EXISTS student_profiles (
 ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token TEXT DEFAULT '';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_expires_at TIMESTAMPTZ;
 `)
+	if err != nil {
+		return err
+	}
+
+	// Add sentence builder column (idempotent)
+	_, err = pool.Exec(ctx, `
+ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS recent_sentences JSONB DEFAULT '[]';
+`)
+	if err != nil {
+		return err
+	}
+
+	// Add list-cache index columns (idempotent)
+	_, err = pool.Exec(ctx, `
+ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS vocab_list_idx    JSONB DEFAULT '{}';
+ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS sentence_list_idx JSONB DEFAULT '{}';
+`)
+	if err != nil {
+		return err
+	}
+
+	// Add listening comprehension index column (idempotent)
+	_, err = pool.Exec(ctx, `
+ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS listening_list_idx JSONB DEFAULT '{}';
+`)
 	return err
 }
 
