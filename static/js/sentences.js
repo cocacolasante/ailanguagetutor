@@ -15,6 +15,7 @@ let results     = [];    // {sentence_id, grammar_tip, correct}[]
 let isListening = false;
 let recognition = null;
 let hasSpeechAPI = false;
+let currentCorrectSentence = '';
 
 const MAX_ATTEMPTS = 2;
 
@@ -86,6 +87,7 @@ function renderSentence(s) {
   document.getElementById('correctedForm').classList.add('hidden');
   document.getElementById('retryBtn').classList.add('hidden');
   document.getElementById('nextBtn').classList.add('hidden');
+  document.getElementById('playCorrectBtn').classList.add('hidden');
   attempts = 0;
   updateProgress();
   document.getElementById('answerInput').focus();
@@ -126,23 +128,33 @@ async function submitAnswer() {
 
 /* ── Show feedback ───────────────────────────────────────────────────────────── */
 function showFeedback(result, s) {
-  const zone       = document.getElementById('feedbackZone');
-  const statusEl   = document.getElementById('feedbackStatus');
-  const textEl     = document.getElementById('feedbackText');
-  const corrEl     = document.getElementById('correctedForm');
-  const retryBtn   = document.getElementById('retryBtn');
-  const nextBtn    = document.getElementById('nextBtn');
+  const zone          = document.getElementById('feedbackZone');
+  const statusEl      = document.getElementById('feedbackStatus');
+  const textEl        = document.getElementById('feedbackText');
+  const corrEl        = document.getElementById('correctedForm');
+  const retryBtn      = document.getElementById('retryBtn');
+  const nextBtn       = document.getElementById('nextBtn');
+  const playCorrectBtn = document.getElementById('playCorrectBtn');
 
   zone.classList.remove('hidden');
   corrEl.classList.add('hidden');
   retryBtn.classList.add('hidden');
   nextBtn.classList.add('hidden');
+  playCorrectBtn.classList.add('hidden');
+  currentCorrectSentence = '';
 
   if (result.correct) {
     statusEl.textContent = '✓ Correct!';
     statusEl.className   = 'sentence-feedback-status correct';
     textEl.textContent   = result.feedback || '';
     results.push({ sentence_id: s.id, grammar_tip: s.grammar_tip, correct: true });
+    // Play the correct sentence audio then auto-advance
+    const target = result.corrected || s.target || '';
+    if (target) {
+      currentCorrectSentence = target;
+      playCorrectBtn.classList.remove('hidden');
+      playCorrectSentence();
+    }
     nextBtn.classList.remove('hidden');
     setTimeout(() => nextSentence(), 2000);
   } else if (attempts < MAX_ATTEMPTS) {
@@ -155,15 +167,44 @@ function showFeedback(result, s) {
     statusEl.textContent = '✗ Incorrect';
     statusEl.className   = 'sentence-feedback-status incorrect';
     textEl.textContent   = result.feedback || '';
-    if (result.corrected) {
-      corrEl.textContent = '✓ ' + result.corrected;
+    const corrected = result.corrected || s.target || '';
+    if (corrected) {
+      corrEl.textContent = '✓ ' + corrected;
       corrEl.classList.remove('hidden');
-    } else if (s.target) {
-      corrEl.textContent = '✓ ' + s.target;
-      corrEl.classList.remove('hidden');
+      currentCorrectSentence = corrected;
+      playCorrectBtn.classList.remove('hidden');
+      playCorrectSentence();
     }
     results.push({ sentence_id: s.id, grammar_tip: s.grammar_tip, correct: false });
     nextBtn.classList.remove('hidden');
+  }
+}
+
+/* ── TTS playback ────────────────────────────────────────────────────────────── */
+async function playCorrectSentence() {
+  if (!currentCorrectSentence) return;
+  const btn = document.getElementById('playCorrectBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+  try {
+    const res = await API.binary('/api/tts', { text: currentCorrectSentence, language });
+    if (!res.ok) throw new Error('TTS failed');
+    const blob  = await res.blob();
+    const url   = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.onended = () => {
+      URL.revokeObjectURL(url);
+      if (btn) { btn.disabled = false; btn.textContent = '🔊 Hear it'; }
+    };
+    audio.onerror = () => {
+      URL.revokeObjectURL(url);
+      if (btn) { btn.disabled = false; btn.textContent = '🔊 Hear it'; }
+    };
+    await audio.play().catch(() => {
+      URL.revokeObjectURL(url);
+      if (btn) { btn.disabled = false; btn.textContent = '🔊 Hear it'; }
+    });
+  } catch {
+    if (btn) { btn.disabled = false; btn.textContent = '🔊 Hear it'; }
   }
 }
 

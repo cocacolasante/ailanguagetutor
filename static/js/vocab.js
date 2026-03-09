@@ -15,7 +15,6 @@ let results    = [];     // {word, correct, attempts}[]
 let isFlipped  = false;
 let isListening = false;
 let recognition = null;
-let audioCtx    = null;
 let hasSpeechAPI = false;
 
 /* ── Language BCP-47 map ─────────────────────────────────────────────────────── */
@@ -113,11 +112,6 @@ function updateProgress() {
 }
 
 /* ── TTS playback ───────────────────────────────────────────────────────────── */
-function getAudioCtx() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  return audioCtx;
-}
-
 async function playWord() {
   const word = words[currentIdx];
   if (!word) return;
@@ -126,16 +120,22 @@ async function playWord() {
   try {
     const res = await API.binary('/api/tts', { text: word.word, language });
     if (!res.ok) throw new Error('TTS failed');
-    const ctx = getAudioCtx();
-    if (ctx.state === 'suspended') await ctx.resume();
-    const audioBuffer = await ctx.decodeAudioData(await res.arrayBuffer());
-    const src = ctx.createBufferSource();
-    src.buffer = audioBuffer;
-    src.connect(ctx.destination);
-    src.start(0);
-    src.onended = () => {
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.onended = () => {
+      URL.revokeObjectURL(url);
       if (btn) { btn.disabled = false; btn.textContent = '🔊 Play'; }
     };
+    audio.onerror = () => {
+      URL.revokeObjectURL(url);
+      if (btn) { btn.disabled = false; btn.textContent = '🔊 Play'; }
+    };
+    // play() rejects (not hangs) when autoplay is blocked — button resets so user can tap
+    await audio.play().catch(() => {
+      URL.revokeObjectURL(url);
+      if (btn) { btn.disabled = false; btn.textContent = '🔊 Play'; }
+    });
   } catch {
     if (btn) { btn.disabled = false; btn.textContent = '🔊 Play'; }
   }

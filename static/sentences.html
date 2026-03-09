@@ -74,6 +74,7 @@
       <div class="sentence-feedback-text" id="feedbackText"></div>
       <div class="sentence-corrected hidden" id="correctedForm"></div>
       <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+        <button class="btn btn-ghost hidden" id="playCorrectBtn" onclick="playCorrectSentence()">🔊 Hear it</button>
         <button class="btn btn-ghost hidden" id="retryBtn" onclick="retryAnswer()">Try Again</button>
         <button class="btn btn-primary hidden" id="nextBtn" onclick="nextSentence()">Next →</button>
       </div>
@@ -114,6 +115,6 @@
   </main>
 
   <script src="/js/api.js?v=14"></script>
-  <script src="/js/sentences.js?v=1"></script>
+  <script src="/js/sentences.js?v=2"></script>
 </body>
 </html>
