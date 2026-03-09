@@ -17,6 +17,67 @@ let allMisspellings  = []; // accumulated across session, sent with complete
 let lastUserBubble   = null;
 let lastUserText     = '';
 
+/* ── Audio (Web Audio API — same approach as vocab.js) ───────────────────────── */
+let audioCtx      = null;
+let currentSource = null;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function stopCurrentAudio() {
+  if (currentSource) {
+    try { currentSource.stop(); } catch (_) {}
+    currentSource = null;
+  }
+}
+
+async function playText(text, btnEl) {
+  if (!text) return;
+  stopCurrentAudio();
+
+  const origLabel = btnEl.textContent;
+  btnEl.disabled = true;
+  btnEl.textContent = '⏳';
+
+  try {
+    const ctx = getAudioCtx();
+    if (ctx.state === 'suspended') await ctx.resume();
+
+    const res = await API.binary('/api/tts', { text, language });
+    if (!res.ok) throw new Error('TTS failed');
+
+    const arrayBuf    = await res.arrayBuffer();
+    const audioBuffer = await ctx.decodeAudioData(arrayBuf);
+
+    stopCurrentAudio();
+    const source = ctx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(ctx.destination);
+    currentSource = source;
+
+    btnEl.textContent = '⏹';
+    btnEl.disabled = false;
+    btnEl.onclick = () => { stopCurrentAudio(); resetPlayBtn(btnEl, origLabel); };
+
+    source.onended = () => {
+      if (currentSource === source) currentSource = null;
+      resetPlayBtn(btnEl, origLabel);
+    };
+    source.start(0);
+  } catch (err) {
+    console.error('[writing] TTS error:', err);
+    resetPlayBtn(btnEl, origLabel);
+  }
+}
+
+function resetPlayBtn(btnEl, label) {
+  btnEl.textContent = label;
+  btnEl.disabled    = false;
+  btnEl.onclick     = null; // will be re-bound by appendMessage
+}
+
 /* ── Init ───────────────────────────────────────────────────────────────────── */
 async function init() {
   document.getElementById('headerSub').textContent =
@@ -83,6 +144,7 @@ function appendMessage(role, content, misspellingAnnotations = []) {
     <div class="msg-avatar">${avatar}</div>
     <div class="msg-body">
       <div class="msg-bubble">${bubbleHtml}</div>
+      ${role === 'assistant' ? '<div class="msg-actions"></div>' : ''}
       <div class="msg-time">${timeStr}</div>
     </div>`;
 
@@ -93,6 +155,49 @@ function appendMessage(role, content, misspellingAnnotations = []) {
   if (role === 'user') {
     lastUserBubble = bubble.querySelector('.msg-bubble');
     lastUserText   = content;
+  }
+
+  // Wire up action buttons for AI messages
+  if (role === 'assistant') {
+    const actionsEl = bubble.querySelector('.msg-actions');
+
+    // Play button
+    const playBtn = document.createElement('button');
+    playBtn.className   = 'msg-action-btn';
+    playBtn.textContent = '🔊 Play';
+    playBtn.onclick = () => playText(content, playBtn);
+    actionsEl.appendChild(playBtn);
+
+    // Translate button
+    const transBtn = document.createElement('button');
+    transBtn.className   = 'msg-action-btn';
+    transBtn.textContent = '🌐 Translate';
+    transBtn.onclick = async () => {
+      transBtn.disabled    = true;
+      transBtn.textContent = '…';
+      try {
+        const data = await API.post('/api/conversation/translate', { text: content, language });
+        // Show translation inline below the bubble
+        const existing = bubble.querySelector('.msg-translation');
+        if (existing) {
+          existing.remove();
+          transBtn.textContent = '🌐 Translate';
+          transBtn.disabled    = false;
+          return;
+        }
+        const transEl = document.createElement('div');
+        transEl.className   = 'msg-translation';
+        transEl.textContent = data.translation || data.text || '';
+        bubble.querySelector('.msg-body').insertBefore(transEl, actionsEl);
+        transBtn.textContent = '🌐 Hide';
+        transBtn.disabled    = false;
+        scrollToBottom();
+      } catch {
+        transBtn.textContent = '🌐 Translate';
+        transBtn.disabled    = false;
+      }
+    };
+    actionsEl.appendChild(transBtn);
   }
 
   return bubble;

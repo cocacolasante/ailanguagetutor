@@ -239,6 +239,44 @@
       color: var(--text-2);
     }
 
+    /* AI message action buttons */
+    .msg-actions {
+      display: flex;
+      gap: 6px;
+      padding: 2px 4px;
+    }
+
+    .msg-action-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-2);
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+
+    .msg-action-btn:hover {
+      background: var(--surface-2);
+      color: var(--text-primary);
+    }
+
+    .msg-action-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .msg-translation {
+      font-size: 0.82rem;
+      color: var(--text-2);
+      font-style: italic;
+      padding: 4px 14px 6px;
+      border-left: 2px solid var(--border);
+      margin-top: 2px;
+    }
+
     @media (max-width: 600px) {
       .writing-main {
         padding: 0 12px 12px;
@@ -313,6 +351,6 @@
   </main>
 
   <script src="/js/api.js?v=14"></script>
-  <script src="/js/writing.js?v=1"></script>
+  <script src="/js/writing.js?v=2"></script>
 </body>
 </html>

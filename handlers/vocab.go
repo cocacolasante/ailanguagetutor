@@ -80,6 +80,12 @@ type vocabCompleteResponse struct {
 	RecordID     string   `json:"record_id"`
 }
 
+type vocabWordResultRequest struct {
+	Word     string `json:"word"`
+	Language string `json:"language"`
+	Correct  bool   `json:"correct"`
+}
+
 // ── Session ───────────────────────────────────────────────────────────────────
 
 // levelSpec describes vocabulary complexity expectations per level.
@@ -457,6 +463,57 @@ func (h *VocabHandler) Complete(w http.ResponseWriter, r *http.Request) {
 		LearnedCount: len(learnedWords),
 		RecordID:     recordID,
 	})
+}
+
+// ── Word Result ───────────────────────────────────────────────────────────────
+
+func (h *VocabHandler) WordResult(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(middleware.UserIDKey).(string)
+
+	var req vocabWordResultRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request"})
+		return
+	}
+	if req.Word == "" || !IsValidLanguage(req.Language) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid word or language"})
+		return
+	}
+
+	ctx := context.Background()
+	profile, err := h.profileStore.Get(ctx, userID, req.Language)
+	if err != nil || profile == nil {
+		profile = &store.StudentProfile{
+			UserID:   userID,
+			Language: req.Language,
+		}
+	}
+
+	if req.Correct {
+		profile.RecentVocab = prependUnique([]string{req.Word}, profile.RecentVocab, 30)
+		// Remove from weak lists if the user now knows it
+		profile.WeakVocab = removeFromSlice(req.Word, profile.WeakVocab)
+	} else {
+		profile.WeakVocab  = prependUnique([]string{req.Word}, profile.WeakVocab, 30)
+		profile.WeakAreas  = prependUnique([]string{req.Word}, profile.WeakAreas, 20)
+	}
+
+	if err := h.profileStore.Upsert(ctx, profile); err != nil {
+		log.Printf("vocab/word-result Upsert error: %v", err)
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+// removeFromSlice returns a new slice with the target string removed.
+func removeFromSlice(target string, s []string) []string {
+	out := s[:0:0]
+	for _, v := range s {
+		if v != target {
+			out = append(out, v)
+		}
+	}
+	return out
 }
 
 // ── AI helper ─────────────────────────────────────────────────────────────────

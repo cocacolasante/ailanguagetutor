@@ -128,9 +128,10 @@ func main() {
 		r.Post("/api/tts", ttsHandler.Convert)
 
 		// Vocab builder
-		r.Post("/api/vocab/session",  vocabHandler.Session)
-		r.Post("/api/vocab/check",    vocabHandler.Check)
-		r.Post("/api/vocab/complete", vocabHandler.Complete)
+		r.Post("/api/vocab/session",     vocabHandler.Session)
+		r.Post("/api/vocab/check",       vocabHandler.Check)
+		r.Post("/api/vocab/complete",    vocabHandler.Complete)
+		r.Post("/api/vocab/word-result", vocabHandler.WordResult)
 
 		// Sentence builder
 		r.Post("/api/sentences/session",  sentenceHandler.Session)

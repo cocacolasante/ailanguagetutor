@@ -328,6 +328,11 @@ function stopListening() {
   try { recognition.stop(); } catch {}
 }
 
+/* ── Mid-lesson persistence ──────────────────────────────────────────────────── */
+function saveWordResult(word, correct) {
+  API.post('/api/vocab/word-result', { word, language, correct }).catch(() => {});
+}
+
 /* ── Pronunciation check ────────────────────────────────────────────────────── */
 async function checkPronunciation(spoken) {
   const word = words[currentIdx];
@@ -339,17 +344,20 @@ async function checkPronunciation(spoken) {
     if (result.correct) {
       setStatus('Correct! Great pronunciation.', 'correct');
       results.push({ word: word.word, correct: true, attempts });
+      saveWordResult(word.word, true);
       setTimeout(() => nextWord(), 1500);
     } else if (attempts < 3) {
       setStatus(result.feedback ? `Try again: ${result.feedback}` : 'Not quite — try again!', 'feedback');
     } else {
       setStatus('Keep practicing! Moving on.', 'incorrect');
       results.push({ word: word.word, correct: false, attempts });
+      saveWordResult(word.word, false);
       setTimeout(() => nextWord(), 2000);
     }
   } catch {
     if (attempts >= 3) {
       results.push({ word: word.word, correct: false, attempts });
+      saveWordResult(word.word, false);
       setTimeout(() => nextWord(), 1500);
     } else {
       setStatus('Could not check — try again.', 'feedback');
@@ -362,6 +370,7 @@ function manualResult(correct) {
   const word = words[currentIdx];
   attempts++;
   results.push({ word: word.word, correct, attempts });
+  saveWordResult(word.word, correct);
   setStatus(correct ? 'Got it! Moving on.' : 'Noted as a word to review.', correct ? 'correct' : 'incorrect');
   setTimeout(() => nextWord(), 1200);
 }
