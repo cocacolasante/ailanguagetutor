@@ -12,11 +12,12 @@ let words      = [];     // VocabWord[]
 let currentIdx = 0;
 let attempts   = 0;      // 1-3 for current word
 let results    = [];     // {word, correct, attempts}[]
-let isFlipped    = false;
-let isListening  = false;
-let isPlayingAudio = false;
-let recognition  = null;
-let hasSpeechAPI = false;
+let isFlipped      = false;
+let isListening    = false;
+let isPlayingAudio = false;  // true while audio is playing OR during post-play session release delay
+let ttsInFlight    = false;  // guard against concurrent playWord() calls
+let recognition    = null;
+let hasSpeechAPI   = false;
 
 /* ── Language BCP-47 map ─────────────────────────────────────────────────────── */
 const LANG_BCP47 = { it: 'it-IT', es: 'es-ES', pt: 'pt-BR' };
@@ -58,8 +59,15 @@ async function loadSession() {
 
     renderCard(words[0]);
     updateProgress();
-    // Auto-play first word after a short delay so AudioContext can init
-    setTimeout(() => playWord(), 600);
+    // Only auto-play if AudioContext is already running (desktop).
+    // Mobile browsers always start suspended until a user gesture — skip the
+    // wasted TTS fetch and let the user tap Play themselves.
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const canAutoPlay = ctx.state === 'running';
+      ctx.close();
+      if (canAutoPlay) setTimeout(() => playWord(), 600);
+    } catch { /* no AudioContext — just skip auto-play */ }
   } catch (err) {
     showError('Failed to load vocabulary. ' + (err.message || ''));
   }
@@ -99,53 +107,65 @@ function updateProgress() {
 }
 
 /* ── TTS playback ───────────────────────────────────────────────────────────── */
-function setAudioPlaying(playing) {
-  isPlayingAudio = playing;
+
+// Call with true when audio starts, false when it ends.
+// On mobile (iOS/Android) the audio session stays in "playback" mode for ~600ms
+// after onended fires — recognition.start() during that window fails silently.
+// We keep isPlayingAudio=true for that window so startListening() waits.
+function releaseAudioSession() {
+  setTimeout(() => {
+    isPlayingAudio = false;
+    ttsInFlight    = false;
+    const listenBtn = document.getElementById('listenBtn');
+    if (listenBtn) listenBtn.disabled = false;
+  }, 700);
+}
+
+function releaseAudioSessionImmediate() {
+  isPlayingAudio = false;
+  ttsInFlight    = false;
   const listenBtn = document.getElementById('listenBtn');
-  if (playing) {
-    if (listenBtn) listenBtn.disabled = true;
-  } else {
-    // iOS Safari needs a moment to release the audio session before the mic can start.
-    // Delay re-enabling the button so recognition.start() doesn't fail silently.
-    setTimeout(() => {
-      isPlayingAudio = false;
-      if (listenBtn) listenBtn.disabled = false;
-    }, 400);
-  }
+  if (listenBtn) listenBtn.disabled = false;
 }
 
 async function playWord() {
+  if (ttsInFlight) return;           // prevent concurrent calls
   const word = words[currentIdx];
   if (!word) return;
-  const btn = document.getElementById('playBtn');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
-  setAudioPlaying(true);
+
+  ttsInFlight    = true;
+  isPlayingAudio = true;             // block mic immediately
+  const btn      = document.getElementById('playBtn');
+  const listenBtn = document.getElementById('listenBtn');
+  if (btn)       { btn.disabled = true; btn.textContent = '⏳'; }
+  if (listenBtn) listenBtn.disabled = true;
+
   try {
     const res = await API.binary('/api/tts', { text: word.word, language });
     if (!res.ok) throw new Error('TTS failed');
     const blob = await res.blob();
     const url  = URL.createObjectURL(blob);
     const audio = new Audio(url);
-    const playbackDone = () => {
+
+    const onPlaybackDone = () => {
       URL.revokeObjectURL(url);
       if (btn) { btn.disabled = false; btn.textContent = '🔊 Play'; }
-      setAudioPlaying(false); // uses 400ms delay for iOS audio session release
+      releaseAudioSession();         // keep isPlayingAudio=true for 700ms
     };
-    const playBlocked = () => {
+    const onPlayBlocked = () => {
+      // play() was rejected (autoplay policy) — no audio session was acquired
       URL.revokeObjectURL(url);
       if (btn) { btn.disabled = false; btn.textContent = '🔊 Play'; }
-      // Autoplay blocked — no audio actually played, release immediately
-      isPlayingAudio = false;
-      const listenBtn = document.getElementById('listenBtn');
-      if (listenBtn) listenBtn.disabled = false;
+      releaseAudioSessionImmediate();
     };
-    audio.onended = playbackDone;
-    audio.onerror = playbackDone;
-    // play() rejects when autoplay is blocked — button resets so user can tap
-    await audio.play().catch(playBlocked);
+
+    audio.onended = onPlaybackDone;
+    audio.onerror = onPlaybackDone;
+    await audio.play().catch(onPlayBlocked);
   } catch {
+    // fetch/blob error — no audio played
     if (btn) { btn.disabled = false; btn.textContent = '🔊 Play'; }
-    setAudioPlaying(false); // fetch failed — no audio played, no session to release
+    releaseAudioSessionImmediate();
   }
 }
 
@@ -254,7 +274,14 @@ function nextWord() {
   if (currentIdx < words.length) {
     renderCard(words[currentIdx]);
     updateProgress();
-    setTimeout(() => playWord(), 400);
+    // Only auto-play if AudioContext is running (i.e. desktop / already unlocked).
+    // On mobile the context is still suspended after the previous user gesture — skip.
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const canAutoPlay = ctx.state === 'running';
+      ctx.close();
+      if (canAutoPlay) setTimeout(() => playWord(), 400);
+    } catch { /* skip auto-play */ }
   } else {
     completeSession();
   }
