@@ -290,6 +290,116 @@ async function savePreferences() {
   }
 }
 
+/* ── Language Progress ───────────────────────────────────────────────────────── */
+
+const CEFR_LEVELS = [
+  { level: 1, cefr: 'A1', name: 'Beginner',           fp: 0,     color: '#6366f1' },
+  { level: 2, cefr: 'A2', name: 'Elementary',         fp: 750,   color: '#8b5cf6' },
+  { level: 3, cefr: 'B1', name: 'Intermediate',       fp: 2500,  color: '#06b6d4' },
+  { level: 4, cefr: 'B2', name: 'Upper Intermediate', fp: 6000,  color: '#10b981' },
+  { level: 5, cefr: 'C1', name: 'Advanced',           fp: 13000, color: '#f59e0b' },
+  { level: 6, cefr: 'C2', name: 'Mastery',            fp: 25000, color: '#ef4444' },
+];
+
+const CEFR_DESCRIPTIONS = {
+  1: 'Can introduce yourself and use basic everyday phrases.',
+  2: 'Can handle simple routine tasks and describe your daily life.',
+  3: 'Can deal with most travel situations and discuss familiar topics.',
+  4: 'Can interact fluently with native speakers on complex topics.',
+  5: 'Can express ideas fluently for professional and academic use.',
+  6: 'Can understand virtually anything and communicate with native-level precision.',
+};
+
+const LANG_FLAGS = { it: '🇮🇹', es: '🇪🇸', pt: '🇧🇷' };
+const LANG_NAMES = { it: 'Italian', es: 'Spanish', pt: 'Portuguese' };
+
+function fpToLevel(fp) {
+  if (fp >= 25000) return 6;
+  if (fp >= 13000) return 5;
+  if (fp >=  6000) return 4;
+  if (fp >=  2500) return 3;
+  if (fp >=   750) return 2;
+  return 1;
+}
+
+function getLevelProgress(fp) {
+  const lvl = fpToLevel(fp);
+  if (lvl >= 6) return { level: 6, pct: 100, current: fp, needed: 0, nextFP: 25000 };
+  const cur = CEFR_LEVELS[lvl - 1].fp;
+  const nxt = CEFR_LEVELS[lvl].fp;
+  const pct = Math.round(((fp - cur) / (nxt - cur)) * 100);
+  return { level: lvl, pct, current: fp - cur, needed: nxt - fp, nextFP: nxt };
+}
+
+function renderProgressCard(lang, fp) {
+  const { level, pct, current, needed } = getLevelProgress(fp);
+  const info  = CEFR_LEVELS[level - 1];
+  const next  = level < 6 ? CEFR_LEVELS[level] : null;
+  const mastered = level >= 6;
+
+  const nextLabel = mastered
+    ? '<span style="color:var(--text-3);font-size:0.8rem;">Maximum level reached</span>'
+    : `<span style="color:var(--text-3);font-size:0.8rem;">${needed.toLocaleString()} FP to ${next.cefr} ${next.name}</span>`;
+
+  return `
+    <div class="lang-progress-card">
+      <div class="lang-progress-header">
+        <span class="lang-progress-flag">${LANG_FLAGS[lang] || '🌐'}</span>
+        <div>
+          <div class="lang-progress-title">${LANG_NAMES[lang] || lang}</div>
+          <div class="lang-progress-sub">${fp.toLocaleString()} total FP</div>
+        </div>
+        <div class="lang-level-badge" style="background:${info.color}22;border-color:${info.color}44;color:${info.color}">
+          <span class="lang-level-cefr">${info.cefr}</span>
+          <span class="lang-level-name">${info.name}</span>
+        </div>
+      </div>
+      <p style="font-size:0.85rem;color:var(--text-3);margin:8px 0 12px;">${CEFR_DESCRIPTIONS[level]}</p>
+      ${mastered ? '' : `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:0.75rem;color:var(--text-3);">Level ${level} → Level ${level + 1}</span>
+        <span style="font-size:0.75rem;font-weight:600;color:var(--text-2);">${pct}%</span>
+      </div>
+      <div class="progress-bar-wrap" style="max-width:100%;height:8px;">
+        <div class="progress-bar-fill" style="width:${pct}%;background:${info.color};"></div>
+      </div>
+      <div style="margin-top:8px;">${nextLabel}</div>
+      `}
+    </div>`;
+}
+
+function renderLevelGuide() {
+  const rows = CEFR_LEVELS.map(l => `
+    <div class="level-guide-row">
+      <div class="level-guide-badge" style="background:${l.color}22;border-color:${l.color}44;color:${l.color};">
+        <strong>${l.cefr}</strong> L${l.level}
+      </div>
+      <div class="level-guide-info">
+        <span class="level-guide-name">${l.name}</span>
+        <span class="level-guide-fp">${l.fp === 0 ? 'Start' : l.fp.toLocaleString() + ' FP'}</span>
+      </div>
+    </div>`).join('');
+  return `<div class="level-guide">${rows}</div>`;
+}
+
+async function loadProgress() {
+  const el = document.getElementById('progressCards');
+  if (!el) return;
+  try {
+    const data = await API.get('/api/user/stats');
+    const langFP = data.language_fp || {};
+    const langs = Object.keys(langFP);
+    if (langs.length === 0) {
+      el.innerHTML = `<p style="color:var(--text-3);font-size:0.9rem;padding:16px 0;">Complete your first conversation to start tracking progress.</p>`;
+    } else {
+      el.innerHTML = langs.map(lang => renderProgressCard(lang, langFP[lang])).join('') + renderLevelGuide();
+    }
+  } catch {
+    el.innerHTML = `<p style="color:var(--text-3);font-size:0.9rem;">Could not load progress.</p>`;
+  }
+}
+
 /* ── Boot ────────────────────────────────────────────────────────────────────── */
 loadStatus();
 initPreferences();
+loadProgress();

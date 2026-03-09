@@ -157,6 +157,31 @@ var AllBadges = []BadgeInfo{
 	{ID: "lang_level_20", Name: "Master", Icon: "👑", Desc: "Reach language level 20"},
 }
 
+// fpToLevel converts accumulated FP for a language into a CEFR-based level (1–6).
+// Thresholds are tuned so a motivated daily learner reaches C2 in ~1.5–2 years.
+//   L1 A1 Beginner:          0 FP
+//   L2 A2 Elementary:      750 FP  (~3 weeks)
+//   L3 B1 Intermediate:  2,500 FP  (~2 months)
+//   L4 B2 Upper-Inter:   6,000 FP  (~4 months)
+//   L5 C1 Advanced:     13,000 FP  (~8 months)
+//   L6 C2 Mastery:      25,000 FP  (~18 months)
+func fpToLevel(fp int) int {
+	switch {
+	case fp >= 25000:
+		return 6
+	case fp >= 13000:
+		return 5
+	case fp >= 6000:
+		return 4
+	case fp >= 2500:
+		return 3
+	case fp >= 750:
+		return 2
+	default:
+		return 1
+	}
+}
+
 // checkAchievements evaluates which new badges a user has earned and appends
 // them to u.Achievements. Returns the list of newly earned badge IDs.
 func checkAchievements(u *User) []string {
@@ -495,8 +520,8 @@ func (us *UserStore) UpdateActivity(id, language string, fp int) (newStreak int,
 	}
 	u.TotalFP += fp
 	u.LanguageFP[language] += fp
-	// Language level: every 500 FP = 1 level, max 20
-	u.LanguageLevel[language] = min(20, u.LanguageFP[language]/500+1)
+	// Language level: 6-tier CEFR system
+	u.LanguageLevel[language] = fpToLevel(u.LanguageFP[language])
 
 	// Increment conversation count
 	u.ConversationCount++

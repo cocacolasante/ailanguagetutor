@@ -1174,6 +1174,69 @@ input::placeholder { color: var(--text-3); }
   padding: 8px 0;
 }
 
+/* ── Language progress cards ─────────────────────────────────────────────────── */
+.lang-progress-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 12px;
+}
+.lang-progress-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+.lang-progress-flag { font-size: 1.8rem; line-height: 1; }
+.lang-progress-title { font-size: 1rem; font-weight: 600; color: var(--text-1); }
+.lang-progress-sub   { font-size: 0.78rem; color: var(--text-3); margin-top: 2px; }
+.lang-level-badge {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid;
+  min-width: 72px;
+}
+.lang-level-cefr { font-size: 1rem; font-weight: 700; line-height: 1.2; }
+.lang-level-name { font-size: 0.65rem; font-weight: 500; opacity: 0.85; }
+
+/* Level guide (shown below cards) */
+.level-guide {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  margin-top: 4px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+.level-guide-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.level-guide-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.level-guide-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.level-guide-name { font-size: 0.78rem; font-weight: 500; color: var(--text-2); }
+.level-guide-fp   { font-size: 0.7rem; color: var(--text-3); }
+
 .profile-row {
   display: flex;
   align-items: center;
