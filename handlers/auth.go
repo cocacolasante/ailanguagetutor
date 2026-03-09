@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/ailanguagetutor/config"
@@ -15,13 +16,14 @@ import (
 )
 
 type AuthHandler struct {
-	cfg     *config.Config
-	store   *store.UserStore
-	billing *BillingHandler
+	cfg       *config.Config
+	store     *store.UserStore
+	billing   *BillingHandler
+	blocklist *store.TokenBlocklist
 }
 
-func NewAuthHandler(cfg *config.Config, s *store.UserStore, b *BillingHandler) *AuthHandler {
-	return &AuthHandler{cfg: cfg, store: s, billing: b}
+func NewAuthHandler(cfg *config.Config, s *store.UserStore, b *BillingHandler, bl *store.TokenBlocklist) *AuthHandler {
+	return &AuthHandler{cfg: cfg, store: s, billing: b, blocklist: bl}
 }
 
 type registerRequest struct {
@@ -214,7 +216,34 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	tokenStr := extractRawToken(r)
+	if tokenStr != "" {
+		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, jwt.ErrSignatureInvalid
+			}
+			return []byte(h.cfg.JWTSecret), nil
+		})
+		if err == nil && token.Valid {
+			if claims, ok := token.Claims.(jwt.MapClaims); ok {
+				if expUnix, ok := claims["exp"].(float64); ok {
+					exp := time.Unix(int64(expUnix), 0)
+					_ = h.blocklist.Add(r.Context(), tokenStr, exp)
+				}
+			}
+		}
+	}
 	writeJSON(w, http.StatusOK, map[string]string{"message": "logged out"})
+}
+
+func extractRawToken(r *http.Request) string {
+	if auth := r.Header.Get("Authorization"); strings.HasPrefix(auth, "Bearer ") {
+		return strings.TrimPrefix(auth, "Bearer ")
+	}
+	if c, err := r.Cookie("token"); err == nil {
+		return c.Value
+	}
+	return ""
 }
 
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {

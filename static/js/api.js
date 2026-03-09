@@ -84,7 +84,12 @@ function requireAuth() {
   }
 }
 
-function logout() {
+async function logout() {
+  try {
+    await API.post('/api/auth/logout');
+  } catch (_) {
+    // ignore errors — still clear local state
+  }
   localStorage.removeItem('token');
   localStorage.removeItem('user');
   window.location.href = '/';

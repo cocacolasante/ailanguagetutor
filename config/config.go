@@ -3,6 +3,8 @@ package config
 import (
 	"log"
 	"os"
+	"strconv"
+	"time"
 )
 
 type Config struct {
@@ -47,6 +49,12 @@ type Config struct {
 	SMTPUsername string
 	SMTPPassword string
 	EmailFrom    string
+
+	// Redis
+	RedisAddr     string
+	RedisPassword string
+	RedisDB       int
+	SessionTTL    time.Duration
 }
 
 func Load() *Config {
@@ -92,6 +100,11 @@ func Load() *Config {
 		SMTPUsername: getEnv("SMTP_USERNAME", ""),
 		SMTPPassword: getEnv("SMTP_PASSWORD", ""),
 		EmailFrom:    getEnv("EMAIL_FROM", ""),
+
+		RedisAddr:     getEnv("REDIS_ADDR", "redis:6379"),
+		RedisPassword: getEnv("REDIS_PASSWORD", ""),
+		RedisDB:       getEnvInt("REDIS_DB", 0),
+		SessionTTL:    getEnvDuration("SESSION_TTL", 4*time.Hour),
 	}
 }
 
@@ -152,4 +165,28 @@ func getEnvRequired(key string) string {
 		log.Fatalf("Required environment variable %s is not set", key)
 	}
 	return v
+}
+
+func getEnvInt(key string, fallback int) int {
+	v := os.Getenv(key)
+	if v == "" {
+		return fallback
+	}
+	i, err := strconv.Atoi(v)
+	if err != nil {
+		return fallback
+	}
+	return i
+}
+
+func getEnvDuration(key string, fallback time.Duration) time.Duration {
+	v := os.Getenv(key)
+	if v == "" {
+		return fallback
+	}
+	d, err := time.ParseDuration(v)
+	if err != nil {
+		return fallback
+	}
+	return d
 }

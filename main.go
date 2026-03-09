@@ -13,6 +13,7 @@ import (
 	"github.com/ailanguagetutor/store"
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -26,14 +27,25 @@ func main() {
 	defer pool.Close()
 	database.MigrateFromJSON(ctx, pool)
 
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     cfg.RedisAddr,
+		Password: cfg.RedisPassword,
+		DB:       cfg.RedisDB,
+	})
+	if err := rdb.Ping(context.Background()).Err(); err != nil {
+		log.Fatalf("redis: %v", err)
+	}
+	defer rdb.Close()
+
 	userStore    := store.NewUserStore(pool)
-	sessionStore := store.NewSessionStore()
+	sessionStore := store.NewSessionStore(rdb, cfg.SessionTTL)
+	blocklist    := store.NewTokenBlocklist(rdb)
 	contextStore := store.NewContextStore(pool)
 	historyStore := store.NewConversationHistoryStore(pool)
 	profileStore := store.NewStudentProfileStore(pool)
 
 	billingHandler      := handlers.NewBillingHandler(cfg, userStore)
-	authHandler         := handlers.NewAuthHandler(cfg, userStore, billingHandler)
+	authHandler         := handlers.NewAuthHandler(cfg, userStore, billingHandler, blocklist)
 	convHandler         := handlers.NewConversationHandler(cfg, sessionStore, contextStore, userStore, historyStore, profileStore)
 	ttsHandler          := handlers.NewTTSHandler(cfg)
 	adminHandler        := handlers.NewAdminHandler(cfg, userStore, billingHandler, historyStore)
@@ -52,7 +64,7 @@ func main() {
 	listeningHandler    := handlers.NewListeningHandler(cfg, userStore, profileStore, historyStore, listeningPool, vocabPool, sentencePool)
 	writingHandler      := handlers.NewWritingHandler(cfg, userStore, profileStore, historyStore, sessionStore, writingPool)
 
-	auth := middleware.NewAuthMiddleware(cfg)
+	auth := middleware.NewAuthMiddleware(cfg, blocklist)
 
 	r := chi.NewRouter()
 	r.Use(chimw.Recoverer)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -635,76 +634,6 @@ func scanUser(row pgx.Row) (*User, error) {
 		_ = scanJSONB(achievements, &u.Achievements)
 	}
 	return &u, nil
-}
-
-// ── Session Store (in-memory, unchanged) ──────────────────────────────────────
-
-type SessionStore struct {
-	mu       sync.RWMutex
-	sessions map[string]*Session
-}
-
-func NewSessionStore() *SessionStore {
-	return &SessionStore{sessions: make(map[string]*Session)}
-}
-
-func (ss *SessionStore) Create(userID, language, topic string, level int, personality, systemPrompt string) *Session {
-	ss.mu.Lock()
-	defer ss.mu.Unlock()
-	s := &Session{
-		ID:          uuid.New().String(),
-		UserID:      userID,
-		Language:    language,
-		Topic:       topic,
-		Level:       level,
-		Personality: personality,
-		Messages:    []Message{{Role: "system", Content: systemPrompt}},
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-	}
-	ss.sessions[s.ID] = s
-	return s
-}
-
-func (ss *SessionStore) Get(id string) (*Session, error) {
-	ss.mu.RLock()
-	defer ss.mu.RUnlock()
-
-	s, exists := ss.sessions[id]
-	if !exists {
-		return nil, ErrSessionNotFound
-	}
-	return s, nil
-}
-
-func (ss *SessionStore) AddMessage(id string, msg Message) error {
-	ss.mu.Lock()
-	defer ss.mu.Unlock()
-
-	s, exists := ss.sessions[id]
-	if !exists {
-		return ErrSessionNotFound
-	}
-	s.Messages = append(s.Messages, msg)
-	s.UpdatedAt = time.Now()
-	return nil
-}
-
-func (ss *SessionStore) GetMessages(id string) ([]Message, error) {
-	ss.mu.RLock()
-	defer ss.mu.RUnlock()
-
-	s, exists := ss.sessions[id]
-	if !exists {
-		return nil, ErrSessionNotFound
-	}
-	var msgs []Message
-	for _, m := range s.Messages {
-		if m.Role != "system" {
-			msgs = append(msgs, m)
-		}
-	}
-	return msgs, nil
 }
 
 // ── Context Store ─────────────────────────────────────────────────────────────

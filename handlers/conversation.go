@@ -820,7 +820,7 @@ Then immediately give one short quiz exercise: either a fill-in-the-blank ("Comp
 
 After their answer, give a brief warm response — confirm what was right or gently correct — then move on to the next word.
 
-Aim for 8–12 words across the full session. Choose everyday vocabulary that a %s learner will actually use.`, lvl, lang, lang)
+Aim for 8–12 words across the full session. Choose everyday vocabulary that a %s learner will actually use.`, lvl, lang, lang, lang)
 
 	case "grammar-sentences":
 		exercises = fmt.Sprintf(`SENTENCE CONSTRUCTION — %s %s learner.
@@ -1274,5 +1274,5 @@ RESPONSE STYLE:
 - 2–4 sentences per turn. Keep the conversation moving naturally.
 - End each turn with a question, reaction, or natural conversational hook.
 - Match the register of the scene: casual for social/daily, professional for work, lively for debate.%s`,
-		lang, lang, scene, lang, lang, lang, contextNote)
+		lang, lang, scene, lang, lang, lang, lang, contextNote)
 }

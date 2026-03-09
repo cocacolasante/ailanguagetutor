@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/ailanguagetutor/config"
+	"github.com/ailanguagetutor/store"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -19,11 +20,12 @@ type contextKey string
 const UserIDKey contextKey = "userID"
 
 type AuthMiddleware struct {
-	cfg *config.Config
+	cfg       *config.Config
+	blocklist *store.TokenBlocklist
 }
 
-func NewAuthMiddleware(cfg *config.Config) *AuthMiddleware {
-	return &AuthMiddleware{cfg: cfg}
+func NewAuthMiddleware(cfg *config.Config, bl *store.TokenBlocklist) *AuthMiddleware {
+	return &AuthMiddleware{cfg: cfg, blocklist: bl}
 }
 
 func (am *AuthMiddleware) Protect(next http.Handler) http.Handler {
@@ -56,6 +58,12 @@ func (am *AuthMiddleware) Protect(next http.Handler) http.Handler {
 
 		userID, ok := claims["sub"].(string)
 		if !ok || userID == "" {
+			w.Header().Set("Content-Type", "application/json")
+			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+			return
+		}
+
+		if am.blocklist.IsBlocked(r.Context(), tokenStr) {
 			w.Header().Set("Content-Type", "application/json")
 			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 			return

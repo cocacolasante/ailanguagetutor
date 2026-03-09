@@ -644,11 +644,7 @@ async function startBetaUpgrade() {
 }
 
 /* ── Auth logout ────────────────────────────────────────────────────────────── */
-function logout() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-  window.location.replace('/');
-}
+// logout() is defined in api.js — do not redefine here
 
 /* ── Helpers ────────────────────────────────────────────────────────────────── */
 function escapeAttr(str) {
