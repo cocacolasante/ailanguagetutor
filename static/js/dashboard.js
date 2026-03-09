@@ -35,6 +35,24 @@ let selectedTopic = null;
   }
   if (u.subscription_status === 'past_due') document.getElementById('pastdueBanner')?.classList.remove('hidden');
 
+  if (u.subscription_status === 'beta_trial') {
+    const banner = document.getElementById('betaTrialBanner');
+    banner?.classList.remove('hidden');
+    const textEl = document.getElementById('betaTrialBannerText');
+    const upgradeBtn = document.getElementById('betaUpgradeBtn');
+    if (u.trial_ends_at) {
+      const days = Math.max(0, Math.ceil((new Date(u.trial_ends_at) - Date.now()) / 86400000));
+      if (days === 0) {
+        if (textEl) textEl.textContent = '⚠️ Your beta trial has ended';
+        if (upgradeBtn) upgradeBtn.textContent = 'Subscribe to Continue →';
+        if (banner) banner.style.background = 'linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.1))';
+        if (banner) banner.style.borderColor = 'rgba(239,68,68,0.35)';
+      } else {
+        if (textEl) textEl.textContent = `🎁 Beta trial · ${days} day${days !== 1 ? 's' : ''} remaining`;
+      }
+    }
+  }
+
   // Prefs banner
   if (!u.pref_language || !u.pref_level) {
     document.getElementById('prefsBanner')?.classList.remove('hidden');
@@ -607,6 +625,21 @@ async function startConversationWithParams(language, level, personality, topicId
   } catch (err) {
     if (btn) { btn.disabled = false; btn.textContent = 'Start Conversation →'; }
     alert('Could not start conversation: ' + (err.message || 'Unknown error'));
+  }
+}
+
+/* ── Beta trial upgrade ──────────────────────────────────────────────────────── */
+async function startBetaUpgrade() {
+  const btn = document.getElementById('betaUpgradeBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    const data = await API.post('/api/billing/checkout', { plan: 'immediate' });
+    if (data.checkout_url) {
+      window.location.href = data.checkout_url;
+    }
+  } catch (err) {
+    alert('Could not start checkout: ' + (err.message || 'Please try again.'));
+    if (btn) { btn.disabled = false; btn.textContent = 'Activate Full Access →'; }
   }
 }
 

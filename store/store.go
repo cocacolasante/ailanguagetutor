@@ -31,8 +31,9 @@ const (
 	SubActive    = "active"
 	SubPastDue   = "past_due"
 	SubCancelled = "cancelled"
-	SubFree      = "free"      // admin-granted free access
-	SubSuspended = "suspended" // admin-revoked
+	SubFree      = "free"       // admin-granted permanent free access
+	SubSuspended = "suspended"  // admin-revoked
+	SubBetaTrial = "beta_trial" // admin-invited 30-day beta trial
 )
 
 type User struct {
@@ -74,6 +75,9 @@ type User struct {
 
 // HasFullAccess returns true when the user can use all levels.
 func (u *User) HasFullAccess() bool {
+	if u.SubscriptionStatus == SubBetaTrial {
+		return u.TrialEndsAt != nil && time.Now().Before(*u.TrialEndsAt)
+	}
 	return u.SubscriptionStatus == SubActive ||
 		u.SubscriptionStatus == SubFree ||
 		u.SubscriptionStatus == SubPastDue
@@ -85,7 +89,8 @@ func (u *User) HasAnyAccess() bool {
 		u.SubscriptionStatus == SubActive ||
 		u.SubscriptionStatus == SubFree ||
 		u.SubscriptionStatus == SubPastDue ||
-		u.SubscriptionStatus == SubCancelled)
+		u.SubscriptionStatus == SubCancelled ||
+		u.SubscriptionStatus == SubBetaTrial)
 }
 
 // HasConversationAccess returns true when the user can start conversations.
@@ -93,7 +98,7 @@ func (u *User) HasConversationAccess() bool {
 	switch u.SubscriptionStatus {
 	case SubActive, SubFree, SubPastDue, SubTrialing:
 		return true
-	case SubCancelled:
+	case SubBetaTrial, SubCancelled:
 		return u.TrialEndsAt != nil && time.Now().Before(*u.TrialEndsAt)
 	default:
 		return false
@@ -416,7 +421,7 @@ func (us *UserStore) UpdateSubscription(userID, customerID, subscriptionID, stat
 	approved := false
 	emailVerified := false
 	switch status {
-	case SubTrialing, SubActive, SubFree, SubPastDue, SubCancelled:
+	case SubTrialing, SubActive, SubFree, SubPastDue, SubCancelled, SubBetaTrial:
 		approved = true
 		emailVerified = true
 	}
@@ -449,7 +454,7 @@ func (us *UserStore) SetSubscriptionStatus(id, status string, trialEndsAt *time.
 	ctx := context.Background()
 	approved := false
 	switch status {
-	case SubTrialing, SubActive, SubFree, SubPastDue, SubCancelled:
+	case SubTrialing, SubActive, SubFree, SubPastDue, SubCancelled, SubBetaTrial:
 		approved = true
 	}
 	_, err := us.pool.Exec(ctx, `

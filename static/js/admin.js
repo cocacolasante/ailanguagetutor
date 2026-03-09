@@ -34,7 +34,8 @@ function renderStats() {
   const total    = users.length;
   const active   = users.filter(u => u.subscription_status === 'active' || u.subscription_status === 'free').length;
   const trial    = users.filter(u => u.subscription_status === 'trialing').length;
-  const inactive = total - active - trial;
+  const beta     = users.filter(u => u.subscription_status === 'beta_trial').length;
+  const inactive = total - active - trial - beta;
 
   document.getElementById('adminStats').innerHTML = `
     <div class="admin-stat-card">
@@ -47,7 +48,11 @@ function renderStats() {
     </div>
     <div class="admin-stat-card">
       <div class="admin-stat-num" style="color:var(--warning)">${trial}</div>
-      <div class="admin-stat-label">Trial</div>
+      <div class="admin-stat-label">Stripe Trial</div>
+    </div>
+    <div class="admin-stat-card">
+      <div class="admin-stat-num" style="color:#a855f7">${beta}</div>
+      <div class="admin-stat-label">Beta Trial</div>
     </div>
     <div class="admin-stat-card">
       <div class="admin-stat-num" style="color:var(--danger)">${inactive}</div>
@@ -59,18 +64,19 @@ function renderStats() {
 /* ── Subscription badge ──────────────────────────────────────────────────────── */
 function subBadge(status, trialEndsAt) {
   const map = {
-    trialing:  ['badge-yellow',  '⏰ Trial'],
-    active:    ['badge-green',   '✓ Active'],
-    past_due:  ['badge-yellow',  '⚠ Past Due'],
-    cancelled: ['badge-danger',  '✕ Cancelled'],
-    suspended: ['badge-danger',  '🚫 Revoked'],
-    free:      ['badge-purple',  '★ Free'],
-    '':        ['badge-yellow',  'No Plan'],
+    trialing:   ['badge-yellow',  '⏰ Trial'],
+    active:     ['badge-green',   '✓ Active'],
+    past_due:   ['badge-yellow',  '⚠ Past Due'],
+    cancelled:  ['badge-danger',  '✕ Cancelled'],
+    suspended:  ['badge-danger',  '🚫 Revoked'],
+    free:       ['badge-purple',  '★ Free'],
+    beta_trial: ['badge-purple',  '🎁 Beta Trial'],
+    '':         ['badge-yellow',  'No Plan'],
   };
   const [cls, label] = map[status] || ['badge-yellow', status || 'None'];
   let extra = '';
-  if ((status === 'trialing' || status === 'cancelled') && trialEndsAt) {
-    extra = ` · trial ends ${trialEndsAt}`;
+  if ((status === 'trialing' || status === 'cancelled' || status === 'beta_trial') && trialEndsAt) {
+    extra = ` · ends ${trialEndsAt}`;
   }
   return `<span class="badge ${cls}">${label}${extra}</span>`;
 }
@@ -140,9 +146,12 @@ async function setSub(id, newStatus) {
     const u = users.find(u => u.id === id);
     if (u) {
       u.subscription_status = newStatus;
-      u.approved = ['trialing','active','free','past_due','cancelled'].includes(newStatus);
+      u.approved = ['trialing','active','free','past_due','cancelled','beta_trial'].includes(newStatus);
       if (newStatus === 'trialing') {
         const d = new Date(); d.setDate(d.getDate() + 7);
+        u.trial_ends_at = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      } else if (newStatus === 'beta_trial') {
+        const d = new Date(); d.setDate(d.getDate() + 30);
         u.trial_ends_at = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
       } else {
         u.trial_ends_at = null;
@@ -153,6 +162,39 @@ async function setSub(id, newStatus) {
   } catch (err) {
     alert('Error: ' + err.message);
     btns.forEach(b => { b.disabled = false; });
+  }
+}
+
+/* ── Invite beta tester ──────────────────────────────────────────────────────── */
+async function inviteUser() {
+  const email    = document.getElementById('inviteEmail').value.trim();
+  const username = document.getElementById('inviteUsername').value.trim();
+  const btn      = document.getElementById('inviteBtn');
+  const status   = document.getElementById('inviteStatus');
+
+  if (!email || !username) {
+    status.textContent = '⚠ Email and username are required.';
+    status.style.color = 'var(--danger)';
+    return;
+  }
+
+  btn.disabled = true;
+  status.textContent = 'Sending invite…';
+  status.style.color = 'var(--text-2)';
+
+  try {
+    const data = await API.post('/api/admin/invite-user', { email, username });
+    status.textContent = `✓ Invite sent to ${data.email} (trial until ${data.trial_ends_at})`;
+    status.style.color = 'var(--success)';
+    document.getElementById('inviteEmail').value    = '';
+    document.getElementById('inviteUsername').value = '';
+    // Refresh user list
+    await loadUsers();
+  } catch (err) {
+    status.textContent = '✗ ' + (err.message || 'Failed to send invite.');
+    status.style.color = 'var(--danger)';
+  } finally {
+    btn.disabled = false;
   }
 }
 

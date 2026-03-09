@@ -39,6 +39,29 @@
       <!-- Populated by JS -->
     </div>
 
+    <!-- Invite Beta Tester -->
+    <section style="margin-bottom: 32px;">
+      <div class="step-label" style="margin-bottom: 16px;">
+        <div class="step-num">🎁</div>
+        <h2>Invite Beta Tester</h2>
+      </div>
+      <div class="card" style="max-width: 520px;">
+        <p style="margin: 0 0 16px; color: var(--text-2); font-size: 0.9rem; line-height: 1.5;">
+          Create an account with <strong>30 days of free full access</strong>. The user receives an email with a link to set their password — no Stripe required. After 30 days they'll be prompted to subscribe.
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <input id="inviteEmail"    type="email"  placeholder="Email address"  class="input" style="flex: 1; min-width: 180px;" />
+            <input id="inviteUsername" type="text"   placeholder="Username"       class="input" style="flex: 1; min-width: 140px;" />
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <button class="btn btn-primary" onclick="inviteUser()" id="inviteBtn">Send Invite</button>
+            <span id="inviteStatus" style="font-size: 0.85rem; color: var(--text-2);"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Users table -->
     <section>
       <div class="step-label" style="margin-bottom: 16px;">
@@ -56,6 +79,6 @@
   </main>
 
   <script src="/js/api.js?v=14"></script>
-  <script src="/js/admin.js?v=3"></script>
+  <script src="/js/admin.js?v=4"></script>
 </body>
 </html>

@@ -7,18 +7,21 @@ import (
 	"sort"
 	"time"
 
+	"github.com/ailanguagetutor/config"
 	"github.com/ailanguagetutor/middleware"
 	"github.com/ailanguagetutor/store"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 type AdminHandler struct {
+	cfg       *config.Config
 	userStore *store.UserStore
 	billing   *BillingHandler
 }
 
-func NewAdminHandler(us *store.UserStore, bh *BillingHandler) *AdminHandler {
-	return &AdminHandler{userStore: us, billing: bh}
+func NewAdminHandler(cfg *config.Config, us *store.UserStore, bh *BillingHandler) *AdminHandler {
+	return &AdminHandler{cfg: cfg, userStore: us, billing: bh}
 }
 
 // requireAdmin checks the caller is the admin user; returns false and writes 403 if not.
@@ -136,6 +139,7 @@ func (h *AdminHandler) SetSubscription(w http.ResponseWriter, r *http.Request) {
 	allowed := map[string]bool{
 		store.SubFree: true, store.SubTrialing: true,
 		store.SubSuspended: true, store.SubCancelled: true, store.SubActive: true,
+		store.SubBetaTrial: true,
 	}
 	if !allowed[body.Status] {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid status"})
@@ -145,6 +149,9 @@ func (h *AdminHandler) SetSubscription(w http.ResponseWriter, r *http.Request) {
 	var trialEndsAt *time.Time
 	if body.Status == store.SubTrialing {
 		t := time.Now().Add(7 * 24 * time.Hour)
+		trialEndsAt = &t
+	} else if body.Status == store.SubBetaTrial {
+		t := time.Now().Add(30 * 24 * time.Hour)
 		trialEndsAt = &t
 	}
 
@@ -166,4 +173,69 @@ func (h *AdminHandler) SetSubscription(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"status": body.Status})
+}
+
+// POST /api/admin/invite-user
+// Creates an account for a beta tester, bypassing Stripe entirely.
+// Sends an invite email containing a 48-hour password-set link.
+func (h *AdminHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
+	if !h.requireAdmin(w, r) {
+		return
+	}
+
+	var req struct {
+		Email    string `json:"email"`
+		Username string `json:"username"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Email == "" || req.Username == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "email and username are required"})
+		return
+	}
+
+	// Random temp password — user will overwrite it via the invite link.
+	tempPassword := uuid.New().String()
+
+	u, err := h.userStore.Create(req.Email, req.Username, tempPassword, "beta_trial")
+	if err != nil {
+		if err == store.ErrUserExists {
+			writeJSON(w, http.StatusConflict, map[string]string{"error": "email already registered"})
+		} else {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to create account"})
+		}
+		return
+	}
+
+	// Mark email verified — no email-verification flow for admin-invited users.
+	_ = h.userStore.SetEmailVerified(u.ID)
+
+	// Set beta_trial with 30-day window.
+	trialEndsAt := time.Now().Add(30 * 24 * time.Hour)
+	if err := h.userStore.SetSubscriptionStatus(u.ID, store.SubBetaTrial, &trialEndsAt); err != nil {
+		h.userStore.Delete(u.ID)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to configure trial"})
+		return
+	}
+
+	// Generate a 48-hour password-set token so the user can choose their password.
+	resetToken := uuid.New().String()
+	resetExpiry := time.Now().Add(48 * time.Hour)
+	if err := h.userStore.SetPasswordResetToken(req.Email, resetToken, resetExpiry); err != nil {
+		h.userStore.Delete(u.ID)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to create invite token"})
+		return
+	}
+
+	resetURL := h.cfg.AppBaseURL + "/reset-password.html?token=" + resetToken
+	if err := sendBetaInviteEmail(h.cfg, req.Email, req.Username, resetURL, trialEndsAt); err != nil {
+		log.Printf("admin invite: email error for %s: %v", req.Email, err)
+		h.userStore.Delete(u.ID)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to send invite email. Please check SMTP config."})
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, map[string]any{
+		"message":       "Invite sent successfully.",
+		"email":         req.Email,
+		"trial_ends_at": trialEndsAt.Format("Jan 2, 2006"),
+	})
 }
