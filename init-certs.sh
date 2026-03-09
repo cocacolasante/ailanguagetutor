@@ -5,7 +5,6 @@
 #
 # Prerequisites:
 #   - DNS A record for fluentica.app pointing to this server's IP
-#   - DNS A record for www.fluentica.app pointing to this server's IP
 #   - Port 80 open in firewall
 #   - .env file with EMAIL_FROM set (used as Let's Encrypt contact email)
 #
@@ -18,9 +17,8 @@ set -e
 
 EMAIL="${1:-admin@fluentica.app}"
 DOMAIN="fluentica.app"
-WWW_DOMAIN="www.fluentica.app"
 
-echo "==> Requesting certificate for $DOMAIN and $WWW_DOMAIN"
+echo "==> Requesting certificate for $DOMAIN"
 echo "    Contact email: $EMAIL"
 
 # Step 1: Start nginx with the bootstrap (HTTP-only) config so the ACME
@@ -35,22 +33,23 @@ echo "==> Nginx started in bootstrap mode — waiting 3s..."
 sleep 3
 
 # Step 2: Issue certificate via certbot webroot challenge
-docker compose run --rm certbot certbot certonly \
+# Note: --entrypoint overrides the renewal-loop entrypoint defined in compose
+docker compose run --rm --entrypoint certbot certbot certonly \
   --webroot \
   --webroot-path /var/www/certbot \
   --email "$EMAIL" \
   --agree-tos \
   --no-eff-email \
-  -d "$DOMAIN" \
-  -d "$WWW_DOMAIN"
+  -d "$DOMAIN"
 
 echo "==> Certificate issued successfully."
 
 # Step 3: Download recommended TLS parameters from Let's Encrypt if not present
-if [ ! -f "$(docker volume inspect ailanguagetutor_certbot_certs --format '{{.Mountpoint}}')/options-ssl-nginx.conf" ] 2>/dev/null; then
-  docker compose run --rm certbot sh -c "
-    curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf \
-      -o /etc/letsencrypt/options-ssl-nginx.conf &&
+CERT_MOUNT="$(docker volume inspect ailanguagetutor_certbot_certs --format '{{.Mountpoint}}' 2>/dev/null)"
+if [ ! -f "${CERT_MOUNT}/options-ssl-nginx.conf" ]; then
+  docker compose run --rm --entrypoint sh certbot -c "
+    wget -qO /etc/letsencrypt/options-ssl-nginx.conf \
+      https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf &&
     openssl dhparam -out /etc/letsencrypt/ssl-dhparams.pem 2048
   "
 fi
@@ -59,8 +58,8 @@ fi
 mv nginx/conf.d/fluentica.conf.bak nginx/conf.d/fluentica.conf 2>/dev/null || true
 rm -f nginx/conf.d/fluentica-init.conf
 
-# Step 5: Reload nginx with full HTTPS config
-docker compose up -d --force-recreate nginx
+# Step 5: Reload nginx with full HTTPS config and start certbot renewal daemon
+docker compose up -d --force-recreate nginx certbot
 
 echo ""
 echo "==> Done! Fluentica is live at https://$DOMAIN"

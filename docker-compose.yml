@@ -3,9 +3,9 @@ services:
     image: postgres:15-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: fluentica
-      POSTGRES_USER: fluentica
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fluentica}
+      POSTGRES_DB: linguaai
+      POSTGRES_USER: linguaai
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-linguaai}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -38,7 +38,7 @@ services:
       - "8080:8080"
     env_file: .env
     environment:
-      DATABASE_URL: postgres://fluentica:${POSTGRES_PASSWORD:-fluentica}@db:5432/fluentica?sslmode=disable
+      DATABASE_URL: postgres://linguaai:${POSTGRES_PASSWORD:-linguaai}@db:5432/linguaai?sslmode=disable
       REDIS_ADDR: redis:6379
     volumes:
       - pool_data:/app/data

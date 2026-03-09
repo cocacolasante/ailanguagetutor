@@ -4,7 +4,7 @@
 server {
     listen 80;
     listen [::]:80;
-    server_name fluentica.app www.fluentica.app;
+    server_name fluentica.app;
 
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
