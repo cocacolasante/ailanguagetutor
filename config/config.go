@@ -88,12 +88,12 @@ func Load() *Config {
 		ElevenLabsVoiceExecutive: getEnv("ELEVENLABS_VOICE_EXECUTIVE", "TxGEqnHWrfWFTfGW9XjX"), // Josh
 		ElevenLabsVoiceTravel:    getEnv("ELEVENLABS_VOICE_TRAVEL",    "VR6AewLTigWG4xSOukaG"), // Arnold
 
-		DatabaseURL: getEnv("DATABASE_URL", "postgres://linguaai:linguaai@localhost:5432/linguaai?sslmode=disable"),
+		DatabaseURL: getEnv("DATABASE_URL", "postgres://fluentica:fluentica@localhost:5432/fluentica?sslmode=disable"),
 
 		StripeSecretKey:     getEnv("STRIPE_SECRET_KEY", ""),
 		StripeWebhookSecret: getEnv("STRIPE_WEBHOOK_SECRET", ""),
 		StripePriceID:       getEnv("STRIPE_PRICE_ID", ""),
-		AppBaseURL:          getEnv("APP_BASE_URL", "http://localhost:8080"),
+		AppBaseURL:          getEnv("APP_BASE_URL", "https://fluentica.app"),
 
 		SMTPHost:     getEnv("SMTP_HOST", ""),
 		SMTPPort:     getEnv("SMTP_PORT", "587"),

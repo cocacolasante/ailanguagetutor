@@ -3,13 +3,13 @@ services:
     image: postgres:15-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: linguaai
-      POSTGRES_USER: linguaai
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-linguaai}
+      POSTGRES_DB: fluentica
+      POSTGRES_USER: fluentica
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fluentica}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U linguaai"]
+      test: ["CMD-SHELL", "pg_isready -U fluentica"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -35,15 +35,46 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "${PORT:-8080}:8080"
+      - "8080:8080"
     env_file: .env
     environment:
-      DATABASE_URL: postgres://linguaai:${POSTGRES_PASSWORD:-linguaai}@db:5432/linguaai?sslmode=disable
+      DATABASE_URL: postgres://fluentica:${POSTGRES_PASSWORD:-fluentica}@db:5432/fluentica?sslmode=disable
       REDIS_ADDR: redis:6379
     volumes:
       - pool_data:/app/data
+
+  # nginx and certbot are production-only — uncomment on the server after running init-certs.sh
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot_www:/var/www/certbot:ro
+      - certbot_certs:/etc/letsencrypt:ro
+    depends_on:
+      - app
+    command: >
+      /bin/sh -c "while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g 'daemon off;'"
+  
+  certbot:
+    image: certbot/certbot
+    restart: unless-stopped
+    volumes:
+      - certbot_www:/var/www/certbot
+      - certbot_certs:/etc/letsencrypt
+    entrypoint: >
+      /bin/sh -c "trap exit TERM;
+        while :; do
+          certbot renew --webroot -w /var/www/certbot --quiet;
+          sleep 12h & wait $${!};
+        done"
 
 volumes:
   postgres_data:
   pool_data:
   redis_data:
+  certbot_www:
+  certbot_certs:

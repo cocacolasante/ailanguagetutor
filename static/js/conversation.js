@@ -74,7 +74,7 @@ const IMMERSION_PLACEHOLDERS = {
 /* ── Init UI ────────────────────────────────────────────────────────────────── */
 document.getElementById('headerLang').textContent  = `${langMeta.flag} ${langMeta.name}`;
 document.getElementById('headerTopic').textContent = `${topicIcon} ${topicName}`;
-document.title = `${langMeta.name} · ${topicName} — LinguaAI`;
+document.title = `${langMeta.name} · ${topicName} — Fluentica`;
 
 const ttsToggle = document.getElementById('ttsToggle');
 ttsToggle.addEventListener('change', () => { ttsEnabled = ttsToggle.checked; });

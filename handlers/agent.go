@@ -41,7 +41,7 @@ func (h *AgentHandler) SetupAgent(w http.ResponseWriter, r *http.Request) {
 
 func (h *AgentHandler) createAgent() (string, error) {
 	payload := map[string]any{
-		"name": "LinguaAI Language Tutor",
+		"name": "Fluentica Language Tutor",
 		"conversation_config": map[string]any{
 			"agent": map[string]any{
 				"prompt": map[string]any{
@@ -885,7 +885,7 @@ func buildFirstMessage(langCode, topicID string, level int) string {
 
 // agentBasePrompt is the static base prompt stored on the ElevenLabs agent.
 // Per-session instructions are injected dynamically via conversation_config_override.
-const agentBasePrompt = `You are LinguaAI, an expert 1-on-1 language tutor. At the start of each conversation you will receive a detailed system prompt with specific instructions about the student's language, proficiency level, learning mode, and topic. Follow those instructions precisely for the entire session.
+const agentBasePrompt = `You are Fluentica, an expert 1-on-1 language tutor. At the start of each conversation you will receive a detailed system prompt with specific instructions about the student's language, proficiency level, learning mode, and topic. Follow those instructions precisely for the entire session.
 
 Core rules that always apply:
 - This is a VOICE conversation. Keep every response short and natural — 1 to 3 sentences maximum.

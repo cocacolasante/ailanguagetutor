@@ -1,0 +1,17 @@
+# ── Bootstrap config — used ONLY on first deploy before certs are issued ──────
+# Rename to fluentica-init.conf and remove/rename fluentica.conf while running
+# `init-certs.sh`. Swap back once certs exist.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name fluentica.app www.fluentica.app;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 200 'Fluentica — coming soon';
+        add_header Content-Type text/plain;
+    }
+}
