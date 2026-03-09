@@ -7,6 +7,14 @@ const level     = parseInt(params.get('level') || '1', 10);
 const topic     = params.get('topic')     || 'general';
 const topicName = params.get('topicName') || 'General';
 
+/* ── Platform detection ─────────────────────────────────────────────────────── */
+// iOS (Safari + Chrome-on-iOS) uses WebKit's exclusive audio session model.
+// Playing HTMLAudioElement switches the session to "Playback-only", which
+// silently kills webkitSpeechRecognition. We use AudioContext for playback on
+// iOS so we can hold a "PlayAndRecord" session throughout.
+const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+console.log('[vocab] isIOS:', isIOS);
+
 /* ── State ──────────────────────────────────────────────────────────────────── */
 let words      = [];
 let currentIdx = 0;
@@ -19,10 +27,56 @@ let ttsInFlight    = false;
 let recognition    = null;
 let hasSpeechAPI   = false;
 
-// iOS fix: keep a silent MediaStream alive so iOS stays in "play and record"
-// audio session mode. Without this, each audio playback kicks the session to
-// "playback-only", and recognition.start() silently fails until iOS transitions back.
-let keepAliveMicStream = null;
+/* ── iOS audio pipeline ─────────────────────────────────────────────────────── */
+// On iOS: one AudioContext + a silent mic source keep the session in
+// "PlayAndRecord" mode so recognition works immediately after playback.
+let audioCtx       = null;   // shared AudioContext for the whole session
+let micStream      = null;   // getUserMedia stream (kept alive)
+let pipelineReady  = false;
+
+async function initAudioPipeline() {
+  if (pipelineReady) return true;
+  try {
+    // getUserMedia must be called inside a user-gesture handler
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') await audioCtx.resume();
+
+    // Connect mic → silent gain → destination.
+    // This registers the mic with the AudioContext so iOS sets
+    // AVAudioSession category to PlayAndRecord for this context.
+    const micSrc  = audioCtx.createMediaStreamSource(micStream);
+    const silence = audioCtx.createGain();
+    silence.gain.value = 0;
+    micSrc.connect(silence);
+    silence.connect(audioCtx.destination);
+
+    pipelineReady = true;
+    console.log('[vocab] iOS audio pipeline ready (PlayAndRecord mode)');
+    return true;
+  } catch (err) {
+    console.log('[vocab] initAudioPipeline failed:', err);
+    audioCtx      = null;
+    micStream     = null;
+    pipelineReady = false;
+    return false;
+  }
+}
+
+async function playViaAudioContext(blob) {
+  if (audioCtx.state === 'suspended') await audioCtx.resume();
+  const arrayBuf = await blob.arrayBuffer();
+  const decoded  = await audioCtx.decodeAudioData(arrayBuf);
+  return new Promise((resolve, reject) => {
+    const src = audioCtx.createBufferSource();
+    src.buffer = decoded;
+    src.connect(audioCtx.destination);
+    src.onended = resolve;
+    src.onerror = reject;
+    src.start(0);
+  });
+}
 
 /* ── Language BCP-47 map ─────────────────────────────────────────────────────── */
 const LANG_BCP47 = { it: 'it-IT', es: 'es-ES', pt: 'pt-BR' };
@@ -48,7 +102,7 @@ async function loadSession() {
 
     const langFlag = { it: '🇮🇹', es: '🇪🇸', pt: '🇧🇷' }[language] || '🌐';
     document.getElementById('headerTitle').textContent = `${topicName} — Vocab Builder`;
-    document.getElementById('headerSub').textContent   =
+    document.getElementById('headerSub').textContent =
       `${langFlag} ${LANG_NAMES[language] || language} · Level ${level} · ${words.length} words`;
 
     document.getElementById('loadingState').classList.add('hidden');
@@ -57,14 +111,9 @@ async function loadSession() {
     renderCard(words[0]);
     updateProgress();
 
-    // Only auto-play on desktop (AudioContext already running).
-    // Mobile starts suspended until a user gesture — skip wasted TTS fetch.
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const canAutoPlay = ctx.state === 'running';
-      ctx.close();
-      if (canAutoPlay) setTimeout(() => playWord(), 600);
-    } catch { /* skip auto-play */ }
+    // Desktop: auto-play via HTMLAudioElement (no session conflict on desktop).
+    // iOS: skip — autoplay is always blocked and would waste a TTS call.
+    if (!isIOS) setTimeout(() => playWord(false), 600);
   } catch (err) {
     showError('Failed to load vocabulary. ' + (err.message || ''));
   }
@@ -75,8 +124,7 @@ function renderCard(word) {
   document.getElementById('cardWord').textContent        = word.word;
   document.getElementById('cardPhonetic').textContent    = word.phonetic ? `[ ${word.phonetic} ]` : '';
   document.getElementById('cardTranslation').textContent = word.translation;
-  const card = document.getElementById('flashcard');
-  card.classList.remove('flipped');
+  document.getElementById('flashcard').classList.remove('flipped');
   isFlipped = false;
   attempts  = 0;
   clearStatus();
@@ -85,30 +133,27 @@ function renderCard(word) {
 
 /* ── Flip card ──────────────────────────────────────────────────────────────── */
 function flipCard() {
-  const card = document.getElementById('flashcard');
   isFlipped = !isFlipped;
-  card.classList.toggle('flipped', isFlipped);
+  document.getElementById('flashcard').classList.toggle('flipped', isFlipped);
 }
 
 /* ── Progress ───────────────────────────────────────────────────────────────── */
 function updateProgress() {
-  const total   = words.length;
-  const current = currentIdx + 1;
-  const pct     = (currentIdx / total) * 100;
+  const pct = (currentIdx / words.length) * 100;
   document.getElementById('progressFill').style.width  = pct + '%';
-  document.getElementById('progressLabel').textContent = `Word ${current} of ${total}`;
+  document.getElementById('progressLabel').textContent = `Word ${currentIdx + 1} of ${words.length}`;
 }
 
 /* ── TTS playback ───────────────────────────────────────────────────────────── */
-async function playWord() {
+// fromGesture=true when called directly from a button tap (needed for iOS pipeline init).
+// fromGesture=false for auto-play (desktop only).
+async function playWord(fromGesture = false) {
   if (ttsInFlight) {
-    console.log('[vocab] playWord: skipped — ttsInFlight');
+    console.log('[vocab] playWord: skipped — already in flight');
     return;
   }
-
-  // If recording when Play is tapped, cancel it first
   if (isListening) {
-    console.log('[vocab] playWord: stopping active recording before play');
+    console.log('[vocab] playWord: cancelling active recording');
     stopListening();
   }
 
@@ -117,86 +162,75 @@ async function playWord() {
 
   ttsInFlight    = true;
   isPlayingAudio = true;
-  const btn       = document.getElementById('playBtn');
+  const playBtn   = document.getElementById('playBtn');
   const listenBtn = document.getElementById('listenBtn');
-  if (btn)       { btn.disabled = true; btn.textContent = '⏳'; }
+  if (playBtn)   { playBtn.disabled = true; playBtn.textContent = '⏳'; }
   if (listenBtn) listenBtn.disabled = true;
 
-  console.log('[vocab] playWord: fetching TTS for', word.word);
+  // On iOS, initialize the audio pipeline on first user-gesture tap of Play.
+  // This locks the AVAudioSession into PlayAndRecord mode so the mic works
+  // immediately after audio ends — no timing delays required.
+  if (isIOS && fromGesture && !pipelineReady) {
+    console.log('[vocab] playWord: initializing iOS audio pipeline');
+    await initAudioPipeline();
+  }
+
+  const releaseMic = () => {
+    isPlayingAudio = false;
+    ttsInFlight    = false;
+    if (playBtn)   { playBtn.disabled = false; playBtn.textContent = '🔊 Play'; }
+    if (listenBtn) listenBtn.disabled = false;
+    console.log('[vocab] playWord: done — mic enabled');
+  };
+
+  console.log('[vocab] playWord: fetching TTS for', word.word, '| pipeline:', pipelineReady);
   try {
     const res = await API.binary('/api/tts', { text: word.word, language });
     if (!res.ok) throw new Error('TTS failed');
-    const blob  = await res.blob();
-    const url   = URL.createObjectURL(blob);
-    const audio = new Audio(url);
+    const blob = await res.blob();
 
-    const onPlaybackDone = () => {
-      console.log('[vocab] playWord: audio ended — releasing audio session');
-      URL.revokeObjectURL(url);
-      if (btn) { btn.disabled = false; btn.textContent = '🔊 Play'; }
-      // With keep-alive mic stream active, iOS stays in play+record mode and
-      // recognition can start immediately. Keep a short safety delay anyway.
-      setTimeout(() => {
-        isPlayingAudio = false;
-        ttsInFlight    = false;
-        if (listenBtn) listenBtn.disabled = false;
-        console.log('[vocab] playWord: mic re-enabled');
-      }, keepAliveMicStream ? 100 : 800);
-    };
-
-    const onPlayBlocked = () => {
-      console.log('[vocab] playWord: autoplay blocked');
-      URL.revokeObjectURL(url);
-      if (btn) { btn.disabled = false; btn.textContent = '🔊 Play'; }
-      isPlayingAudio = false;
-      ttsInFlight    = false;
-      if (listenBtn) listenBtn.disabled = false;
-    };
-
-    audio.onended = onPlaybackDone;
-    audio.onerror = onPlaybackDone;
-    console.log('[vocab] playWord: calling audio.play()');
-    await audio.play().catch(onPlayBlocked);
+    if (pipelineReady && audioCtx) {
+      // iOS path: play through the shared AudioContext.
+      // The mic source connected to this context keeps iOS in PlayAndRecord mode,
+      // so recognition.start() works immediately when audio ends.
+      console.log('[vocab] playWord: playing via AudioContext');
+      try {
+        await playViaAudioContext(blob);
+      } catch (e) {
+        console.log('[vocab] AudioContext playback error:', e);
+      }
+      releaseMic();
+    } else {
+      // Desktop path: HTMLAudioElement (no iOS session conflict on desktop).
+      console.log('[vocab] playWord: playing via HTMLAudioElement');
+      const url   = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      const done  = () => { URL.revokeObjectURL(url); releaseMic(); };
+      audio.onended = done;
+      audio.onerror = done;
+      await audio.play().catch(() => { URL.revokeObjectURL(url); releaseMic(); });
+    }
   } catch (err) {
     console.log('[vocab] playWord: error:', err);
-    if (btn) { btn.disabled = false; btn.textContent = '🔊 Play'; }
-    isPlayingAudio = false;
-    ttsInFlight    = false;
-    if (listenBtn) listenBtn.disabled = false;
-  }
-}
-
-/* ── Keep-alive mic stream (iOS audio session fix) ───────────────────────────── */
-// Called on the first user tap of Speak. Acquires a silent mic stream that keeps
-// iOS's audio session in "play and record" mode for the rest of the session.
-async function ensureKeepAliveMic() {
-  if (keepAliveMicStream) return;
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
-  try {
-    keepAliveMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    console.log('[vocab] keep-alive mic stream acquired — iOS will stay in playAndRecord mode');
-  } catch (err) {
-    console.log('[vocab] keep-alive mic failed (non-fatal):', err);
+    releaseMic();
   }
 }
 
 /* ── Speech recognition ─────────────────────────────────────────────────────── */
 function createRecognition() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) return null;
-  const r = new SpeechRecognition();
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  const r = new SR();
   r.continuous     = false;
   r.interimResults = false;
   r.lang           = LANG_BCP47[language] || 'it-IT';
 
   let gotResult = false;
 
-  r.onstart = () => {
-    gotResult = false;
-    console.log('[vocab] recognition.onstart: mic active');
-  };
+  r.onstart       = () => { gotResult = false; console.log('[vocab] recognition.onstart'); };
   r.onspeechstart = () => console.log('[vocab] recognition.onspeechstart');
   r.onspeechend   = () => console.log('[vocab] recognition.onspeechend');
+
   r.onresult = (e) => {
     gotResult = true;
     const transcript = e.results[0][0].transcript;
@@ -204,17 +238,20 @@ function createRecognition() {
     stopListening();
     checkPronunciation(transcript);
   };
+
   r.onerror = (e) => {
     console.log('[vocab] recognition.onerror:', e.error, e.message);
+    const wasListening = isListening;
     stopListening();
-    if (e.error !== 'aborted') {
+    if (wasListening && e.error !== 'aborted') {
       setStatus('Mic error — tap Speak to try again.', 'feedback');
     }
   };
+
   r.onend = () => {
-    console.log('[vocab] recognition.onend — gotResult:', gotResult, '| isListening:', isListening);
+    console.log('[vocab] recognition.onend — gotResult:', gotResult, 'isListening:', isListening);
     if (isListening) {
-      // Ended without a result (silent fail or timeout)
+      // Ended without a result (silent fail or no-speech timeout)
       stopListening();
       if (!gotResult) {
         setStatus("Didn't catch that — tap Speak to try again.", 'feedback');
@@ -224,23 +261,17 @@ function createRecognition() {
   return r;
 }
 
-async function startListening() {
-  console.log('[vocab] startListening: isListening=', isListening, 'isPlayingAudio=', isPlayingAudio);
+// Kept synchronous — no async/await so user-gesture chain is never broken.
+function startListening() {
+  console.log('[vocab] startListening: isListening=', isListening, 'isPlayingAudio=', isPlayingAudio, 'pipeline=', pipelineReady);
   if (!hasSpeechAPI) return;
-  if (isListening) {
-    stopListening();
-    return;
-  }
+  if (isListening) { stopListening(); return; }
   if (isPlayingAudio) {
-    console.log('[vocab] startListening: blocked by active audio');
+    console.log('[vocab] startListening: blocked — audio active');
     setStatus('Wait for audio to finish…');
     setTimeout(clearStatus, 1500);
     return;
   }
-
-  // Acquire keep-alive stream on first tap (user gesture context).
-  // This is the key fix for iOS: holds audio session in play+record mode.
-  await ensureKeepAliveMic();
 
   recognition = createRecognition();
   if (!recognition) return;
@@ -255,6 +286,7 @@ async function startListening() {
   } catch (err) {
     console.log('[vocab] recognition.start() threw:', err);
     stopListening();
+    setStatus('Could not start mic — tap Speak to retry.', 'feedback');
   }
 }
 
@@ -273,7 +305,6 @@ async function checkPronunciation(spoken) {
   attempts++;
   updateAttemptsLabel();
   setStatus('Checking…');
-
   try {
     const result = await API.post('/api/vocab/check', { word: word.word, language, spoken });
     if (result.correct) {
@@ -281,8 +312,7 @@ async function checkPronunciation(spoken) {
       results.push({ word: word.word, correct: true, attempts });
       setTimeout(() => nextWord(), 1500);
     } else if (attempts < 3) {
-      const tip = result.feedback ? `Try again: ${result.feedback}` : 'Not quite — try again!';
-      setStatus(tip, 'feedback');
+      setStatus(result.feedback ? `Try again: ${result.feedback}` : 'Not quite — try again!', 'feedback');
     } else {
       setStatus('Keep practicing! Moving on.', 'incorrect');
       results.push({ word: word.word, correct: false, attempts });
@@ -303,8 +333,7 @@ function manualResult(correct) {
   const word = words[currentIdx];
   attempts++;
   results.push({ word: word.word, correct, attempts });
-  setStatus(correct ? 'Got it! Moving on.' : 'Noted as a word to review.',
-            correct ? 'correct' : 'incorrect');
+  setStatus(correct ? 'Got it! Moving on.' : 'Noted as a word to review.', correct ? 'correct' : 'incorrect');
   setTimeout(() => nextWord(), 1200);
 }
 
@@ -314,13 +343,8 @@ function nextWord() {
   if (currentIdx < words.length) {
     renderCard(words[currentIdx]);
     updateProgress();
-    // Only auto-play on desktop (AudioContext running = already unlocked by user gesture).
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const canAutoPlay = ctx.state === 'running';
-      ctx.close();
-      if (canAutoPlay) setTimeout(() => playWord(), 400);
-    } catch { /* skip */ }
+    // Desktop: auto-play. iOS: let the user tap Play (autoplay always blocked).
+    if (!isIOS) setTimeout(() => playWord(false), 400);
   } else {
     completeSession();
   }
@@ -328,64 +352,49 @@ function nextWord() {
 
 /* ── Complete session ───────────────────────────────────────────────────────── */
 async function completeSession() {
-  // Release keep-alive stream when done
-  if (keepAliveMicStream) {
-    keepAliveMicStream.getTracks().forEach(t => t.stop());
-    keepAliveMicStream = null;
-  }
+  if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+  if (audioCtx)  { try { audioCtx.close(); } catch {} audioCtx = null; }
 
   document.getElementById('flashcardContainer').classList.add('hidden');
-
   try {
     const data = await API.post('/api/vocab/complete', {
       language, level, topic, topic_name: topicName, results,
     });
-
     const weakWords    = data.weak_words   || [];
     const learnedCount = data.learned_count ?? results.filter(r => r.correct).length;
     const fpEarned     = data.fp_earned    ?? results.length * 5;
-
     document.getElementById('statTotal').textContent   = results.length;
     document.getElementById('statLearned').textContent = learnedCount;
     document.getElementById('statFP').textContent      = `+${fpEarned} FP`;
-
     if (weakWords.length) {
       document.getElementById('weakSection').classList.remove('hidden');
       document.getElementById('weakList').innerHTML = weakWords.map(w => `<li>${w}</li>`).join('');
     }
   } catch {
-    const learnedCount = results.filter(r => r.correct).length;
     document.getElementById('statTotal').textContent   = results.length;
-    document.getElementById('statLearned').textContent = learnedCount;
+    document.getElementById('statLearned').textContent = results.filter(r => r.correct).length;
     document.getElementById('statFP').textContent      = `+${results.length * 5} FP`;
   }
-
   document.getElementById('completeScreen').classList.remove('hidden');
 }
 
 /* ── Practice again ─────────────────────────────────────────────────────────── */
-function practiceAgain() {
-  window.location.href = window.location.href;
-}
+function practiceAgain() { window.location.href = window.location.href; }
 
-/* ── Helpers ────────────────────────────────────────────────────────────────── */
+/* ── Helpers ─────────────────────────────────────────────────────────────────── */
 function setStatus(msg, type) {
   const el = document.getElementById('vocabStatus');
   el.textContent = msg;
   el.className   = 'vocab-status' + (type ? ' ' + type : '');
 }
-
 function clearStatus() {
   const el = document.getElementById('vocabStatus');
   el.textContent = '';
   el.className   = 'vocab-status';
 }
-
 function updateAttemptsLabel() {
-  const el = document.getElementById('vocabAttempts');
-  el.textContent = attempts > 0 ? `Attempt ${attempts} of 3` : '';
+  document.getElementById('vocabAttempts').textContent = attempts > 0 ? `Attempt ${attempts} of 3` : '';
 }
-
 function showError(msg) {
   document.getElementById('loadingState').innerHTML =
     `<p style="color:#f87171">${msg}</p><a href="/dashboard.html" class="btn btn-ghost btn-sm" style="margin-top:12px">← Dashboard</a>`;

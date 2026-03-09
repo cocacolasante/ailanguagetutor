@@ -69,14 +69,14 @@
 
     <!-- Controls -->
     <div class="vocab-controls" id="vocabControls">
-      <button class="btn btn-ghost btn-sm" onclick="playWord()" id="playBtn">🔊 Play</button>
+      <button class="btn btn-ghost btn-sm" onclick="playWord(true)" id="playBtn">🔊 Play</button>
       <button class="btn btn-ghost btn-sm" onclick="flipCard()" id="flipBtn">🔄 Flip</button>
       <button class="btn btn-primary btn-sm" onclick="startListening()" id="listenBtn">🎤 Speak</button>
     </div>
 
     <!-- Manual fallback (shown when SpeechRecognition is unavailable) -->
     <div class="vocab-manual-btns hidden" id="manualBtns">
-      <button class="btn btn-ghost btn-sm" onclick="playWord()">🔊 Replay</button>
+      <button class="btn btn-ghost btn-sm" onclick="playWord(true)">🔊 Replay</button>
       <button class="btn btn-danger btn-sm" onclick="manualResult(false)">✗ Missed</button>
       <button class="btn btn-primary btn-sm" onclick="manualResult(true)">✓ Got it</button>
     </div>
@@ -116,6 +116,6 @@
   </main>
 
   <script src="/js/api.js?v=14"></script>
-  <script src="/js/vocab.js?v=8"></script>
+  <script src="/js/vocab.js?v=9"></script>
 </body>
 </html>
