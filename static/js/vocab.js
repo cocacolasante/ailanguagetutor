@@ -102,7 +102,16 @@ function updateProgress() {
 function setAudioPlaying(playing) {
   isPlayingAudio = playing;
   const listenBtn = document.getElementById('listenBtn');
-  if (listenBtn) listenBtn.disabled = playing;
+  if (playing) {
+    if (listenBtn) listenBtn.disabled = true;
+  } else {
+    // iOS Safari needs a moment to release the audio session before the mic can start.
+    // Delay re-enabling the button so recognition.start() doesn't fail silently.
+    setTimeout(() => {
+      isPlayingAudio = false;
+      if (listenBtn) listenBtn.disabled = false;
+    }, 400);
+  }
 }
 
 async function playWord() {
@@ -117,18 +126,26 @@ async function playWord() {
     const blob = await res.blob();
     const url  = URL.createObjectURL(blob);
     const audio = new Audio(url);
-    const done = () => {
+    const playbackDone = () => {
       URL.revokeObjectURL(url);
       if (btn) { btn.disabled = false; btn.textContent = '🔊 Play'; }
-      setAudioPlaying(false);
+      setAudioPlaying(false); // uses 400ms delay for iOS audio session release
     };
-    audio.onended = done;
-    audio.onerror = done;
-    // play() rejects (not hangs) when autoplay is blocked — button resets so user can tap
-    await audio.play().catch(done);
+    const playBlocked = () => {
+      URL.revokeObjectURL(url);
+      if (btn) { btn.disabled = false; btn.textContent = '🔊 Play'; }
+      // Autoplay blocked — no audio actually played, release immediately
+      isPlayingAudio = false;
+      const listenBtn = document.getElementById('listenBtn');
+      if (listenBtn) listenBtn.disabled = false;
+    };
+    audio.onended = playbackDone;
+    audio.onerror = playbackDone;
+    // play() rejects when autoplay is blocked — button resets so user can tap
+    await audio.play().catch(playBlocked);
   } catch {
     if (btn) { btn.disabled = false; btn.textContent = '🔊 Play'; }
-    setAudioPlaying(false);
+    setAudioPlaying(false); // fetch failed — no audio played, no session to release
   }
 }
 
@@ -201,13 +218,6 @@ async function checkPronunciation(spoken) {
         ? `Try again: ${result.feedback}`
         : 'Not quite — try again!';
       setStatus(tip, 'feedback');
-      setTimeout(() => {
-        clearStatus();
-        if (hasSpeechAPI) {
-          // Re-listen automatically
-          startListening();
-        }
-      }, 2500);
     } else {
       // 3rd attempt failed
       setStatus('Keep practicing! Moving on.', 'incorrect');
