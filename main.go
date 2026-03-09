@@ -194,7 +194,7 @@ func main() {
 		IdleTimeout:  120 * time.Second,
 	}
 
-	log.Printf("Fluentica running → http://localhost:%s", cfg.Port)
+	log.Printf("Fluentica AI running → http://localhost:%s", cfg.Port)
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}

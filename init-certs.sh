@@ -62,5 +62,5 @@ rm -f nginx/conf.d/fluentica-init.conf
 docker compose up -d --force-recreate nginx certbot
 
 echo ""
-echo "==> Done! Fluentica is live at https://$DOMAIN"
+echo "==> Done! Fluentica AI is live at https://$DOMAIN"
 echo "    Certificates auto-renew every 12h via the certbot container."

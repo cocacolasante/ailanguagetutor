@@ -34,7 +34,7 @@ func sendVerificationEmail(cfg *config.Config, toEmail, username, verifyURL stri
         <tr>
           <td style="background:linear-gradient(135deg,#7c3aed,#2563eb);padding:32px 40px;text-align:center;">
             <div style="font-size:2rem;margin-bottom:8px;">🌐</div>
-            <h1 style="margin:0;color:#fff;font-size:1.5rem;font-weight:700;letter-spacing:-0.02em;">Fluentica</h1>
+            <h1 style="margin:0;color:#fff;font-size:1.5rem;font-weight:700;letter-spacing:-0.02em;">Fluentica AI</h1>
             <p style="margin:4px 0 0;color:rgba(255,255,255,0.8);font-size:0.875rem;">Your AI-powered language tutor</p>
           </td>
         </tr>
@@ -44,7 +44,7 @@ func sendVerificationEmail(cfg *config.Config, toEmail, username, verifyURL stri
             <h2 style="margin:0 0 16px;color:#f0f0f8;font-size:1.25rem;font-weight:600;">Verify your email address</h2>
             <p style="margin:0 0 12px;color:#a0a0b8;line-height:1.6;">Hi %s,</p>
             <p style="margin:0 0 28px;color:#a0a0b8;line-height:1.6;">
-              Thanks for signing up! Click the button below to verify your email address and complete your Fluentica account setup.
+              Thanks for signing up! Click the button below to verify your email address and complete your Fluentica AI account setup.
             </p>
             <table cellpadding="0" cellspacing="0" style="margin:0 auto 28px;">
               <tr>
@@ -62,14 +62,14 @@ func sendVerificationEmail(cfg *config.Config, toEmail, username, verifyURL stri
               <a href="%s" style="color:#7c3aed;font-size:0.8rem;">%s</a>
             </p>
             <p style="margin:0;color:#606080;font-size:0.8rem;line-height:1.5;">
-              This link will expire once used. If you didn't create a Fluentica account, you can safely ignore this email.
+              This link will expire once used. If you didn't create a Fluentica AI account, you can safely ignore this email.
             </p>
           </td>
         </tr>
         <!-- Footer -->
         <tr>
           <td style="padding:20px 40px;border-top:1px solid #2a2a38;text-align:center;">
-            <p style="margin:0;color:#404058;font-size:0.75rem;">© 2025 Fluentica · All rights reserved</p>
+            <p style="margin:0;color:#404058;font-size:0.75rem;">© 2025 Fluentica AI · All rights reserved</p>
           </td>
         </tr>
       </table>
@@ -79,9 +79,9 @@ func sendVerificationEmail(cfg *config.Config, toEmail, username, verifyURL stri
 </html>`, safeUsername, safeURL, safeURL, safeURL)
 
 	var msg bytes.Buffer
-	fmt.Fprintf(&msg, "From: Fluentica <%s>\r\n", cfg.EmailFrom)
+	fmt.Fprintf(&msg, "From: Fluentica AI <%s>\r\n", cfg.EmailFrom)
 	fmt.Fprintf(&msg, "To: %s\r\n", toEmail)
-	fmt.Fprintf(&msg, "Subject: Verify your Fluentica email address\r\n")
+	fmt.Fprintf(&msg, "Subject: Verify your Fluentica AI email address\r\n")
 	fmt.Fprintf(&msg, "MIME-Version: 1.0\r\n")
 	fmt.Fprintf(&msg, "Content-Type: text/html; charset=UTF-8\r\n")
 	fmt.Fprintf(&msg, "\r\n")
@@ -116,16 +116,16 @@ func sendBetaInviteEmail(cfg *config.Config, toEmail, username, resetURL string,
         <tr>
           <td style="background:linear-gradient(135deg,#7c3aed,#2563eb);padding:32px 40px;text-align:center;">
             <div style="font-size:2rem;margin-bottom:8px;">🌐</div>
-            <h1 style="margin:0;color:#fff;font-size:1.5rem;font-weight:700;letter-spacing:-0.02em;">Fluentica</h1>
+            <h1 style="margin:0;color:#fff;font-size:1.5rem;font-weight:700;letter-spacing:-0.02em;">Fluentica AI</h1>
             <p style="margin:4px 0 0;color:rgba(255,255,255,0.8);font-size:0.875rem;">Your AI-powered language tutor</p>
           </td>
         </tr>
         <tr>
           <td style="padding:40px;">
-            <h2 style="margin:0 0 16px;color:#f0f0f8;font-size:1.25rem;font-weight:600;">You're invited to try Fluentica! 🎉</h2>
+            <h2 style="margin:0 0 16px;color:#f0f0f8;font-size:1.25rem;font-weight:600;">You're invited to try Fluentica AI! 🎉</h2>
             <p style="margin:0 0 12px;color:#a0a0b8;line-height:1.6;">Hi %s,</p>
             <p style="margin:0 0 20px;color:#a0a0b8;line-height:1.6;">
-              You've been given <strong style="color:#f0f0f8;">30 days of free beta access</strong> to Fluentica — an AI-powered language tutor for Italian, Spanish, and Portuguese. No credit card required.
+              You've been given <strong style="color:#f0f0f8;">30 days of free beta access</strong> to Fluentica AI — an AI-powered language tutor for Italian, Spanish, and Portuguese. No credit card required.
             </p>
             <div style="background:#12122a;border:1px solid #2a2a40;border-radius:10px;padding:16px 20px;margin:0 0 28px;">
               <p style="margin:0 0 4px;color:#7c3aed;font-size:0.8rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Beta Trial</p>
@@ -156,7 +156,7 @@ func sendBetaInviteEmail(cfg *config.Config, toEmail, username, resetURL string,
         </tr>
         <tr>
           <td style="padding:20px 40px;border-top:1px solid #2a2a38;text-align:center;">
-            <p style="margin:0;color:#404058;font-size:0.75rem;">© 2025 Fluentica · All rights reserved</p>
+            <p style="margin:0;color:#404058;font-size:0.75rem;">© 2025 Fluentica AI · All rights reserved</p>
           </td>
         </tr>
       </table>
@@ -166,9 +166,9 @@ func sendBetaInviteEmail(cfg *config.Config, toEmail, username, resetURL string,
 </html>`, safeUsername, trialDate, safeURL, safeURL, safeURL)
 
 	var msg bytes.Buffer
-	fmt.Fprintf(&msg, "From: Fluentica <%s>\r\n", cfg.EmailFrom)
+	fmt.Fprintf(&msg, "From: Fluentica AI <%s>\r\n", cfg.EmailFrom)
 	fmt.Fprintf(&msg, "To: %s\r\n", toEmail)
-	fmt.Fprintf(&msg, "Subject: You're invited — 30-day free trial of Fluentica\r\n")
+	fmt.Fprintf(&msg, "Subject: You're invited — 30-day free trial of Fluentica AI\r\n")
 	fmt.Fprintf(&msg, "MIME-Version: 1.0\r\n")
 	fmt.Fprintf(&msg, "Content-Type: text/html; charset=UTF-8\r\n")
 	fmt.Fprintf(&msg, "\r\n")
@@ -199,7 +199,7 @@ func sendPasswordResetEmail(cfg *config.Config, toEmail, username, resetURL stri
         <tr>
           <td style="background:linear-gradient(135deg,#7c3aed,#2563eb);padding:32px 40px;text-align:center;">
             <div style="font-size:2rem;margin-bottom:8px;">🌐</div>
-            <h1 style="margin:0;color:#fff;font-size:1.5rem;font-weight:700;letter-spacing:-0.02em;">Fluentica</h1>
+            <h1 style="margin:0;color:#fff;font-size:1.5rem;font-weight:700;letter-spacing:-0.02em;">Fluentica AI</h1>
             <p style="margin:4px 0 0;color:rgba(255,255,255,0.8);font-size:0.875rem;">Your AI-powered language tutor</p>
           </td>
         </tr>
@@ -208,7 +208,7 @@ func sendPasswordResetEmail(cfg *config.Config, toEmail, username, resetURL stri
             <h2 style="margin:0 0 16px;color:#f0f0f8;font-size:1.25rem;font-weight:600;">Reset your password</h2>
             <p style="margin:0 0 12px;color:#a0a0b8;line-height:1.6;">Hi %s,</p>
             <p style="margin:0 0 28px;color:#a0a0b8;line-height:1.6;">
-              We received a request to reset your Fluentica password. Click the button below to choose a new password. This link expires in 1 hour.
+              We received a request to reset your Fluentica AI password. Click the button below to choose a new password. This link expires in 1 hour.
             </p>
             <table cellpadding="0" cellspacing="0" style="margin:0 auto 28px;">
               <tr>
@@ -232,7 +232,7 @@ func sendPasswordResetEmail(cfg *config.Config, toEmail, username, resetURL stri
         </tr>
         <tr>
           <td style="padding:20px 40px;border-top:1px solid #2a2a38;text-align:center;">
-            <p style="margin:0;color:#404058;font-size:0.75rem;">© 2025 Fluentica · All rights reserved</p>
+            <p style="margin:0;color:#404058;font-size:0.75rem;">© 2025 Fluentica AI · All rights reserved</p>
           </td>
         </tr>
       </table>
@@ -242,9 +242,9 @@ func sendPasswordResetEmail(cfg *config.Config, toEmail, username, resetURL stri
 </html>`, safeUsername, safeURL, safeURL, safeURL)
 
 	var msg bytes.Buffer
-	fmt.Fprintf(&msg, "From: Fluentica <%s>\r\n", cfg.EmailFrom)
+	fmt.Fprintf(&msg, "From: Fluentica AI <%s>\r\n", cfg.EmailFrom)
 	fmt.Fprintf(&msg, "To: %s\r\n", toEmail)
-	fmt.Fprintf(&msg, "Subject: Reset your Fluentica password\r\n")
+	fmt.Fprintf(&msg, "Subject: Reset your Fluentica AI password\r\n")
 	fmt.Fprintf(&msg, "MIME-Version: 1.0\r\n")
 	fmt.Fprintf(&msg, "Content-Type: text/html; charset=UTF-8\r\n")
 	fmt.Fprintf(&msg, "\r\n")

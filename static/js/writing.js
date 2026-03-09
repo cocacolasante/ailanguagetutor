@@ -82,7 +82,7 @@ function resetPlayBtn(btnEl, label) {
 async function init() {
   document.getElementById('headerSub').textContent =
     `${language.toUpperCase()} · Level ${level} · ${topicName}`;
-  document.title = `Writing Coach · ${topicName} — Fluentica`;
+  document.title = `Writing Coach · ${topicName} — Fluentica AI`;
 
   try {
     const data = await API.post('/api/writing/session', { language, level, topic, topicName });

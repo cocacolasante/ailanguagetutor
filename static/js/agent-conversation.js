@@ -61,7 +61,7 @@ const translationCache = new Map();
 /* ── Init UI ────────────────────────────────────────────────────────────────── */
 document.getElementById('headerLang').textContent  = `${langMeta.flag} ${langMeta.name}`;
 document.getElementById('headerTopic').textContent = `${topicIcon} ${topicName}`;
-document.title = `${langMeta.name} · ${topicName} — Fluentica`;
+document.title = `${langMeta.name} · ${topicName} — Fluentica AI`;
 
 // Always explicitly set banner state — never rely on HTML default
 const immersionBanner = document.getElementById('immersionBanner');

@@ -11,7 +11,7 @@ server {
     }
 
     location / {
-        return 200 'Fluentica — coming soon';
+        return 200 'Fluentica AI — coming soon';
         add_header Content-Type text/plain;
     }
 }
