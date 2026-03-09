@@ -184,10 +184,26 @@ async function inviteUser() {
 
   try {
     const data = await API.post('/api/admin/invite-user', { email, username });
-    status.textContent = `✓ Invite sent to ${data.email} (trial until ${data.trial_ends_at})`;
-    status.style.color = 'var(--success)';
     document.getElementById('inviteEmail').value    = '';
     document.getElementById('inviteUsername').value = '';
+
+    // Show result + copy link (always shown so admin can share manually)
+    const copyId = 'inviteCopyLink_' + Date.now();
+    status.innerHTML = `
+      <span style="color:var(--success)">✓ ${data.message}</span>
+      <br><span style="color:var(--text-2);font-size:0.8rem;">Trial until ${data.trial_ends_at}</span>
+      ${data.set_password_url ? `<br><button class="btn btn-sm btn-ghost" style="margin-top:6px;font-size:0.75rem;" id="${copyId}">📋 Copy Set-Password Link</button>` : ''}
+    `;
+    status.style.color = '';
+    if (data.set_password_url) {
+      document.getElementById(copyId)?.addEventListener('click', () => {
+        navigator.clipboard.writeText(data.set_password_url).then(() => {
+          const b = document.getElementById(copyId);
+          if (b) { b.textContent = '✓ Copied!'; setTimeout(() => { if (b) b.textContent = '📋 Copy Set-Password Link'; }, 2000); }
+        });
+      });
+    }
+
     // Refresh user list
     await loadUsers();
   } catch (err) {

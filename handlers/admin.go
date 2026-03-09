@@ -226,16 +226,23 @@ func (h *AdminHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resetURL := h.cfg.AppBaseURL + "/reset-password.html?token=" + resetToken
+
+	emailSent := true
 	if err := sendBetaInviteEmail(h.cfg, req.Email, req.Username, resetURL, trialEndsAt); err != nil {
 		log.Printf("admin invite: email error for %s: %v", req.Email, err)
-		h.userStore.Delete(u.ID)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to send invite email. Please check SMTP config."})
-		return
+		emailSent = false
 	}
 
-	writeJSON(w, http.StatusCreated, map[string]any{
-		"message":       "Invite sent successfully.",
-		"email":         req.Email,
-		"trial_ends_at": trialEndsAt.Format("Jan 2, 2006"),
-	})
+	resp := map[string]any{
+		"email":            req.Email,
+		"trial_ends_at":   trialEndsAt.Format("Jan 2, 2006"),
+		"set_password_url": resetURL,
+	}
+	if emailSent {
+		resp["message"] = "Invite email sent successfully."
+	} else {
+		resp["message"] = "Account created but email could not be sent (SMTP not configured). Share the set-password link manually."
+	}
+
+	writeJSON(w, http.StatusCreated, resp)
 }

@@ -94,9 +94,11 @@ func sendVerificationEmail(cfg *config.Config, toEmail, username, verifyURL stri
 }
 
 // sendBetaInviteEmail sends an invite email to a beta tester with a password-set link.
+// Returns nil when SMTP is unconfigured (logs URL to stdout instead).
+// Returns a non-nil error only when SMTP IS configured but the send fails.
 func sendBetaInviteEmail(cfg *config.Config, toEmail, username, resetURL string, trialEndsAt time.Time) error {
 	if cfg.SMTPHost == "" || cfg.EmailFrom == "" {
-		log.Printf("SMTP not configured — skipping beta invite to %s. Set-password URL: %s", toEmail, resetURL)
+		log.Printf("[INVITE] SMTP not configured. Share this set-password URL manually with %s: %s", toEmail, resetURL)
 		return nil
 	}
 
