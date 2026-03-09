@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Writing Coach — LinguaAI</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -10,22 +10,31 @@
   <link rel="stylesheet" href="/css/style.css?v=4" />
   <style>
     /* ── Writing Coach specific styles ────────────────────────────── */
-    .writing-page {
+
+    /*
+     * #appShell is pinned to the four edges of the visible viewport using
+     * position:fixed. This is the most reliable way to constrain a chat layout
+     * on iOS Safari — it works correctly when the virtual keyboard opens/closes,
+     * regardless of 100vh quirks.
+     */
+    #appShell {
+      position: fixed;
+      inset: 0;
       display: flex;
       flex-direction: column;
-      height: 100vh;
-      height: 100dvh;
       overflow: hidden;
+      background: var(--bg);
     }
 
     .writing-main {
       flex: 1;
+      min-height: 0;
       display: flex;
       flex-direction: column;
       max-width: 700px;
       width: 100%;
       margin: 0 auto;
-      padding: 0 16px 16px;
+      padding: 0 16px;
       overflow: hidden;
     }
 
@@ -61,7 +70,9 @@
 
     .writing-thread {
       flex: 1;
+      min-height: 0;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       padding: 16px 0;
       display: flex;
       flex-direction: column;
@@ -171,7 +182,7 @@
       display: flex;
       gap: 10px;
       align-items: flex-end;
-      padding-top: 12px;
+      padding: 12px 0 8px;
       border-top: 1px solid var(--border);
       flex-shrink: 0;
     }
@@ -188,7 +199,7 @@
       line-height: 1.4;
       resize: none;
       min-height: 42px;
-      max-height: 140px;
+      max-height: 120px;
       overflow-y: auto;
       outline: none;
       transition: border-color 0.2s;
@@ -225,7 +236,7 @@
     .writing-end-row {
       display: flex;
       justify-content: center;
-      padding-top: 10px;
+      padding-bottom: 12px;
       flex-shrink: 0;
     }
 
@@ -280,80 +291,81 @@
 
     @media (max-width: 600px) {
       .writing-main {
-        padding: 0 12px 12px;
-        padding-bottom: max(12px, env(safe-area-inset-bottom));
+        padding: 0 12px;
       }
       .message {
         max-width: 92%;
       }
-      .writing-input-row {
-        padding-bottom: env(safe-area-inset-bottom, 0);
-      }
     }
   </style>
 </head>
-<body class="writing-page">
+<body>
 
-  <!-- Navbar -->
-  <nav class="navbar">
-    <div class="navbar-brand">
-      <a href="/dashboard.html" class="logo-link">
-        <span class="logo-icon">🌐</span>
-        <span class="logo-text">LinguaAI</span>
-      </a>
-    </div>
-    <div class="navbar-right">
-      <a href="/dashboard.html" class="btn btn-ghost btn-sm">← Dashboard</a>
-    </div>
-  </nav>
+  <!-- Fixed shell: pinned to visible viewport on all devices including iOS -->
+  <div id="appShell">
 
-  <!-- Main writing area -->
-  <main class="writing-main">
+    <!-- Navbar -->
+    <nav class="navbar">
+      <div class="navbar-brand">
+        <a href="/dashboard.html" class="logo-link">
+          <span class="logo-icon">🌐</span>
+          <span class="logo-text">LinguaAI</span>
+        </a>
+      </div>
+      <div class="navbar-right">
+        <a href="/dashboard.html" class="btn btn-ghost btn-sm">← Dashboard</a>
+      </div>
+    </nav>
 
-    <!-- Loading state -->
-    <div class="writing-loading" id="loadingState">
-      <div class="spinner"></div>
-      <p>Starting writing session…</p>
-    </div>
+    <!-- Main writing area -->
+    <main class="writing-main">
 
-    <!-- Chat container (hidden until session loads) -->
-    <div id="chatContainer" class="hidden" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+      <!-- Loading state -->
+      <div class="writing-loading" id="loadingState">
+        <div class="spinner"></div>
+        <p>Starting writing session…</p>
+      </div>
 
-      <!-- Header -->
-      <div class="writing-header">
-        <div class="writing-header-meta">
-          <div>
-            <h2>✍️ Writing Coach</h2>
-            <p id="headerSub">Loading…</p>
+      <!-- Chat container (hidden until session loads) -->
+      <div id="chatContainer" class="hidden" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0">
+
+        <!-- Header -->
+        <div class="writing-header">
+          <div class="writing-header-meta">
+            <div>
+              <h2>✍️ Writing Coach</h2>
+              <p id="headerSub">Loading…</p>
+            </div>
+            <div class="conv-timer" id="timerDisplay">0:00</div>
           </div>
-          <div class="conv-timer" id="timerDisplay">0:00</div>
         </div>
+
+        <!-- Message thread -->
+        <div class="writing-thread" id="messagesContainer"></div>
+
+        <!-- Input row -->
+        <div class="writing-input-row">
+          <textarea
+            id="msgInput"
+            class="writing-textarea"
+            placeholder="Type your reply…"
+            rows="1"
+          ></textarea>
+          <button class="writing-send-btn" id="sendBtn" onclick="sendMessage()" title="Send">
+            ➤
+          </button>
+        </div>
+
+        <!-- End session -->
+        <div class="writing-end-row">
+          <button class="btn btn-danger btn-sm" onclick="endSession()">End &amp; Get Summary</button>
+        </div>
+
       </div>
 
-      <!-- Message thread -->
-      <div class="writing-thread" id="messagesContainer"></div>
+    </main>
 
-      <!-- Input row -->
-      <div class="writing-input-row">
-        <textarea
-          id="msgInput"
-          class="writing-textarea"
-          placeholder="Type your reply…"
-          rows="1"
-        ></textarea>
-        <button class="writing-send-btn" id="sendBtn" onclick="sendMessage()" title="Send">
-          ➤
-        </button>
-      </div>
-
-      <!-- End session -->
-      <div class="writing-end-row">
-        <button class="btn btn-danger btn-sm" onclick="endSession()">End &amp; Get Summary</button>
-      </div>
-
-    </div>
-
-  </main>
+  </div><!-- /#appShell -->
 
   <script src="/js/api.js?v=14"></script>
   <script src="/js/writing.js?v=2"></script>

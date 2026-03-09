@@ -95,7 +95,11 @@ async function init() {
 
     appendMessage('assistant', data.first_message);
     startTimer();
-    document.getElementById('msgInput').focus();
+    // Don't auto-focus on mobile — iOS Safari locks up touch/scroll events
+    // when focus() is called programmatically during page load.
+    if (window.innerWidth > 768) {
+      document.getElementById('msgInput').focus();
+    }
   } catch (err) {
     document.getElementById('loadingState').innerHTML =
       `<p style="color:var(--text-2)">Failed to start session: ${escapeHtml(err.message || 'Unknown error')}</p>
@@ -264,7 +268,7 @@ async function sendMessage() {
   } finally {
     isSending = false;
     document.getElementById('sendBtn').disabled = false;
-    input.focus();
+    if (window.innerWidth > 768) input.focus();
   }
 }
 
