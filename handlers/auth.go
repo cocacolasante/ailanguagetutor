@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -16,14 +17,16 @@ import (
 )
 
 type AuthHandler struct {
-	cfg       *config.Config
-	store     *store.UserStore
-	billing   *BillingHandler
-	blocklist *store.TokenBlocklist
+	cfg         *config.Config
+	store       *store.UserStore
+	billing     *BillingHandler
+	blocklist   *store.TokenBlocklist
+	rateLimiter *store.RateLimiter
+	resetStore  *store.ResetTokenStore
 }
 
-func NewAuthHandler(cfg *config.Config, s *store.UserStore, b *BillingHandler, bl *store.TokenBlocklist) *AuthHandler {
-	return &AuthHandler{cfg: cfg, store: s, billing: b, blocklist: bl}
+func NewAuthHandler(cfg *config.Config, s *store.UserStore, b *BillingHandler, bl *store.TokenBlocklist, rl *store.RateLimiter, rs *store.ResetTokenStore) *AuthHandler {
+	return &AuthHandler{cfg: cfg, store: s, billing: b, blocklist: bl, rateLimiter: rl, resetStore: rs}
 }
 
 type registerRequest struct {
@@ -74,6 +77,11 @@ func toDTO(u *store.User) userDTO {
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+	if !h.rateLimiter.Allow(r.Context(), fmt.Sprintf("ratelimit:register:%s", clientIP(r)), 5, 10*time.Minute) {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": "too many requests"})
+		return
+	}
+
 	var req registerRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
@@ -113,6 +121,13 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Rate-limit email sends to prevent duplicate sends within 60 seconds
+	cooldownKey := fmt.Sprintf("cooldown:email-send:%s", u.Email)
+	if h.rateLimiter.OnCooldown(r.Context(), cooldownKey) {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": "A verification email was already sent. Please wait before requesting another."})
+		return
+	}
+
 	// Send verification email; clicking the link will redirect to Stripe Checkout
 	verifyURL := h.cfg.AppBaseURL + "/api/auth/verify-email?token=" + u.EmailVerifyToken
 	if err := sendVerificationEmail(h.cfg, u.Email, u.Username, verifyURL); err != nil {
@@ -121,6 +136,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to send verification email. Please try again."})
 		return
 	}
+	_ = h.rateLimiter.SetCooldown(r.Context(), cooldownKey, 60*time.Second)
 
 	writeJSON(w, http.StatusCreated, map[string]string{
 		"message": "Please check your email to verify your account.",
@@ -167,6 +183,11 @@ func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	if !h.rateLimiter.Allow(r.Context(), fmt.Sprintf("ratelimit:login:%s", clientIP(r)), 10, time.Minute) {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": "too many requests"})
+		return
+	}
+
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
@@ -284,13 +305,21 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Rate limit by IP and by email (3 attempts per hour each)
+	ipKey := fmt.Sprintf("ratelimit:forgot-password:%s", clientIP(r))
+	emailKey := fmt.Sprintf("ratelimit:forgot-password:email:%s", req.Email)
+	if !h.rateLimiter.Allow(r.Context(), ipKey, 3, time.Hour) ||
+		!h.rateLimiter.Allow(r.Context(), emailKey, 3, time.Hour) {
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": "too many requests"})
+		return
+	}
+
 	// Always respond with success to avoid exposing whether the email exists
 	u, err := h.store.GetByEmail(req.Email)
 	if err == nil {
 		token := uuid.New().String()
-		expiry := time.Now().Add(time.Hour)
-		if err := h.store.SetPasswordResetToken(u.Email, token, expiry); err != nil {
-			log.Printf("forgot-password: set token error: %v", err)
+		if err := h.resetStore.Save(r.Context(), token, u.Email); err != nil {
+			log.Printf("forgot-password: save token error: %v", err)
 		} else {
 			resetURL := h.cfg.AppBaseURL + "/reset-password.html?token=" + token
 			if err := sendPasswordResetEmail(h.cfg, u.Email, u.Username, resetURL); err != nil {
@@ -318,13 +347,16 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u, err := h.store.GetByPasswordResetToken(req.Token)
+	// Look up email from Redis (TTL handles expiry)
+	email, err := h.resetStore.Get(r.Context(), req.Token)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid or expired reset link."})
 		return
 	}
-	if u.PasswordResetExpiry == nil || time.Now().After(*u.PasswordResetExpiry) {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "This reset link has expired. Please request a new one."})
+
+	u, err := h.store.GetByEmail(email)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid or expired reset link."})
 		return
 	}
 
@@ -338,7 +370,19 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Consume the token so it can't be reused
+	_ = h.resetStore.Delete(r.Context(), req.Token)
+
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Password updated. You can now sign in."})
+}
+
+// clientIP extracts the client IP from r.RemoteAddr, stripping the port.
+func clientIP(r *http.Request) string {
+	addr := r.RemoteAddr
+	if idx := strings.LastIndex(addr, ":"); idx != -1 {
+		return addr[:idx]
+	}
+	return addr
 }
 
 func (h *AuthHandler) generateToken(userID string) (string, error) {

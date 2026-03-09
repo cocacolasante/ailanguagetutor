@@ -20,12 +20,14 @@ import (
 // ── Handler ────────────────────────────────────────────────────────────────────
 
 type WritingHandler struct {
-	cfg          *config.Config
-	userStore    *store.UserStore
-	profileStore *store.StudentProfileStore
-	historyStore *store.ConversationHistoryStore
-	sessionStore *store.SessionStore
-	pool         *store.ItemPool
+	cfg           *config.Config
+	userStore     *store.UserStore
+	profileStore  *store.StudentProfileStore
+	historyStore  *store.ConversationHistoryStore
+	sessionStore  *store.SessionStore
+	pool          *store.ItemPool
+	presenceStore *store.PresenceStore
+	cacheStore    *store.CacheStore
 }
 
 func NewWritingHandler(
@@ -35,14 +37,18 @@ func NewWritingHandler(
 	hs *store.ConversationHistoryStore,
 	ss *store.SessionStore,
 	pool *store.ItemPool,
+	presence *store.PresenceStore,
+	cache *store.CacheStore,
 ) *WritingHandler {
 	return &WritingHandler{
-		cfg:          cfg,
-		userStore:    us,
-		profileStore: ps,
-		historyStore: hs,
-		sessionStore: ss,
-		pool:         pool,
+		cfg:           cfg,
+		userStore:     us,
+		profileStore:  ps,
+		historyStore:  hs,
+		sessionStore:  ss,
+		pool:          pool,
+		presenceStore: presence,
+		cacheStore:    cache,
 	}
 }
 
@@ -198,6 +204,13 @@ If no misspellings, return empty array.`,
 
 	session := h.sessionStore.Create(userID, req.Language, req.Topic, req.Level, "writing-coach", systemPrompt)
 	_ = h.sessionStore.AddMessage(session.ID, store.Message{Role: "assistant", Content: firstMessage})
+
+	_ = h.presenceStore.Set(r.Context(), userID, store.LessonPresence{
+		Type:      "writing",
+		Language:  req.Language,
+		Topic:     req.Topic,
+		StartedAt: session.CreatedAt,
+	})
 
 	writeJSON(w, http.StatusOK, writingSessionResponse{
 		SessionID:    session.ID,
@@ -385,6 +398,9 @@ func (h *WritingHandler) Complete(w http.ResponseWriter, r *http.Request) {
 		EndedAt:      time.Now(),
 	}
 	h.historyStore.Save(record)
+
+	_ = h.presenceStore.Clear(r.Context(), userID)
+	_ = h.cacheStore.InvalidateUserStats(r.Context(), userID)
 
 	// Advance writing list index
 	ctx := context.Background()

@@ -19,10 +19,11 @@ type AdminHandler struct {
 	userStore    *store.UserStore
 	historyStore *store.ConversationHistoryStore
 	billing      *BillingHandler
+	resetStore   *store.ResetTokenStore
 }
 
-func NewAdminHandler(cfg *config.Config, us *store.UserStore, bh *BillingHandler, hs *store.ConversationHistoryStore) *AdminHandler {
-	return &AdminHandler{cfg: cfg, userStore: us, billing: bh, historyStore: hs}
+func NewAdminHandler(cfg *config.Config, us *store.UserStore, bh *BillingHandler, hs *store.ConversationHistoryStore, rs *store.ResetTokenStore) *AdminHandler {
+	return &AdminHandler{cfg: cfg, userStore: us, billing: bh, historyStore: hs, resetStore: rs}
 }
 
 // requireAdmin checks the caller is the admin user; returns false and writes 403 if not.
@@ -219,8 +220,7 @@ func (h *AdminHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 
 	// Generate a 48-hour password-set token so the user can choose their password.
 	resetToken := uuid.New().String()
-	resetExpiry := time.Now().Add(48 * time.Hour)
-	if err := h.userStore.SetPasswordResetToken(req.Email, resetToken, resetExpiry); err != nil {
+	if err := h.resetStore.SaveWithTTL(r.Context(), resetToken, req.Email, 48*time.Hour); err != nil {
 		h.userStore.Delete(u.ID)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to create invite token"})
 		return

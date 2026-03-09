@@ -26,7 +26,7 @@ func newLogoutTestHandler(t *testing.T) (*handlers.AuthHandler, *store.TokenBloc
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	bl := store.NewTokenBlocklist(rdb)
 	cfg := &config.Config{JWTSecret: logoutTestSecret}
-	h := handlers.NewAuthHandler(cfg, nil, nil, bl)
+	h := handlers.NewAuthHandler(cfg, nil, nil, bl, nil, nil)
 	return h, bl, mr
 }
 

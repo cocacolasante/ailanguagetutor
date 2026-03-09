@@ -161,6 +161,15 @@ ALTER TABLE conversation_history ADD COLUMN IF NOT EXISTS misspellings JSONB DEF
 ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS weak_vocab   JSONB DEFAULT '[]';
 ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS weak_grammar JSONB DEFAULT '[]';
 `)
+	if err != nil {
+		return err
+	}
+
+	// Password reset tokens moved to Redis — drop Postgres columns (idempotent)
+	_, err = pool.Exec(ctx, `
+ALTER TABLE users DROP COLUMN IF EXISTS password_reset_token;
+ALTER TABLE users DROP COLUMN IF EXISTS password_reset_expires_at;
+`)
 	return err
 }
 

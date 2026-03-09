@@ -20,13 +20,15 @@ import (
 // ── Handler ────────────────────────────────────────────────────────────────────
 
 type ListeningHandler struct {
-	cfg          *config.Config
-	userStore    *store.UserStore
-	profileStore *store.StudentProfileStore
-	historyStore *store.ConversationHistoryStore
-	pool         *store.ItemPool
-	vocabPool    *store.ItemPool
-	sentencePool *store.ItemPool
+	cfg           *config.Config
+	userStore     *store.UserStore
+	profileStore  *store.StudentProfileStore
+	historyStore  *store.ConversationHistoryStore
+	pool          *store.ItemPool
+	vocabPool     *store.ItemPool
+	sentencePool  *store.ItemPool
+	presenceStore *store.PresenceStore
+	cacheStore    *store.CacheStore
 }
 
 func NewListeningHandler(
@@ -37,15 +39,19 @@ func NewListeningHandler(
 	pool *store.ItemPool,
 	vocabPool *store.ItemPool,
 	sentencePool *store.ItemPool,
+	presence *store.PresenceStore,
+	cache *store.CacheStore,
 ) *ListeningHandler {
 	return &ListeningHandler{
-		cfg:          cfg,
-		userStore:    us,
-		profileStore: ps,
-		historyStore: hs,
-		pool:         pool,
-		vocabPool:    vocabPool,
-		sentencePool: sentencePool,
+		cfg:           cfg,
+		userStore:     us,
+		profileStore:  ps,
+		historyStore:  hs,
+		pool:          pool,
+		vocabPool:     vocabPool,
+		sentencePool:  sentencePool,
+		presenceStore: presence,
+		cacheStore:    cache,
 	}
 }
 
@@ -158,6 +164,13 @@ func (h *ListeningHandler) Session(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "level must be 1-5"})
 		return
 	}
+
+	_ = h.presenceStore.Set(r.Context(), userID, store.LessonPresence{
+		Type:      "listening",
+		Language:  req.Language,
+		Topic:     req.Topic,
+		StartedAt: time.Now(),
+	})
 
 	profile, _ := h.profileStore.Get(r.Context(), userID, req.Language)
 
@@ -298,6 +311,9 @@ func (h *ListeningHandler) Complete(w http.ResponseWriter, r *http.Request) {
 		EndedAt:      time.Now(),
 	}
 	h.historyStore.Save(record)
+
+	_ = h.presenceStore.Clear(r.Context(), userID)
+	_ = h.cacheStore.InvalidateUserStats(r.Context(), userID)
 
 	writeJSON(w, http.StatusOK, listeningCompleteResponse{
 		FPEarned:     fp,

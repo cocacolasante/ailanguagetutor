@@ -18,15 +18,17 @@ import (
 )
 
 type SentenceHandler struct {
-	cfg          *config.Config
-	userStore    *store.UserStore
-	profileStore *store.StudentProfileStore
-	historyStore *store.ConversationHistoryStore
-	pool         *store.ItemPool
+	cfg           *config.Config
+	userStore     *store.UserStore
+	profileStore  *store.StudentProfileStore
+	historyStore  *store.ConversationHistoryStore
+	pool          *store.ItemPool
+	presenceStore *store.PresenceStore
+	cacheStore    *store.CacheStore
 }
 
-func NewSentenceHandler(cfg *config.Config, us *store.UserStore, ps *store.StudentProfileStore, hs *store.ConversationHistoryStore, pool *store.ItemPool) *SentenceHandler {
-	return &SentenceHandler{cfg: cfg, userStore: us, profileStore: ps, historyStore: hs, pool: pool}
+func NewSentenceHandler(cfg *config.Config, us *store.UserStore, ps *store.StudentProfileStore, hs *store.ConversationHistoryStore, pool *store.ItemPool, presence *store.PresenceStore, cache *store.CacheStore) *SentenceHandler {
+	return &SentenceHandler{cfg: cfg, userStore: us, profileStore: ps, historyStore: hs, pool: pool, presenceStore: presence, cacheStore: cache}
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -105,6 +107,13 @@ func (h *SentenceHandler) Session(w http.ResponseWriter, r *http.Request) {
 	langName := LanguageName(req.Language)
 	topicName, _ := TopicDetails(req.Topic)
 	spec := levelSpec[req.Level]
+
+	_ = h.presenceStore.Set(r.Context(), userID, store.LessonPresence{
+		Type:      "sentence",
+		Language:  req.Language,
+		Topic:     req.Topic,
+		StartedAt: time.Now(),
+	})
 
 	profile, _ := h.profileStore.Get(r.Context(), userID, req.Language)
 
@@ -419,6 +428,9 @@ func (h *SentenceHandler) Complete(w http.ResponseWriter, r *http.Request) {
 		EndedAt:      time.Now(),
 	}
 	h.historyStore.Save(record)
+
+	_ = h.presenceStore.Clear(r.Context(), userID)
+	_ = h.cacheStore.InvalidateUserStats(r.Context(), userID)
 
 	writeJSON(w, http.StatusOK, sentenceCompleteResponse{
 		FPEarned:     fp,

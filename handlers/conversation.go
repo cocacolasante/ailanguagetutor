@@ -26,10 +26,12 @@ type ConversationHandler struct {
 	userStore    *store.UserStore
 	historyStore *store.ConversationHistoryStore
 	profileStore *store.StudentProfileStore
+	presenceStore *store.PresenceStore
+	cacheStore   *store.CacheStore
 }
 
-func NewConversationHandler(cfg *config.Config, ss *store.SessionStore, cs *store.ContextStore, us *store.UserStore, hs *store.ConversationHistoryStore, ps *store.StudentProfileStore) *ConversationHandler {
-	return &ConversationHandler{cfg: cfg, sessionStore: ss, contextStore: cs, userStore: us, historyStore: hs, profileStore: ps}
+func NewConversationHandler(cfg *config.Config, ss *store.SessionStore, cs *store.ContextStore, us *store.UserStore, hs *store.ConversationHistoryStore, ps *store.StudentProfileStore, presence *store.PresenceStore, cache *store.CacheStore) *ConversationHandler {
+	return &ConversationHandler{cfg: cfg, sessionStore: ss, contextStore: cs, userStore: us, historyStore: hs, profileStore: ps, presenceStore: presence, cacheStore: cache}
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────────
@@ -99,6 +101,13 @@ func (h *ConversationHandler) Start(w http.ResponseWriter, r *http.Request) {
 	studentCtx := buildStudentContextBlock(profile, isFirst)
 	systemPrompt := buildSystemPrompt(req.Language, req.Level, topicName, topicDesc, req.Topic, req.Personality, len(priorMsgs) > 0, studentCtx)
 	session := h.sessionStore.Create(userID, req.Language, req.Topic, req.Level, req.Personality, systemPrompt)
+
+	_ = h.presenceStore.Set(r.Context(), userID, store.LessonPresence{
+		Type:      "conversation",
+		Language:  req.Language,
+		Topic:     req.Topic,
+		StartedAt: session.CreatedAt,
+	})
 
 	for _, m := range priorMsgs {
 		_ = h.sessionStore.AddMessage(session.ID, m)
@@ -230,6 +239,9 @@ func (h *ConversationHandler) End(w http.ResponseWriter, r *http.Request) {
 		EndedAt:      time.Now(),
 	}
 	h.historyStore.Save(record)
+
+	_ = h.presenceStore.Clear(r.Context(), userID)
+	_ = h.cacheStore.InvalidateUserStats(r.Context(), userID)
 
 	// Update student profile asynchronously
 	go h.updateStudentProfile(session.UserID, session.Language, summaryResult, record)

@@ -12,15 +12,23 @@ type GamificationHandler struct {
 	userStore    *store.UserStore
 	historyStore *store.ConversationHistoryStore
 	profileStore *store.StudentProfileStore
+	cacheStore   *store.CacheStore
 }
 
-func NewGamificationHandler(us *store.UserStore, hs *store.ConversationHistoryStore, ps *store.StudentProfileStore) *GamificationHandler {
-	return &GamificationHandler{userStore: us, historyStore: hs, profileStore: ps}
+func NewGamificationHandler(us *store.UserStore, hs *store.ConversationHistoryStore, ps *store.StudentProfileStore, cs *store.CacheStore) *GamificationHandler {
+	return &GamificationHandler{userStore: us, historyStore: hs, profileStore: ps, cacheStore: cs}
 }
 
 // Stats returns the current user's gamification stats and recent conversations.
 func (h *GamificationHandler) Stats(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(middleware.UserIDKey).(string)
+
+	// Serve from cache if available
+	var cached map[string]any
+	if h.cacheStore.GetUserStats(r.Context(), userID, &cached) {
+		writeJSON(w, http.StatusOK, cached)
+		return
+	}
 
 	user, err := h.userStore.GetByID(userID)
 	if err != nil {
@@ -47,7 +55,7 @@ func (h *GamificationHandler) Stats(w http.ResponseWriter, r *http.Request) {
 		achievements = []string{}
 	}
 
-	writeJSON(w, http.StatusOK, map[string]any{
+	stats := map[string]any{
 		"streak":               user.Streak,
 		"last_activity_date":   user.LastActivityDate,
 		"total_fp":             user.TotalFP,
@@ -56,15 +64,25 @@ func (h *GamificationHandler) Stats(w http.ResponseWriter, r *http.Request) {
 		"achievements":         achievements,
 		"conversation_count":   user.ConversationCount,
 		"recent_conversations": recent,
-	})
+	}
+
+	_ = h.cacheStore.SetUserStats(r.Context(), userID, stats)
+	writeJSON(w, http.StatusOK, stats)
 }
 
 // Leaderboard returns the top 50 users by total FP.
 func (h *GamificationHandler) Leaderboard(w http.ResponseWriter, r *http.Request) {
+	// Serve from cache if available
+	if entries, ok := h.cacheStore.GetLeaderboard(r.Context()); ok {
+		writeJSON(w, http.StatusOK, map[string]any{"leaderboard": entries})
+		return
+	}
+
 	entries := h.userStore.GetLeaderboard(50)
 	if entries == nil {
 		entries = []store.LeaderboardEntry{}
 	}
+	_ = h.cacheStore.SetLeaderboard(r.Context(), entries)
 	writeJSON(w, http.StatusOK, map[string]any{
 		"leaderboard": entries,
 	})
