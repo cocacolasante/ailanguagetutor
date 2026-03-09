@@ -82,6 +82,35 @@ async function playViaAudioContext(blob) {
 const LANG_BCP47 = { it: 'it-IT', es: 'es-ES', pt: 'pt-BR' };
 const LANG_NAMES = { it: 'Italian', es: 'Spanish', pt: 'Portuguese' };
 
+/* ── BFCache handling ───────────────────────────────────────────────────────── */
+// iOS Safari heavily uses BFCache (Back-Forward Cache). When the user navigates
+// away and back, the page JS state is restored from cache. Scalar values like
+// pipelineReady=true survive, but object references (audioCtx, micStream) are
+// nulled. This causes the second session to skip initAudioPipeline() while
+// having no AudioContext — falling back to HTMLAudioElement with no session
+// management, so recognition silently fails.
+// Fix: on BFCache restore, reset all pipeline state so it re-inits cleanly.
+window.addEventListener('pagehide', () => {
+  if (micStream) { micStream.getTracks().forEach(t => t.stop()); }
+  if (audioCtx)  { try { audioCtx.close(); } catch {} }
+});
+
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) {
+    console.log('[vocab] pageshow: BFCache restore — resetting pipeline state');
+    pipelineReady  = false;
+    audioCtx       = null;
+    micStream      = null;
+    ttsInFlight    = false;
+    isPlayingAudio = false;
+    isListening    = false;
+    const playBtn   = document.getElementById('playBtn');
+    const listenBtn = document.getElementById('listenBtn');
+    if (playBtn)   { playBtn.disabled = false; playBtn.textContent = '🔊 Play'; }
+    if (listenBtn) { listenBtn.disabled = false; }
+  }
+});
+
 /* ── Boot ───────────────────────────────────────────────────────────────────── */
 (async function init() {
   if (window.SpeechRecognition || window.webkitSpeechRecognition) {
@@ -201,11 +230,22 @@ async function playWord(fromGesture = false) {
       }
       releaseMic();
     } else {
-      // Desktop path: HTMLAudioElement (no iOS session conflict on desktop).
+      // HTMLAudioElement path: desktop (no session conflict) or iOS fallback.
+      // On iOS fallback, add a delay to let the audio session transition back.
       console.log('[vocab] playWord: playing via HTMLAudioElement');
       const url   = URL.createObjectURL(blob);
       const audio = new Audio(url);
-      const done  = () => { URL.revokeObjectURL(url); releaseMic(); };
+      const done  = () => {
+        URL.revokeObjectURL(url);
+        if (isIOS) {
+          // Give iOS time to transition the audio session before mic is enabled.
+          // This path only runs when AudioContext pipeline unavailable (BFCache edge case).
+          console.log('[vocab] playWord: HTMLAudioElement ended, waiting 1200ms for iOS session');
+          setTimeout(releaseMic, 1200);
+        } else {
+          releaseMic();
+        }
+      };
       audio.onended = done;
       audio.onerror = done;
       await audio.play().catch(() => { URL.revokeObjectURL(url); releaseMic(); });
@@ -354,6 +394,7 @@ function nextWord() {
 async function completeSession() {
   if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
   if (audioCtx)  { try { audioCtx.close(); } catch {} audioCtx = null; }
+  pipelineReady = false; // ensure re-init on next session (guards against non-BFCache revisit)
 
   document.getElementById('flashcardContainer').classList.add('hidden');
   try {
