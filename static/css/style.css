@@ -265,12 +265,14 @@ input::placeholder { color: var(--text-3); }
   text-align: center;
   margin-bottom: 32px;
 }
-.auth-logo .logo-icon {
-  font-size: 2.8rem;
-  margin-bottom: 12px;
+.auth-logo-img {
+  width: 220px;
+  height: auto;
+  margin-bottom: 8px;
   display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
-.auth-logo h1 { font-size: 1.6rem; }
 .auth-logo p  { font-size: 0.9rem; margin-top: 6px; }
 
 .auth-card {
@@ -371,7 +373,7 @@ input::placeholder { color: var(--text-3); }
   font-size: 1.05rem;
   color: var(--text);
 }
-.nav-brand .brand-icon { font-size: 1.4rem; }
+.nav-logo-img { height: 32px; width: auto; }
 
 .nav-right {
   display: flex;
