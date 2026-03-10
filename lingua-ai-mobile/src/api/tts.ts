@@ -1,4 +1,4 @@
-import { File, Paths } from 'expo-file-system';
+import * as FileSystem from 'expo-file-system';
 import { API_BASE, ENDPOINTS } from '@/constants/api';
 import { getToken } from '@/utils/storage';
 
@@ -17,10 +17,17 @@ export const fetchTTS = async (text: string, language: string): Promise<string> 
   if (!response.ok) throw new Error('TTS request failed');
 
   const arrayBuffer = await response.arrayBuffer();
-  const file = new File(Paths.cache, `tts_${Date.now()}.mp3`);
-  const writer = file.writableStream().getWriter();
-  await writer.write(new Uint8Array(arrayBuffer));
-  await writer.close();
+  const uint8Array = new Uint8Array(arrayBuffer);
 
-  return file.uri;
+  // Convert binary to base64 for FileSystem.writeAsStringAsync
+  let binary = '';
+  uint8Array.forEach((b) => { binary += String.fromCharCode(b); });
+  const base64 = btoa(binary);
+
+  const fileUri = `${FileSystem.cacheDirectory}tts_${Date.now()}.mp3`;
+  await FileSystem.writeAsStringAsync(fileUri, base64, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+
+  return fileUri;
 };
