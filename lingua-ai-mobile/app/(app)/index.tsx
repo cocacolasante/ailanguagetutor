@@ -16,6 +16,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { getStats } from '@/api/gamification';
 import { useAuthStore } from '@/store/authStore';
 import { formatRelativeDate, levelLabel } from '@/utils/formatting';
+import { useNotifications } from '@/hooks/useNotifications';
 import { ConversationRecord } from '@/types/api';
 
 const LANGUAGE_FLAGS: Record<string, string> = { it: '🇮🇹', es: '🇪🇸', pt: '🇧🇷' };
@@ -24,6 +25,7 @@ const LANGUAGE_NAMES: Record<string, string> = { it: 'Italian', es: 'Spanish', p
 export default function DashboardScreen() {
   const user = useAuthStore((s) => s.user);
   const { data: stats, isLoading } = useQuery({ queryKey: ['stats'], queryFn: getStats });
+  useNotifications(stats?.streak);
 
   if (isLoading) return <LoadingSpinner style={{ backgroundColor: Colors.background }} />;
 

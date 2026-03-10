@@ -13,6 +13,7 @@ import { useConversationStream } from '@/hooks/useConversationStream';
 import { useAudio } from '@/hooks/useAudio';
 import { endConversation } from '@/api/conversation';
 import { formatDuration } from '@/utils/formatting';
+import { cancelStreakReminder } from '@/utils/notifications';
 
 export default function LiveConversationScreen() {
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
@@ -97,6 +98,7 @@ export default function LiveConversationScreen() {
           try {
             const result = await endConversation(sessionId!);
             clearSession();
+            cancelStreakReminder().catch(() => {});
             router.replace({
               pathname: '/(app)/conversation/summary',
               params: { recordId: result.record_id },

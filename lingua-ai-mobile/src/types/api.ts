@@ -34,17 +34,6 @@ export interface ConversationRecord {
   ended_at: string;
 }
 
-export interface UserStats {
-  streak: number;
-  last_activity_date: string;
-  total_fp: number;
-  language_fp: Record<string, number>;
-  language_level: Record<string, number>;
-  achievements: string[];
-  conversation_count: number;
-  recent_conversations: ConversationRecord[];
-}
-
 export interface SessionStart {
   session_id: string;
   language: string;
@@ -116,3 +105,46 @@ export interface Badge {
   icon: string;
   desc: string;
 }
+
+// UserStats extended fields
+export interface UserStats {
+  streak: number;
+  last_activity_date: string;
+  total_fp: number;
+  language_fp: Record<string, number>;
+  language_level: Record<string, number>;
+  achievements: string[];
+  conversation_count: number;
+  recent_conversations: ConversationRecord[];
+  weak_areas?: string[];
+  strong_areas?: string[];
+  recent_topics?: string[];
+  recent_vocab?: string[];
+  next_suggestions?: string[];
+  weak_vocab?: string[];
+  weak_grammar?: string[];
+}
+
+export interface Mistake {
+  type: string;
+  description: string;
+  example: string;
+  count: number;
+}
+
+export interface VocabWord { word: string; translation: string; example: string; }
+export interface VocabSession { session_id: string; words: VocabWord[]; }
+export interface VocabCheckResult { correct: boolean; correctAnswer: string; explanation: string; }
+export interface VocabCompleteResult { score: number; total: number; fluency_points: number; weak_vocab: string[]; }
+
+export interface SentenceItem { prompt: string; hint: string; }
+export interface SentenceSession { session_id: string; sentences: SentenceItem[]; }
+export interface SentenceCheckResult { correct: boolean; correctAnswer: string; feedback: string; }
+export interface SentenceCompleteResult { score: number; total: number; fluency_points: number; }
+
+export interface ListeningExercise { audioText: string; question: string; options: string[]; }
+export interface ListeningSession { session_id: string; exercises: ListeningExercise[]; }
+export interface ListeningCompleteResult { score: number; total: number; fluency_points: number; correctAnswers: string[]; }
+
+export interface WritingSession { session_id: string; prompt: string; targetLanguage: string; }
+export interface WritingCompleteResult { feedback: string; fluency_points: number; corrections: string[]; }

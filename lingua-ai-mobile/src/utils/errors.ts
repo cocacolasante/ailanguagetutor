@@ -1,3 +1,9 @@
+import axios from 'axios';
+
+export function isPracticeSessionExpired(error: unknown): boolean {
+  return axios.isAxiosError(error) && error.response?.status === 404;
+}
+
 export function extractErrorMessage(err: unknown): string {
   if (err && typeof err === 'object') {
     const e = err as Record<string, unknown>;

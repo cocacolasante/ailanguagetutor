@@ -1,20 +1,33 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useQuery } from '@tanstack/react-query';
-import { FlatList } from 'react-native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Colors } from '@/constants/colors';
 import { Card } from '@/components/ui/Card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { getLeaderboard } from '@/api/gamification';
 import { useAuthStore } from '@/store/authStore';
 import { LeaderboardEntry } from '@/types/api';
+import { queryKeys } from '@/constants/api';
 
 const RANK_ICONS = ['🥇', '🥈', '🥉'];
 
 export default function LeaderboardScreen() {
   const user = useAuthStore((s) => s.user);
-  const { data, isLoading } = useQuery({ queryKey: ['leaderboard'], queryFn: getLeaderboard, staleTime: 60_000 });
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: queryKeys.leaderboard,
+    queryFn: getLeaderboard,
+    staleTime: 60_000,
+  });
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
 
   if (isLoading) return <LoadingSpinner style={{ backgroundColor: Colors.background }} />;
 
@@ -27,6 +40,13 @@ export default function LeaderboardScreen() {
       <FlatList
         data={data ?? []}
         contentContainerStyle={styles.list}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={Colors.accent}
+          />
+        }
         renderItem={({ item }: { item: LeaderboardEntry }) => {
           const isMe = item.username === user?.username;
           return (

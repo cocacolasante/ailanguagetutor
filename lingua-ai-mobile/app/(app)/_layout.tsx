@@ -31,10 +31,17 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
-        name="conversation"
+        name="practice"
         options={{
           title: 'Practice',
-          tabBarIcon: ({ focused }) => <TabIcon icon="💬" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon icon="📚" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="improve"
+        options={{
+          title: 'Improve',
+          tabBarIcon: ({ focused }) => <TabIcon icon="🎯" focused={focused} />,
         }}
       />
       <Tabs.Screen
@@ -52,10 +59,14 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
+        name="conversation"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
-          title: 'Settings',
-          tabBarIcon: ({ focused }) => <TabIcon icon="⚙️" focused={focused} />,
           href: null,
         }}
       />

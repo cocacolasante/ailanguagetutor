@@ -24,4 +24,30 @@ export const ENDPOINTS = {
   languages: '/api/languages',
   topics: '/api/topics',
   personalities: '/api/personalities',
+  // Practice modes
+  vocabSession: '/api/vocab/session',
+  vocabCheck: '/api/vocab/check',
+  vocabWordResult: '/api/vocab/word-result',
+  vocabComplete: '/api/vocab/complete',
+  sentencesSession: '/api/sentences/session',
+  sentencesCheck: '/api/sentences/check',
+  sentencesComplete: '/api/sentences/complete',
+  listeningSession: '/api/listening/session',
+  listeningComplete: '/api/listening/complete',
+  writingSession: '/api/writing/session',
+  writingMessage: '/api/writing/message',
+  writingComplete: '/api/writing/complete',
+  userMistakes: '/api/user/mistakes',
+};
+
+export const queryKeys = {
+  userStats: ['user', 'stats'] as const,
+  userMistakes: ['user', 'mistakes'] as const,
+  records: ['conversation', 'records'] as const,
+  record: (id: string) => ['conversation', 'records', id] as const,
+  badges: ['badges'] as const,
+  leaderboard: ['leaderboard'] as const,
+  languages: ['meta', 'languages'] as const,
+  topics: ['meta', 'topics'] as const,
+  personalities: ['meta', 'personalities'] as const,
 };

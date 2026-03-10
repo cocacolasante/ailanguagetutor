@@ -21,7 +21,9 @@
     },
     "android": {
       "package": "com.fluentica.app",
-      "permissions": ["RECORD_AUDIO"],
+      "permissions": [
+        "RECORD_AUDIO"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#0f0f1a",
         "foregroundImage": "./assets/adaptive-icon.png"
@@ -40,7 +42,16 @@
         {
           "microphonePermission": "Fluentica AI needs microphone access for voice input during language practice sessions."
         }
-      ]
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#6366f1",
+          "sounds": []
+        }
+      ],
+      "@stripe/stripe-react-native"
     ],
     "experiments": {
       "typedRoutes": true
