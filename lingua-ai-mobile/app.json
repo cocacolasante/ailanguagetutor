@@ -50,8 +50,7 @@
           "color": "#6366f1",
           "sounds": []
         }
-      ],
-      "@stripe/stripe-react-native"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
