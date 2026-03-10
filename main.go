@@ -76,9 +76,10 @@ func main() {
 
 	// ── Static files ──────────────────────────────────────────────────────────
 	fs := http.StripPrefix("", noCacheFS(http.Dir("./static")))
-	r.Handle("/css/*",   fs)
-	r.Handle("/js/*",    fs)
-	r.Handle("/fonts/*", fs)
+	r.Handle("/css/*",    fs)
+	r.Handle("/js/*",     fs)
+	r.Handle("/fonts/*",  fs)
+	r.Handle("/images/*", fs)
 
 	// Serve HTML pages
 	r.Get("/",                       serveFile("./static/index.html"))
