@@ -57,7 +57,7 @@ active + free → all 5 levels
 
 ## TTS
 - POST /api/tts  → ElevenLabs audio stream proxy
-  Body: { text: string, language: "it" | "es" | "pt" }
+  Body: { text: string, language: "it" | "es" | "pt" | "en" }
   Response: audio/mpeg stream
   Play with expo-av Audio.Sound
 

@@ -14,6 +14,7 @@ const LANGUAGES = [
   { code: 'it', name: 'Italian', flag: '🇮🇹' },
   { code: 'es', name: 'Spanish', flag: '🇪🇸' },
   { code: 'pt', name: 'Portuguese', flag: '🇧🇷' },
+  { code: 'en', name: 'English', flag: '🇺🇸' },
 ];
 
 const PERSONALITIES = [

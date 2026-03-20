@@ -36,6 +36,7 @@ var Languages = []Language{
 	{Code: "it", Name: "Italian", NativeName: "Italiano", Flag: "🇮🇹"},
 	{Code: "es", Name: "Spanish", NativeName: "Español", Flag: "🇪🇸"},
 	{Code: "pt", Name: "Portuguese", NativeName: "Português", Flag: "🇧🇷"},
+	{Code: "en", Name: "English", NativeName: "English", Flag: "🇺🇸"},
 }
 
 var Topics = []Topic{

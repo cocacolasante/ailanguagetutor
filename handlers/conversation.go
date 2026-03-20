@@ -317,13 +317,14 @@ func (h *ConversationHandler) generateSummary(ctx context.Context, language stri
 	}
 	durationStr := fmt.Sprintf("%d min %d sec", durationSecs/60, durationSecs%60)
 	langName := LanguageName(language)
+	native := nativeLang(language)
 
 	prompt := fmt.Sprintf(`You are a language learning analytics assistant. Analyze the %s conversation transcript below and return a JSON object. Return ONLY valid JSON — no markdown, no code fences, no extra text.
 
 RULES — you MUST follow these exactly:
 - "summary": Write 2-3 complete sentences describing what the student actually practiced. Always include the topic and at least one specific thing they did or said.
 - "topics_discussed": List 2-4 specific topics or themes that came up. Never leave this empty — at minimum list the session topic.
-- "vocabulary_learned": List every %s word or phrase that appeared in the conversation (format: "word: English meaning"). If fewer than 3 appear, infer 2-3 relevant words for this topic and level that the student likely encountered.
+- "vocabulary_learned": List every %s word or phrase that appeared in the conversation (format: "word: %s meaning"). If fewer than 3 appear, infer 2-3 relevant words for this topic and level that the student likely encountered.
 - "grammar_corrections": List any grammar mistakes the student made with a brief correction. If no mistakes, write one grammar tip relevant to their level and the topic (e.g. "Tip: Use estar for temporary states like feelings and locations").
 - "suggested_next_lessons": Always provide exactly 3 specific, actionable next steps tailored to this student's level and what they practiced today.
 - "student_name": The student's first name if they introduced themselves in the conversation, otherwise empty string.
@@ -335,7 +336,7 @@ Messages exchanged: %d
 
 Transcript:
 %s`,
-		langName, langName, levelName, level, topicName, durationStr, len(msgs), transcript.String(),
+		langName, langName, native, levelName, level, topicName, durationStr, len(msgs), transcript.String(),
 	)
 
 	payload := ionosPayload{
@@ -581,9 +582,10 @@ func (h *ConversationHandler) Translate(w http.ResponseWriter, r *http.Request) 
 	}
 
 	langName := LanguageName(req.Language)
+	native := nativeLang(req.Language)
 	prompt := fmt.Sprintf(
-		"Translate the following %s text to English. Respond with ONLY the translation — no explanations, no quotation marks, no additional commentary:\n\n%s",
-		langName, req.Text,
+		"Translate the following %s text to %s. Respond with ONLY the translation — no explanations, no quotation marks, no additional commentary:\n\n%s",
+		langName, native, req.Text,
 	)
 
 	payload := ionosPayload{
@@ -666,23 +668,32 @@ func (h *ConversationHandler) History(w http.ResponseWriter, r *http.Request) {
 
 // ── System prompt builder ─────────────────────────────────────────────────────
 
-func levelProfile(level int) string {
+// nativeLang returns the assumed native/support language for a given target language code.
+// English learners are assumed to be Spanish speakers; all others are assumed English speakers.
+func nativeLang(langCode string) string {
+	if langCode == "en" {
+		return "Spanish"
+	}
+	return "English"
+}
+
+func levelProfile(level int, native string) string {
 	switch level {
 
 	case 1:
-		return `Student level: Beginner (1/5) — Structured & Instructor-Led.
-Conversation is short and highly guided. Speak primarily in English (about 85%) with only one short target-language word or phrase per turn, including a quick pronunciation hint.
-Each turn: introduce one word or short phrase, model it in a simple sentence, then ask the student to try it. Correct immediately: brief praise, corrected form, one short reason. Keep language simple and controlled.`
+		return fmt.Sprintf(`Student level: Beginner (1/5) — Structured & Instructor-Led.
+Conversation is short and highly guided. Speak primarily in %s (about 85%%) with only one short target-language word or phrase per turn, including a quick pronunciation hint.
+Each turn: introduce one word or short phrase, model it in a simple sentence, then ask the student to try it. Correct immediately: brief praise, corrected form, one short reason. Keep language simple and controlled.`, native)
 
 	case 2:
-		return `Student level: Elementary (2/5) — Guided Conversation.
-Use about 60% target language and 40% English support. Weave in one useful vocabulary word naturally per turn (word = English meaning).
-Use short situational prompts instead of scripts. After every 2–3 exchanges, insert one brief correction note (1 correction + short reason), then continue the conversation.`
+		return fmt.Sprintf(`Student level: Elementary (2/5) — Guided Conversation.
+Use about 60%% target language and 40%% %s support. Weave in one useful vocabulary word naturally per turn (word = %s meaning).
+Use short situational prompts instead of scripts. After every 2–3 exchanges, insert one brief correction note (1 correction + short reason), then continue the conversation.`, native, native)
 
 	case 3:
-		return `Student level: Intermediate (3/5) — Balanced Real Conversation.
-Speak primarily in the target language with minimal English clarifications in brackets only when needed.
-Allow natural back-and-forth for 4–5 turns without interrupting minor mistakes. Then give one short coaching block: 1–2 corrections (with very short reasons), one vocabulary upgrade, and one fluency tip. Resume conversation immediately.`
+		return fmt.Sprintf(`Student level: Intermediate (3/5) — Balanced Real Conversation.
+Speak primarily in the target language with minimal %s clarifications in brackets only when needed.
+Allow natural back-and-forth for 4–5 turns without interrupting minor mistakes. Then give one short coaching block: 1–2 corrections (with very short reasons), one vocabulary upgrade, and one fluency tip. Resume conversation immediately.`, native)
 
 	case 4:
 		return `Student level: Advanced (4/5) — Conversation First, Coaching Second.
@@ -695,7 +706,7 @@ Speak entirely in the target language at natural native flow. No structured teac
 Only correct if communication fails. After 8–10 turns, offer one subtle refinement (tone, idiom, cultural nuance), then immediately continue the conversation. Treat the student as an equal conversational partner.`
 
 	default:
-		return levelProfile(3)
+		return levelProfile(3, native)
 	}
 }
 
@@ -768,15 +779,16 @@ Teach through conversation, not explanation. Ask about the student's real life a
 
 func buildSystemPrompt(langCode string, level int, topicName, topicDesc, topicID, personality string, hasPriorContext bool, studentContext string) string {
 	lang := LanguageName(langCode)
+	native := nativeLang(langCode)
 
 	if strings.HasPrefix(topicID, "grammar-") {
-		return buildGrammarSystemPrompt(lang, level, topicName, topicID, hasPriorContext)
+		return buildGrammarSystemPrompt(lang, native, level, topicName, topicID, hasPriorContext)
 	}
 	if strings.HasPrefix(topicID, "cultural-") {
-		return buildCulturalSystemPrompt(lang, level, topicName, topicID, hasPriorContext)
+		return buildCulturalSystemPrompt(lang, native, level, topicName, topicID, hasPriorContext)
 	}
 	if strings.HasPrefix(topicID, "immersion-") {
-		return buildImmersionSystemPrompt(lang, topicName, topicID, hasPriorContext)
+		return buildImmersionSystemPrompt(lang, native, topicName, topicID, hasPriorContext)
 	}
 
 	contextNote := ""
@@ -803,11 +815,11 @@ FORMATTING — MANDATORY: Write in plain, natural prose only. No markdown whatso
 		lang, topicName, topicDesc,
 		personalityCharacter(personality),
 		personalityTeachingRules(personality),
-		levelProfile(level),
+		levelProfile(level, native),
 		contextNote, scenePreamble, studentContext)
 }
 
-func buildGrammarSystemPrompt(lang string, level int, topicName, topicID string, hasPriorContext bool) string {
+func buildGrammarSystemPrompt(lang, native string, level int, topicName, topicID string, hasPriorContext bool) string {
 	levelLabels := map[int]string{1: "Beginner", 2: "Elementary", 3: "Intermediate", 4: "Advanced", 5: "Fluent"}
 	lvl := levelLabels[level]
 	if lvl == "" {
@@ -826,46 +838,46 @@ func buildGrammarSystemPrompt(lang string, level int, topicName, topicID string,
 
 Teach 1 new word per turn in a natural, conversational way — not as a formatted list or card. Here is how each turn should flow, written as natural speech:
 
-Introduce the word naturally: say its name in %s, give the English meaning in parentheses right after it, then pronounce it in plain text with the stressed syllable in capitals (e.g., "Say it like this: KAH-sah"), then use it in one natural real-life sentence.
+Introduce the word naturally: say its name in %s, give the %s meaning in parentheses right after it, then pronounce it in plain text with the stressed syllable in capitals (e.g., "Say it like this: KAH-sah"), then use it in one natural real-life sentence.
 
-Then immediately give one short quiz exercise: either a fill-in-the-blank ("Complete this: Vivo en una _____ grande.") or ask them to translate a short English phrase using the word. Write the quiz as a plain sentence, not a formatted block.
+Then immediately give one short quiz exercise: either a fill-in-the-blank ("Complete this: Vivo en una _____ grande.") or ask them to translate a short %s phrase using the word. Write the quiz as a plain sentence, not a formatted block.
 
 After their answer, give a brief warm response — confirm what was right or gently correct — then move on to the next word.
 
-Aim for 8–12 words across the full session. Choose everyday vocabulary that a %s learner will actually use.`, lvl, lang, lang, lang)
+Aim for 8–12 words across the full session. Choose everyday vocabulary that a %s learner will actually use.`, lvl, lang, lang, native, native, lang)
 
 	case "grammar-sentences":
 		exercises = fmt.Sprintf(`SENTENCE CONSTRUCTION — %s %s learner.
 
 Present each exercise in natural, conversational prose — not as numbered lists or formatted blocks. Here is how each turn should flow as natural speech:
 
-Name the grammar pattern you are working on in one sentence (e.g., "Let's work on reflexive verbs"). Show one clear model sentence in %s with an English translation right after it in parentheses. Then give 2 exercises written as plain sentences: for a scramble say something like "Can you put these words in order: voy / hoy / al / supermercado?" and for fill-in-the-blank say "Complete this sentence: Ella _____ aprender."
+Name the grammar pattern you are working on in one sentence (e.g., "Let's work on reflexive verbs"). Show one clear model sentence in %s with a %s translation right after it in parentheses. Then give 2 exercises written as plain sentences: for a scramble say something like "Can you put these words in order: voy / hoy / al / supermercado?" and for fill-in-the-blank say "Complete this sentence: Ella _____ aprender."
 
 After each answer, confirm or correct with one short natural sentence explaining the rule. After 2–3 successful exercises, move to the next pattern.
 
-Focus on patterns that genuinely challenge English speakers learning %s. Always use natural, real-life sentences.`, lvl, lang, lang, lang)
+Focus on patterns that genuinely challenge %s speakers learning %s. Always use natural, real-life sentences.`, lvl, lang, lang, native, native, lang)
 
 	case "grammar-pronunciation":
 		exercises = fmt.Sprintf(`PRONUNCIATION PRACTICE — %s %s learner.
 
 Present each word and its pronunciation guide in natural, conversational prose — not as labeled blocks or bullet lists. Here is how each turn should flow as natural speech:
 
-Introduce the word naturally: say "Today's word is [word]" and then give the phonetic breakdown in plain text with the stressed syllable in capitals (e.g., "Say it like this: res-tau-RAN-te — four syllables, stress on the third"). Then describe the trickiest sound compared to English in one plain sentence (e.g., "The double r in perro requires your tongue tip to vibrate, which has no equivalent in English"). Give one short physical placement tip. Then ask the student to type the word and explain how they would pronounce it, or use it in a short sentence.
+Introduce the word naturally: say "Today's word is [word]" and then give the phonetic breakdown in plain text with the stressed syllable in capitals (e.g., "Say it like this: res-tau-RAN-te — four syllables, stress on the third"). Then describe the trickiest sound compared to %s in one plain sentence. Give one short physical placement tip. Then ask the student to type the word and explain how they would pronounce it, or use it in a short sentence.
 
 After their response, confirm or gently correct with a specific note on what to adjust. After every 5 words, give a short recall drill by listing the session's words as a plain sentence: "Can you say all of these: [list]?"
 
-Focus on sounds that genuinely challenge %s learners — rolled r's, nasal sounds, silent letters, tricky stress patterns.`, lvl, lang, lang)
+Focus on sounds that genuinely challenge %s learners — tricky stress patterns, sounds with no equivalent in %s, and commonly mispronounced words.`, lvl, lang, native, lang, native)
 
 	case "grammar-listening":
 		exercises = fmt.Sprintf(`LISTENING COMPREHENSION — %s %s learner.
 
 Present each passage and its questions in plain, natural prose — not as labeled blocks. Here is how each turn should flow as natural speech:
 
-Begin by saying something like "Read this carefully:" and then write a short passage in %s (2–4 sentences, a natural everyday scenario appropriate for %s level — someone at the market, a phone call, two friends making plans). Then naturally ask two comprehension questions as plain sentences. For Beginner or Elementary levels, add a brief English hint in parentheses after each question.
+Begin by saying something like "Read this carefully:" and then write a short passage in %s (2–4 sentences, a natural everyday scenario appropriate for %s level — someone at the market, a phone call, two friends making plans). Then naturally ask two comprehension questions as plain sentences. For Beginner or Elementary levels, add a brief %s hint in parentheses after each question.
 
 After they answer, warmly acknowledge what they got right and gently correct any errors. Then explain one vocabulary word or grammar point from the passage in a single natural sentence before moving on to the next passage.
 
-Gradually increase the complexity of passages across the session.`, lvl, lang, lang, lvl)
+Gradually increase the complexity of passages across the session.`, lvl, lang, lang, lvl, native)
 
 	case "grammar-writing":
 		exercises = fmt.Sprintf(`WRITING COACH — %s %s learner.
@@ -926,12 +938,13 @@ func travelPrompt(topicID, lang string) string {
 
 func buildGreetPrompt(langCode string, level int, topicID string) string {
 	lang := LanguageName(langCode)
+	native := nativeLang(langCode)
 
 	if strings.HasPrefix(topicID, "grammar-") {
-		return buildGrammarGreet(topicID, lang, level)
+		return buildGrammarGreet(topicID, lang, native, level)
 	}
 	if strings.HasPrefix(topicID, "cultural-") {
-		return buildCulturalGreet(topicID, lang, level)
+		return buildCulturalGreet(topicID, lang, native, level)
 	}
 	if strings.HasPrefix(topicID, "immersion-") {
 		return buildImmersionGreet(topicID, lang)
@@ -941,14 +954,14 @@ func buildGreetPrompt(langCode string, level int, topicID string) string {
 
 	case 1:
 		return fmt.Sprintf(
-			"[Open warmly in English. Introduce the topic briefly, teach one simple %s word or short phrase with pronunciation guidance, use it in a model sentence, then ask the student to try it. Keep it structured and beginner-safe. 2–3 sentences only.]",
-			lang,
+			"[Open warmly in %s. Introduce the topic briefly, teach one simple %s word or short phrase with pronunciation guidance, use it in a model sentence, then ask the student to try it. Keep it structured and beginner-safe. 2–3 sentences only.]",
+			native, lang,
 		)
 
 	case 2:
 		return fmt.Sprintf(
-			"[Greet using a mix of %s and English. Introduce 1–2 useful words naturally (word = English meaning), then set up a simple real-life scenario related to the topic and give the student their first short situational prompt. Keep it conversational, not instructional.]",
-			lang,
+			"[Greet using a mix of %s and %s. Introduce 1–2 useful words naturally (word = %s meaning), then set up a simple real-life scenario related to the topic and give the student their first short situational prompt. Keep it conversational, not instructional.]",
+			lang, native, native,
 		)
 
 	case 3:
@@ -974,7 +987,7 @@ func buildGreetPrompt(langCode string, level int, topicID string) string {
 	}
 }
 
-func buildGrammarGreet(topicID, lang string, level int) string {
+func buildGrammarGreet(topicID, lang, native string, level int) string {
 	levelNames := map[int]string{1: "beginner", 2: "elementary", 3: "intermediate", 4: "advanced", 5: "fluent"}
 	lvl := levelNames[level]
 	if lvl == "" {
@@ -989,13 +1002,13 @@ func buildGrammarGreet(topicID, lang string, level int) string {
 		)
 	case "grammar-sentences":
 		return fmt.Sprintf(
-			"[Start the sentence construction session. Greet briefly in 1 sentence, name the first grammar pattern, show one clear model sentence in %s with English translation, then give the first exercise using the exact 'Ordena las palabras: word1 / word2 / word3' scramble format or a fill-in-the-blank. Appropriate for a %s learner.]",
-			lang, lvl,
+			"[Start the sentence construction session. Greet briefly in 1 sentence, name the first grammar pattern, show one clear model sentence in %s with a %s translation, then give the first exercise using the exact 'Ordena las palabras: word1 / word2 / word3' scramble format or a fill-in-the-blank. Appropriate for a %s learner.]",
+			lang, native, lvl,
 		)
 	case "grammar-pronunciation":
 		return fmt.Sprintf(
-			"[Start the pronunciation session. Greet in 1 sentence, then introduce the first word using the exact 'La palabra es: \"[word]\"' format, followed by phonetic breakdown, syllable count, and an English comparison for the trickiest sound. Choose a genuinely challenging sound for a %s learner of %s — like a rolled r, nasal vowel, or silent letter.]",
-			lvl, lang,
+			"[Start the pronunciation session. Greet in 1 sentence, then introduce the first word followed by phonetic breakdown, syllable count, and a %s comparison for the trickiest sound. Choose a genuinely challenging sound for a %s learner of %s — like a rolled r, nasal vowel, or silent letter.]",
+			native, lvl, lang,
 		)
 	case "grammar-listening":
 		return fmt.Sprintf(
@@ -1015,7 +1028,7 @@ func buildGrammarGreet(topicID, lang string, level int) string {
 	}
 }
 
-func buildCulturalGreet(topicID, lang string, level int) string {
+func buildCulturalGreet(topicID, lang, native string, level int) string {
 	levelNames := map[int]string{1: "beginner", 2: "elementary", 3: "intermediate", 4: "advanced", 5: "fluent"}
 	lvl := levelNames[level]
 	if lvl == "" {
@@ -1025,8 +1038,8 @@ func buildCulturalGreet(topicID, lang string, level int) string {
 	switch topicID {
 	case "cultural-context":
 		return fmt.Sprintf(
-			"[Start the cultural lesson. Greet warmly in 1 sentence, then introduce the first cultural topic — pick a social norm, unwritten rule, or everyday custom from %s culture that surprises English speakers. Give 2-3 sentences of rich cultural context, then ask an engaging question to start the discussion. Appropriate for a %s learner.]",
-			lang, lvl,
+			"[Start the cultural lesson. Greet warmly in 1 sentence, then introduce the first cultural topic — pick a social norm, unwritten rule, or everyday custom from %s culture that surprises %s speakers. Give 2-3 sentences of rich cultural context, then ask an engaging question to start the discussion. Appropriate for a %s learner.]",
+			lang, native, lvl,
 		)
 	case "cultural-stories":
 		return fmt.Sprintf(
@@ -1056,7 +1069,7 @@ func buildCulturalGreet(topicID, lang string, level int) string {
 	}
 }
 
-func buildCulturalSystemPrompt(lang string, level int, topicName, topicID string, hasPriorContext bool) string {
+func buildCulturalSystemPrompt(lang, native string, level int, topicName, topicID string, hasPriorContext bool) string {
 	levelLabels := map[int]string{1: "Beginner", 2: "Elementary", 3: "Intermediate", 4: "Advanced", 5: "Fluent"}
 	lvl := levelLabels[level]
 	if lvl == "" {
@@ -1075,11 +1088,11 @@ func buildCulturalSystemPrompt(lang string, level int, topicName, topicID string
 
 Your approach each turn:
 1. Introduce one specific cultural topic: a social norm, unwritten rule, etiquette point, or everyday custom from %s culture.
-2. Explain it in 2-3 sentences with authentic detail. Briefly contrast with typical English-speaking culture where relevant.
+2. Explain it in 2-3 sentences with authentic detail. Briefly contrast with typical %s-speaking culture where relevant.
 3. Teach one natural phrase or expression tied to this cultural point.
 4. Ask the student a reflective or personal question to invite discussion.
 
-Cover a wide range of topics: greetings, personal space, punctuality, gift-giving, family roles, work culture, social hierarchies, taboos, gestures. Make it feel like an enlightening conversation, not a lecture.`, lvl, lang, lang)
+Cover a wide range of topics: greetings, personal space, punctuality, gift-giving, family roles, work culture, social hierarchies, taboos, gestures. Make it feel like an enlightening conversation, not a lecture.`, lvl, lang, lang, native)
 
 	case "cultural-stories":
 		guide = fmt.Sprintf(`STORY-BASED INTERACTIVE LEARNING — %s level %s learner.
@@ -1111,10 +1124,10 @@ Choose idioms that are genuinely common in everyday %s. Prioritize expressions t
 You are an enthusiastic %s food culture guide. Your approach each turn:
 1. Introduce one aspect of %s food culture: a regional dish, meal tradition, market custom, dining etiquette rule, street food culture, or food-related social norm.
 2. Share 2-3 sentences of rich, authentic cultural detail — regional variations, history, social context, why it matters.
-3. Introduce 2-3 key vocabulary words related to the topic (with English translations).
+3. Introduce 2-3 key vocabulary words related to the topic (with %s translations).
 4. Invite the student to ask questions or share their own experience with food.
 
-Cover the full richness of food culture: not just dishes, but when people eat, how meals are structured, what food means socially, regional pride, market culture, and food-related expressions.`, lvl, lang, lang, lang)
+Cover the full richness of food culture: not just dishes, but when people eat, how meals are structured, what food means socially, regional pride, market culture, and food-related expressions.`, lvl, lang, lang, lang, native)
 
 	case "cultural-history":
 		guide = fmt.Sprintf(`HISTORY & TRADITIONS GUIDE — %s level %s learner.
@@ -1248,7 +1261,7 @@ func buildUpdatedProfile(existing *store.StudentProfile, userID, language string
 	return p
 }
 
-func buildImmersionSystemPrompt(lang, topicName, topicID string, hasPriorContext bool) string {
+func buildImmersionSystemPrompt(lang, native, topicName, topicID string, hasPriorContext bool) string {
 	scenes := map[string]string{
 		"immersion-daily":  fmt.Sprintf("SCENE: You are in everyday daily life with a %s speaker. Scenarios can include shopping, running errands, home life, asking for help, or any mundane real-world situation.", lang),
 		"immersion-social": fmt.Sprintf("SCENE: You are at a casual social gathering — a dinner party, night out, or informal get-together with %s speakers. Be warm, funny, and social.", lang),
@@ -1272,12 +1285,12 @@ func buildImmersionSystemPrompt(lang, topicName, topicID string, hasPriorContext
 %s
 
 IMMERSION RULES — ABSOLUTE AND NON-NEGOTIABLE:
-- Respond ONLY in %s. Never write a single word of English under any circumstances.
+- Respond ONLY in %s. Never write a single word of %s under any circumstances.
 - Do not translate, explain grammar, or provide hints in any language other than %s.
-- If a word or concept might be unfamiliar, explain it using only %s — describe, paraphrase, or give context within the target language itself. Never use English as a crutch.
+- If a word or concept might be unfamiliar, explain it using only %s — describe, paraphrase, or give context within the target language itself. Never use %s as a crutch.
 - Do not correct grammar errors unless the student's meaning is completely unclear.
 - Speak at a natural native pace and register — use contractions, colloquialisms, natural rhythm.
-- If the student writes in English, do not acknowledge it. Simply continue the scene in %s as though they responded in the target language.
+- If the student writes in %s, do not acknowledge it. Simply continue the scene in %s as though they responded in the target language.
 - Treat the student as a fully capable speaker who belongs in this conversation.
 - Never break character or reference that this is a language learning exercise.
 
@@ -1286,5 +1299,5 @@ RESPONSE STYLE:
 - 2–4 sentences per turn. Keep the conversation moving naturally.
 - End each turn with a question, reaction, or natural conversational hook.
 - Match the register of the scene: casual for social/daily, professional for work, lively for debate.%s`,
-		lang, lang, scene, lang, lang, lang, lang, contextNote)
+		lang, lang, scene, lang, native, lang, lang, native, native, lang, contextNote)
 }
